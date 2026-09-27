@@ -82,6 +82,23 @@ export interface AudioState {
    */
   boomCut: number;
   /**
+   * Pitch multiplier on the bright half of the black magnet lock.
+   *
+   * The lock is built from two halves that are filtered apart: a square-wave
+   * electric arc with its highpass, resonant lowpass and noise sizzle, and a
+   * sine suction sub underneath. This scales the first and leaves the second
+   * alone, so turning it down does not just darken the arc — it shifts the
+   * balance of the whole voice onto the sub.
+   *
+   * 1 is where the sound shipped, with the arc starting at 2.4 kHz and the
+   * lowpass resonance at 5.2 kHz, doubled again for a black-on-black pair. That
+   * put the loudest part of it in the 2-5 kHz band the ear is most sensitive to,
+   * and it read as shrill. It is a knob rather than a constant for the same
+   * reason `boomCut` is: which value stops being irritating depends on the
+   * speaker, and the answer has to be found by ear on the device.
+   */
+  lockTone: number;
+  /**
    * Requested output buffer size, in seconds; 0 leaves the choice to the browser.
    *
    * An AudioContext built with no options asks for `latencyHint: 'interactive'`,
@@ -117,6 +134,7 @@ export const AudioStore: AudioState = {
   drone: 0.25,
   haptics: 1,
   boomCut: 300,
+  lockTone: 0.6,
   latency: 0.05,
 };
 

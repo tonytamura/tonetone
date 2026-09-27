@@ -652,9 +652,35 @@ describe('Voices module', () => {
       const single = arcFrequencies(false);
       const pair = arcFrequencies(true);
       // The FM carrier: the loudest, most identifiable part of the lock.
-      const carrier = single.indexOf(inKey(2400));
+      // `lockTone` scales the arc, so the carrier is not at a bare 2400 Hz.
+      const carrier = single.indexOf(inKey(2400 * AudioStore.lockTone));
       expect(carrier).toBeGreaterThanOrEqual(0);
-      expect(pair[carrier] / single[carrier]).toBeCloseTo(PAIR_LIFT, 5);
+      // The realised interval is not exactly `PAIR_LIFT`, and cannot be: both
+      // carriers are snapped to the scale by `inKey`, and a fifth above a
+      // Hirajoshi note is not always another Hirajoshi note. (It was exact
+      // while the lift was an octave, which is scale-invariant.) The snap moves
+      // it by about 2 cents here — inaudible, and far short of collapsing the
+      // interval, which is what this guards.
+      const interval = pair[carrier] / single[carrier];
+      expect(Math.abs(interval - PAIR_LIFT) / PAIR_LIFT).toBeLessThan(0.03);
+      expect(interval).toBeGreaterThan(1.3);
+    });
+
+    it('scales the arc with lockTone and leaves the suction sub alone', () => {
+      const was = AudioStore.lockTone;
+      try {
+        // Whatever the knob is set to, the arc follows it and the sub does not.
+        // That is the point of the knob: turning it down shifts the voice's
+        // weight onto the sub rather than only taking brightness away.
+        for (const tone of [0.3, 0.6, 1, 1.5]) {
+          AudioStore.lockTone = tone;
+          const freqs = arcFrequencies(false);
+          expect(freqs, `carrier at lockTone ${tone}`).toContain(inKey(2400 * tone));
+          expect(freqs, `sub at lockTone ${tone}`).toContain(inKey(130));
+        }
+      } finally {
+        AudioStore.lockTone = was;
+      }
     });
   });
 
@@ -874,8 +900,12 @@ describe('Voices module', () => {
       }
     });
 
-    it('lifts the pair a full octave, above its own suction sub', () => {
-      expect(PAIR_LIFT).toBeCloseTo(2.0, 5);
+    it('lifts the pair by a clear interval, above its own suction sub', () => {
+      // It was an octave until the family was found too shrill; a fifth still
+      // makes a pair recognisable without putting its resonance at 10 kHz. The
+      // guard is that the interval stays wide enough to hear, not its exact size.
+      expect(PAIR_LIFT).toBeCloseTo(1.5, 5);
+      expect(PAIR_LIFT).toBeGreaterThanOrEqual(1.4);
       // The sub follows, but less far, so the lock keeps weight underneath
       // instead of thinning into a whistle.
       expect(PAIR_SUB_LIFT).toBeGreaterThan(1);
@@ -1190,7 +1220,11 @@ describe('Voices module', () => {
     it('lands the black magnet lock on scale notes, single and pair', () => {
       for (const isPair of [false, true]) {
         const pitches = oscillatorPitches(() => playMagneticElectricSound(0, { ignoreOptionsGuard: true, isPair }));
-        const lift = isPair ? PAIR_LIFT : 1, subLift = isPair ? PAIR_SUB_LIFT : 1;
+        // `lockTone` scales the arc and its filters; the suction sub is
+        // deliberately outside it, which is what lets turning the knob down
+        // shift the voice's weight downward rather than only dulling it.
+        const lift = (isPair ? PAIR_LIFT : 1) * AudioStore.lockTone;
+        const subLift = isPair ? PAIR_SUB_LIFT : 1;
         // The FM modulator shapes the arc's timbre and is not a note; the
         // carrier and the suction sub are.
         for (const f of [2400 * lift, 450 * lift, 130 * subLift, 320 * subLift, 90 * subLift]) {

@@ -261,6 +261,25 @@ const KNOB_SPECS = {
     read: () => PhysicsConfig.MIN_BOOM,
   },
 
+  /**
+   * How bright the black magnet lock is: a pitch multiplier on its arc, the
+   * arc's filters and its noise sizzle, leaving the suction sub alone. Turning
+   * it down therefore moves the voice onto the sub rather than only dulling it.
+   *
+   * 1 is where the lock shipped, with the arc from 2.4 kHz and the lowpass
+   * resonance at 5.2 kHz — doubled again for a black-on-black pair, which put
+   * that pair's resonance at 10 kHz. The default is 0.6 because the whole family
+   * read as shrill. Like `boomcut`, it is a knob because the value that stops
+   * being irritating depends on the speaker.
+   */
+  locktone: {
+    group: 'audio', kind: 'range', min: 0.3, max: 1.5, step: 0.05, default: 0.6,
+    wakesAudio: true, cosmetic: true,
+    apply: v => { AudioStore.lockTone = v as number; },
+    format: v => Math.round(2400 * (v as number)) + 'Hz arc',
+    read: () => AudioStore.lockTone,
+  },
+
   boomcut: {
     group: 'audio', kind: 'range', min: 40, max: 600, step: 5, default: 300,
     wakesAudio: true, cosmetic: true,
@@ -610,7 +629,7 @@ export interface ConfigSnapshot {
   specials: boolean;
   whiteOdds: number;
   shotDecay: number;
-  audio: { volume: number; lockVol: number; breakVol: number; boomVol: number; clickVol: number; drone: number; haptics: number; latency: number; boomCut: number };
+  audio: { volume: number; lockVol: number; breakVol: number; boomVol: number; clickVol: number; drone: number; haptics: number; latency: number; boomCut: number; lockTone: number };
 }
 
 export function snapshotConfig(): ConfigSnapshot {
@@ -624,6 +643,7 @@ export function snapshotConfig(): ConfigSnapshot {
       volume: AudioStore.volume, lockVol: AudioStore.lockVol, breakVol: AudioStore.breakVol,
       boomVol: AudioStore.boomVol, clickVol: AudioStore.clickVol, drone: AudioStore.drone,
       haptics: AudioStore.haptics, latency: AudioStore.latency, boomCut: AudioStore.boomCut,
+      lockTone: AudioStore.lockTone,
     },
   };
 }

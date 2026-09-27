@@ -74,7 +74,8 @@ const BLACK_LOCK_LEVELS: SoundDef[] = LEVEL_TIERS.flatMap(({ boomSize, label }) 
     getParamsText: () => {
       const l = getMagnetLockProps(boomSize);
       // Read from the voice's own constants, so this readout cannot drift.
-      const lift = isPair ? PAIR_LIFT : 1;
+      // `lockTone` is part of the lift in the voice, so it has to be here too.
+      const lift = (isPair ? PAIR_LIFT : 1) * AudioStore.lockTone;
       const dur = l.dur * (isPair ? PAIR_DUR : 1);
       const vol = l.vol * (isPair ? PAIR_VOL : 1);
       return `Arc: ${Math.round(inKey(2400 * lift))}Hz → ${Math.round(inKey(450 * lift))}Hz | Dur: ${dur.toFixed(2)}s | Drive ×${l.drive.toFixed(2)} | Sub ×${(l.sub * (isPair ? PAIR_SUB_LIFT : 1)).toFixed(2)} | Vol: lockVol × ${vol.toFixed(2)} (${Math.round(AudioStore.lockVol * vol * 100)}%)`;
@@ -103,7 +104,7 @@ export const SOUND_CATALOG: SoundDef[] = [
     name: 'Black Ball Magnet Lock',
     category: 'Game FX',
     situation: 'A coloured ball or group attaches to a black ball with an electric arc zap and magnetic suction snap',
-    getParamsText: () => `Electric Square Arc FM Zap + Bandpass Static Discharge + Magnetic Sub Snap | Arc: ${Math.round(inKey(2400))}Hz → ${Math.round(inKey(450))}Hz | Controlled Vol (${Math.round(AudioStore.lockVol * 100)}%)`,
+    getParamsText: () => `Electric Square Arc FM Zap + Bandpass Static Discharge + Magnetic Sub Snap | Arc: ${Math.round(inKey(2400 * AudioStore.lockTone))}Hz → ${Math.round(inKey(450 * AudioStore.lockTone))}Hz | lockTone ×${AudioStore.lockTone.toFixed(2)} | Controlled Vol (${Math.round(AudioStore.lockVol * 100)}%)`,
     play: () => {
       initAudio();
       playMagneticElectricSound(0, { ignoreOptionsGuard: true });

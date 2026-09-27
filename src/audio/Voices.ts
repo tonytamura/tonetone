@@ -899,10 +899,16 @@ export function getMagnetLockProps(groupSize: number) {
 /**
  * Two blacks locking to each other is the rarest bond on the table and pays
  * double a single black (`PAY_BLACK_PAIR`), so it reads as *more* than the
- * ordinary magnet lock in every dimension: a full octave higher, longer, and
- * louder. `PAIR_LIFT` moves the arc and its filters; the suction sub follows at
+ * ordinary magnet lock in every dimension: higher, longer, and louder.
+ * `PAIR_LIFT` moves the arc and its filters; the suction sub follows at
  * `PAIR_SUB_LIFT`, less far, so the lock keeps weight underneath instead of
  * thinning out into a whistle.
+ *
+ * The lift was an octave (2.0) until the whole voice was found too shrill. An
+ * octave above an arc that already started at 2.4 kHz put the pair's resonance
+ * at 10 kHz, which made the rarest event on the table also the most piercing.
+ * It is a fifth now (1.5), which still separates the two clearly — the point of
+ * the lift is that a pair is recognisable, not that it is high.
  *
  * An earlier version had the pair at 0.8x the duration and 0.8x the level of a
  * single black, on the reasoning that it was the snappier sound by character and
@@ -912,8 +918,8 @@ export function getMagnetLockProps(groupSize: number) {
  * The pair now runs longer and louder than a single black at the same tier, and
  * grows with the chain the same way.
  */
-export const PAIR_LIFT = 2.0;
-export const PAIR_SUB_LIFT = 1.5;
+export const PAIR_LIFT = 1.5;
+export const PAIR_SUB_LIFT = 1.25;
 export const PAIR_DUR = 1.25;
 export const PAIR_VOL = 1.2;
 
@@ -923,16 +929,20 @@ export function playMagneticElectricSound(xNorm: number = 0, opts: MagnetLockOpt
   const actx = AudioStore.actx!;
   if (AudioStore.activeVoices >= MAX_VOICES) return;
 
-  const lift = isPair ? PAIR_LIFT : 1;
+  // `lockTone` scales the arc and its filters but not the suction sub below, so
+  // turning it down moves the voice's weight onto the sub rather than only
+  // taking brightness away. See `AudioStore.lockTone`.
+  const lift = (isPair ? PAIR_LIFT : 1) * AudioStore.lockTone;
   const subLift = isPair ? PAIR_SUB_LIFT : 1;
   const level = getMagnetLockProps(groupSize);
 
   const now = actx.currentTime;
   const t = now + LOOKAHEAD.short;
   const dur = level.dur * (isPair ? PAIR_DUR : 1);
-  // Kept under the bond lock: the square-wave arc sits at 2-5 kHz, where it
-  // reads louder than its measured level against the lower game voices. The
-  // pair is deliberately not trimmed for that — see `PAIR_LIFT` above.
+  // Kept under the bond lock: the square-wave arc used to sit at 2-5 kHz, where
+  // it reads louder than its measured level against the lower game voices.
+  // `lockTone` now moves that band down instead of trimming the level for it.
+  // The pair is still not trimmed — see `PAIR_LIFT` above.
   const peak = 0.027 * AudioStore.lockVol * level.vol * (isPair ? PAIR_VOL : 1);
   if (peak <= 0.001) return;
 
@@ -964,7 +974,10 @@ export function playMagneticElectricSound(xNorm: number = 0, opts: MagnetLockOpt
   const lp = actx.createBiquadFilter();
   parts.push(lp);
   lp.type = 'lowpass';
-  lp.Q.value = 8.0;
+  // Q 8 put a narrow resonant peak on the filter's own corner, which is heard as
+  // a whistle riding the sweep rather than as the arc getting brighter. 4.5 still
+  // gives the snap-shut an audible edge without the tone on top of it.
+  lp.Q.value = 4.5;
   lp.frequency.setValueAtTime(5200 * lift, now);
   lp.frequency.setValueAtTime(5200 * lift, t);
   rampFreq(lp.frequency, 1600 * lift, t + 0.04);
@@ -1052,7 +1065,7 @@ export function playMagneticElectricSound(xNorm: number = 0, opts: MagnetLockOpt
   subGain.gain.value = SILENCE;
   subGain.gain.setValueAtTime(SILENCE, now);
   subGain.gain.setValueAtTime(SILENCE, t);
-  subGain.gain.linearRampToValueAtTime(peak * 0.35 * level.sub, t + 0.015);
+  subGain.gain.linearRampToValueAtTime(peak * 0.45 * level.sub, t + 0.015);
   subGain.gain.linearRampToValueAtTime(SILENCE, t + dur);
   subGain.gain.linearRampToValueAtTime(0, t + dur + 0.03);
 
