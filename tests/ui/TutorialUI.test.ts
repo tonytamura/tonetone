@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TUTORIAL_CLOCK, closingCard, successCard, tutorialLine } from '../../src/ui/TutorialUI';
+import { TUTORIAL_CLOCK, closingButton, closingCard, tutorialLine } from '../../src/ui/TutorialUI';
 import { TutorialEvent, TUTORIAL_STEPS } from '../../src/game/Tutorial';
 
 /**
@@ -13,12 +13,14 @@ const EVENTS: TutorialEvent[] = [
   { type: 'firstLock' },
   { type: 'tooHard' },
   { type: 'peel' },
-  ...TUTORIAL_STEPS.map(step => ({ type: 'stepDone', step, lockPts: 6, boomPts: 27 }) as TutorialEvent),
+  ...TUTORIAL_STEPS.map(step => ({ type: 'again', step }) as TutorialEvent),
+  ...TUTORIAL_STEPS.map(step => ({ type: 'stepDone', step, lockPts: 11, boomPts: 27 }) as TutorialEvent),
 ];
 
-// The names of ball colours. The arrow's red is a cue, not a ball, and may be
-// named; a ball colour may not, because colour names fail for colour-blind
-// players. The ring on the field points instead.
+// The names of ball colours. A colour name fails for colour-blind players, so
+// the ring on the field points instead. Black and white are exempt: they are
+// the two balls with names of their own, and they differ in brightness, not
+// hue. The arrow's red is a cue, not a ball, and may be named too.
 const BALL_COLOUR_WORDS = ['gold', 'yellow', 'purple', 'violet', 'pink', 'magenta', 'cyan', 'teal', 'green', 'blue', 'orange'];
 
 function allText(): string[] {
@@ -27,13 +29,20 @@ function allText(): string[] {
     const b = tutorialLine(e);
     if (b) { out.push(b.line); if (b.sub) out.push(b.sub); }
   }
-  for (const c of [successCard(6, 27), closingCard(120)]) out.push(c.title, ...c.lines, c.small || '');
+  const c = closingCard(120);
+  out.push(c.title, ...c.lines, c.small || '', closingButton('solo'), closingButton(null));
   return out;
 }
 
 describe('tutorial copy', () => {
   it('has a line for every event a step can raise', () => {
     for (const e of EVENTS) expect(tutorialLine(e), JSON.stringify(e)).not.toBeNull();
+  });
+
+  it('introduces all five steps, black and white included', () => {
+    const intro = TUTORIAL_STEPS.map(step => tutorialLine({ type: 'step', step })!.line).join(' ');
+    expect(intro).toMatch(/black/i);
+    expect(intro).toMatch(/white/i);
   });
 
   it('never names a ball colour', () => {
@@ -61,16 +70,26 @@ describe('tutorial copy', () => {
     expect(allText().join(' ')).not.toMatch(/turns red/);
   });
 
-  it('quotes what the player really earned', () => {
-    const c = successCard(9, 41);
-    expect(c.lines.join(' ')).toContain('+41');
-    expect(c.lines.join(' ')).toContain('+9');
+  it('quotes what the player really earned when the group booms', () => {
+    const b = tutorialLine({ type: 'stepDone', step: 'boom', lockPts: 9, boomPts: 41 })!;
+    expect(b.line).toContain('+41');
+    expect(b.sub).toContain('+9');
   });
 
-  it('quotes the real match length on the closing card', () => {
-    expect(closingCard(120).small).toBe('Most points in 2:00 wins.');
+  it('says a missed throw can simply be tried again', () => {
+    for (const step of TUTORIAL_STEPS) expect(tutorialLine({ type: 'again', step })!.sub).toMatch(/again/i);
+  });
+
+  it('closes with the rules, the real match length and one button', () => {
+    const c = closingCard(120);
+    expect(c.lines).toHaveLength(5);
+    expect(c.small).toBe('Most points in 2:00 wins.');
     expect(closingCard(180).small).toBe('Most points in 3:00 wins.');
     expect(closingCard(0).small).toBe('Most points wins.');
+    // On the way into a mode, the button starts it; otherwise it goes back.
+    expect(closingButton('solo')).toBe('Start game');
+    expect(closingButton('duel')).toBe('Start game');
+    expect(closingButton(null)).toBe('Back to menu');
   });
 
   it('shows no time on the clock', () => {

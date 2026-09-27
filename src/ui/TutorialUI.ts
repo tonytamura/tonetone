@@ -1,16 +1,16 @@
 /**
- * The tutorial on screen: the banner, the cards, and the glue that runs the
- * controller in `game/Tutorial.ts` beside the page's frame loop.
+ * The tutorial on screen: the banner, the closing card, and the glue that runs
+ * the controller in `game/Tutorial.ts` beside the page's frame loop.
  *
- * The words live in `tutorialLine` and the card builders below, which touch no
- * DOM, so `tests/ui/TutorialUI.test.ts` can hold the copy to the design without
- * a browser. Design: the Tutorial: Design page in Notion, §3.
+ * The words live in `tutorialLine` and `closingCard`, which touch no DOM, so
+ * `tests/ui/TutorialUI.test.ts` can hold the copy to the design without a
+ * browser. Design: the Tutorial: Design page in Notion, §3.
  */
 import { Game, PlayMode } from '../game/GameState';
 import { formatClock } from '../game/Clock';
 import { Ball } from '../physics/Types';
 import {
-  Tutorial, TutorialEvent, TutorialStep, TUTORIAL_STEPS,
+  Tutorial, TutorialEvent, TUTORIAL_STEPS,
   drainTutorialEvents, endTutorial, noteTouch, startTutorial, tutorialAfterFrame, tutorialBeforeFrame,
 } from '../game/Tutorial';
 import { uiClick } from '../audio/UiSounds';
@@ -29,28 +29,43 @@ export interface BannerLine {
  *
  * One instruction at a time, never more than two short lines on a 360px phone.
  * Colours are never named: the ring on the field points instead, since colour
- * names fail for colour-blind players.
+ * names fail for colour-blind players. Black and white are the two balls with
+ * names of their own, and they differ in brightness rather than hue.
  */
 export function tutorialLine(event: TutorialEvent): BannerLine | null {
   switch (event.type) {
     case 'step':
-      if (event.step === 'aim') return { line: 'Drag anywhere to aim.', sub: 'Farther means harder.' };
-      if (event.step === 'lock') return { line: 'Same colours stick.', sub: 'Lock one onto the pair.' };
-      // Deep red, not red: a throw at the red threshold never booms the group,
-      // measured on the real loop. See TEACH_STRENGTH in game/Tutorial.ts.
-      return { line: 'A different colour, thrown hard, booms the whole group.', sub: 'Drag farther, until the arrow is deep red.' };
+      switch (event.step) {
+        case 'aim': return { line: 'Drag anywhere to aim.', sub: 'Farther means harder.' };
+        case 'lock': return { line: 'Same colours stick.', sub: 'Lock one onto the pair.' };
+        // Deep red, not red: a throw at the red threshold never booms the
+        // group, measured on the real loop. See TEACH_STRENGTH in game/Tutorial.ts.
+        case 'boom': return { line: 'A different colour, thrown hard, booms the whole group.', sub: 'Drag farther, until the arrow is deep red.' };
+        case 'black': return { line: 'The black ball sticks to any colour.', sub: 'Lock it onto the pair.' };
+        case 'white': return { line: 'The white ball booms whatever it touches.', sub: 'Even softly. Even the black.' };
+      }
+      return null;
     case 'touched':
-      return { line: 'It fires by itself when the ring fills.', sub: 'Hit the ball.' };
+      return { line: 'It fires by itself when the ring fills.', sub: 'Drag again to aim the next one.' };
     case 'firstLock':
       return { line: 'Keep building.', sub: 'Make it four.' };
     case 'tooHard':
       return { line: 'Gently — a soft throw sticks better.' };
     case 'peel':
       return { line: 'Too soft — that only knocked one loose.', sub: 'Pull farther.' };
+    case 'again':
+      return { line: 'Not quite.', sub: 'Drag to aim, and try again.' };
     case 'stepDone':
-      if (event.step === 'aim') return { line: 'Nice.' };
-      if (event.step === 'lock') return { line: 'A group.' };
-      return { line: 'Boom.' };
+      switch (event.step) {
+        case 'aim': return { line: 'Nice.' };
+        case 'lock': return { line: 'A group.' };
+        // Quotes what this player's own boom and building paid, read from the
+        // counters, so it stays true if the pay table changes.
+        case 'boom': return { line: `That boom paid +${event.boomPts}.`, sub: `Building it paid +${event.lockPts}. Bigger pays more.` };
+        case 'black': return { line: 'Black sticks to anything.', sub: 'Its locks pay double.' };
+        case 'white': return { line: 'White booms anything.', sub: "It's the only way to clear black." };
+      }
+      return null;
     default:
       return null;
   }
@@ -62,25 +77,27 @@ export interface CardCopy {
   small?: string;
 }
 
-/**
- * The card after the boom. It quotes what this player's own boom and building
- * paid, read from the counters, so it stays true if the pay table changes.
- */
-export function successCard(lockPts: number, boomPts: number): CardCopy {
-  return {
-    title: 'Boom',
-    lines: [`That boom paid +${boomPts}.`, `Building the group paid +${lockPts}.`, 'Bigger groups pay much more.'],
-    small: 'The pieces fly off, and can boom other groups.',
-  };
-}
-
-/** The last card: the three rules again, and how a match is won. */
+/** The last card: the rules again, and how a match is won. */
 export function closingCard(matchLen: number): CardCopy {
   return {
     title: "You're ready",
-    lines: ['Aim — it fires by itself.', 'Same colours lock.', 'A different colour, thrown hard, booms.'],
+    lines: [
+      'Aim — it fires by itself.',
+      'Same colours lock.',
+      'A different colour, thrown hard, booms.',
+      'Black sticks to anything.',
+      'White booms anything.',
+    ],
     small: matchLen > 0 ? `Most points in ${formatClock(matchLen)} wins.` : 'Most points wins.',
   };
+}
+
+/**
+ * The one button at the end. A player who came here on their way into a mode
+ * goes on into it; anyone else goes back to the menu they came from.
+ */
+export function closingButton(then: PlayMode | null): string {
+  return then ? 'Start game' : 'Back to menu';
 }
 
 export interface TutorialSessionDeps {
@@ -95,8 +112,13 @@ export interface TutorialSessionDeps {
   toMenu: () => void;
 }
 
+export interface TutorialStartOptions {
+  /** The mode the player was on their way into, if any; the end card starts it. */
+  then?: PlayMode | null;
+}
+
 export interface TutorialSession {
-  start(): void;
+  start(opts?: TutorialStartOptions): void;
   isActive(): boolean;
   /** Run before `advanceFrame`. */
   before(): void;
@@ -115,7 +137,8 @@ function el(id: string) {
 export function createTutorialSession(deps: TutorialSessionDeps): TutorialSession {
   const { game } = deps;
   let tut: Tutorial | null = null;
-  let boomPaid = { lockPts: 0, boomPts: 0 };
+  let then: PlayMode | null = null;
+  let pressed = false;
 
   function setBanner(b: BannerLine) {
     const line = el('tut-line'), sub = el('tut-sub');
@@ -123,17 +146,29 @@ export function createTutorialSession(deps: TutorialSessionDeps): TutorialSessio
     if (sub) { sub.textContent = b.sub || ''; setHidden(sub, !b.sub); }
   }
 
-  function setDots(step: TutorialStep | 'done') {
+  /** One dot per step, built from the step list so the two cannot disagree. */
+  function buildDots() {
     const dots = el('tut-dots');
     if (!dots) return;
-    const at = step === 'done' ? TUTORIAL_STEPS.length : TUTORIAL_STEPS.indexOf(step);
+    dots.innerHTML = '';
+    for (let i = 0; i < TUTORIAL_STEPS.length; i++) dots.appendChild(document.createElement('i'));
+  }
+
+  function setDots(at: number) {
+    const dots = el('tut-dots');
+    if (!dots) return;
     Array.from(dots.children).forEach((d, i) => {
       d.classList.toggle('done', i < at);
       d.classList.toggle('now', i === at);
     });
   }
 
-  function showCard(copy: CardCopy, buttons: { label: string; primary?: boolean; act: () => void }[]) {
+  function showClosing() {
+    uiClick('confirm');
+    // The saved match length, not the tutorial's: the card is about the match
+    // they are about to play.
+    const len = tut ? tut.saved.matchLen : game.matchLen;
+    const copy = closingCard(len);
     const title = el('tut-card-title'), body = el('tut-card-body'), small = el('tut-card-small'), actions = el('tut-card-actions');
     if (title) title.textContent = copy.title;
     if (body) {
@@ -147,42 +182,26 @@ export function createTutorialSession(deps: TutorialSessionDeps): TutorialSessio
     if (small) { small.textContent = copy.small || ''; setHidden(small, !copy.small); }
     if (actions) {
       actions.innerHTML = '';
-      for (const b of buttons) {
-        const btn = document.createElement('button');
-        btn.className = 'confirm-btn ' + (b.primary ? 'primary tut-primary' : 'secondary');
-        btn.textContent = b.label;
-        btn.addEventListener('click', e => { e.stopPropagation(); b.act(); });
-        actions.appendChild(btn);
-      }
+      const btn = document.createElement('button');
+      btn.className = 'confirm-btn primary tut-primary';
+      btn.textContent = closingButton(then);
+      const goTo = then;
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        stop();
+        if (goTo) deps.play(goTo);
+        else { uiClick('cancel'); deps.toMenu(); }
+      });
+      actions.appendChild(btn);
     }
     setHidden(el('tut-banner'), true);
     setHidden(el('tut-card-overlay'), false);
   }
 
-  function showClosing() {
-    uiClick('confirm');
-    // The saved match length, not the tutorial's: the card is about the match
-    // they are about to play.
-    const len = tut ? tut.saved.matchLen : game.matchLen;
-    showCard(closingCard(len), [
-      { label: 'Play solo', primary: true, act: () => { stop(); deps.play('solo'); } },
-      { label: 'Play vs AI', act: () => { stop(); deps.play('ai'); } },
-      { label: 'Menu', act: () => { uiClick('cancel'); stop(); deps.toMenu(); } },
-    ]);
-  }
-
   function handle(e: TutorialEvent) {
-    if (e.type === 'step') setDots(e.step);
-    if (e.type === 'stepDone') {
-      setDots(e.step === 'aim' ? 'lock' : e.step === 'lock' ? 'boom' : 'done');
-      if (e.step === 'boom') boomPaid = { lockPts: e.lockPts, boomPts: e.boomPts };
-    }
-    if (e.type === 'finished') {
-      showCard(successCard(boomPaid.lockPts, boomPaid.boomPts), [
-        { label: 'Next', primary: true, act: showClosing },
-      ]);
-      return;
-    }
+    if (e.type === 'step') setDots(TUTORIAL_STEPS.indexOf(e.step));
+    if (e.type === 'stepDone') setDots(TUTORIAL_STEPS.indexOf(e.step) + 1);
+    if (e.type === 'finished') { showClosing(); return; }
     const b = tutorialLine(e);
     if (b) setBanner(b);
   }
@@ -191,26 +210,38 @@ export function createTutorialSession(deps: TutorialSessionDeps): TutorialSessio
     if (!tut) return;
     endTutorial(tut, game);
     tut = null;
+    pressed = false;
     setHidden(el('tut-banner'), true);
     setHidden(el('tut-card-overlay'), true);
   }
 
-  deps.canvas.addEventListener('pointerdown', () => {
-    if (tut && !game.paused) noteTouch(tut);
-  });
+  // A press, or a drag while pressed, is the player acting: it lets the next
+  // throw fly. A mouse moving over the field without a button down is not.
+  const act = () => { if (tut && !game.paused) noteTouch(tut); };
+  deps.canvas.addEventListener('pointerdown', () => { pressed = true; act(); });
+  deps.canvas.addEventListener('pointermove', () => { if (pressed) act(); });
+  const release = () => { pressed = false; };
+  deps.canvas.addEventListener('pointerup', release);
+  deps.canvas.addEventListener('pointercancel', release);
+
   el('tut-skip')?.addEventListener('click', e => {
     e.stopPropagation();
     uiClick('cancel');
+    const goTo = then;
     stop();
-    deps.toMenu();
+    // Skipping is not refusing to play: someone on their way into a mode goes on.
+    if (goTo) deps.play(goTo);
+    else deps.toMenu();
   });
 
   return {
-    start() {
+    start(opts = {}) {
       if (tut) stop();
+      then = opts.then ?? null;
       deps.prepare();
       const { W, H } = deps.size();
       tut = startTutorial(game, W, H);
+      buildDots();
       setHidden(el('tut-card-overlay'), true);
       setHidden(el('tut-banner'), false);
       for (const e of drainTutorialEvents(tut)) handle(e);
@@ -228,7 +259,7 @@ export function createTutorialSession(deps: TutorialSessionDeps): TutorialSessio
     ringBalls() {
       if (!tut || tut.step === 'done') return [];
       // The whole group the target belongs to, so the ring grows with what the
-      // player builds in step 2 rather than staying on the pair it began as.
+      // player builds rather than staying on the pair it began as.
       for (const id of tut.targetIds) {
         const b = game.byId.get(id);
         if (b && !b.ghost) return b.group.members.filter(m => !m.ghost);
@@ -238,3 +269,4 @@ export function createTutorialSession(deps: TutorialSessionDeps): TutorialSessio
     stop,
   };
 }
+

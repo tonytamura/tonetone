@@ -8,14 +8,15 @@ import { AudioStore } from '../../src/audio/SynthEngine';
 import { SPECIALS } from '../../src/game/Rules';
 import { aimAt, boomHeatOf, boomsOnImpact } from '../../src/physics/LauncherBays';
 import {
-  Tutorial, TutorialEvent, TutorialStep, LOCK_GOAL, TEACH_STRENGTH, TUTORIAL_LAYOUTS,
+  Tutorial, TutorialEvent, TutorialStep, LOCK_GOAL, TEACH_STRENGTH, TUTORIAL_LAYOUTS, TUTORIAL_STEPS, AGAIN_AFTER,
   startTutorial, endTutorial, noteTouch, tutorialBeforeFrame, tutorialAfterFrame, drainTutorialEvents,
 } from '../../src/game/Tutorial';
 
 /**
  * The tutorial is only worth shipping if every step can be won, on every
- * screen, with the throw it tells the player to make. These tests drive it on
- * the real `advanceFrame`, the way the page does, and measure that.
+ * screen, with the throw it tells the player to make — and only by a player
+ * who acts. These tests drive it on the real `advanceFrame`, the way the page
+ * does, and measure that.
  */
 
 const SCREENS: [number, number][] = [[380, 620], [768, 1024], [1280, 720]];
@@ -76,12 +77,12 @@ function redStrength(W: number, H: number): number {
  */
 function oneThrow(W: number, H: number, s: TutorialStep, aimDeg: number, strength: number): boolean {
   return withTutorial(W, H, s, (tut, game) => {
-    noteTouch(tut);
     const p = game.players[0];
+    p.aimDeg = aimDeg; p.strength = strength;
+    noteTouch(tut);
     p.reload = 0;
     let clock = 0, thrownAt = -1;
     for (let f = 0; f < 60 * 6; f++) {
-      if (thrownAt >= 0) p.reload = 99;
       p.aimDeg = aimDeg; p.strength = strength;
       const r = step(tut, game, W, H, clock);
       clock = r.clock;
@@ -106,14 +107,38 @@ function windowWidth(W: number, H: number, s: TutorialStep, strength: number): n
   return hi - lo + 1;
 }
 
+/**
+ * Play from `first` to the end the way an attentive player would: aim at the
+ * ring at the strength the step teaches, and drag again after every throw.
+ */
+function playThrough(W: number, H: number, first: TutorialStep, until: (tut: Tutorial) => boolean) {
+  return withTutorial(W, H, first, (tut, game) => {
+    const events: TutorialEvent[] = [];
+    let clock = 0;
+    for (let f = 0; f < 60 * 180 && !until(tut); f++) {
+      if (tut.step !== 'done' && tut.targetIds.length) {
+        const c = centreOf(tut, game);
+        const p = game.players[0];
+        aimAt(p, c.x, c.y, W, H, false);
+        p.strength = TEACH_STRENGTH[tut.step];
+        if (!tut.armed) noteTouch(tut);
+      }
+      clock = step(tut, game, W, H, clock).clock;
+      events.push(...drainTutorialEvents(tut));
+    }
+    return { tut, game, events };
+  });
+}
+
 describe('every step can be won with the throw it teaches', () => {
   for (const [W, H] of SCREENS) {
-    for (const s of ['aim', 'lock', 'boom'] as TutorialStep[]) {
+    for (const s of TUTORIAL_STEPS) {
       it(`${s} at ${W}x${H}: a window several degrees wide at strength ${TEACH_STRENGTH[s]}`, () => {
         const width = windowWidth(W, H, s, TEACH_STRENGTH[s]);
         // A few degrees is what a first-time player's drag can hold. Measured
         // at the time of writing (380x620 / 768x1024 / 1280x720): aim 13/8/8,
-        // lock 21/11/17, boom 17/11/17. The tablet's are the tightest.
+        // lock 21/11/17, boom 17/11/17, black 21/11/17, white 21/11/17. The
+        // tablet's are the tightest.
         expect(width, `${s} window at ${W}x${H}`).toBeGreaterThanOrEqual(5);
       });
     }
@@ -152,90 +177,98 @@ describe('the words match the arrow', () => {
   });
 });
 
-describe('step 3 starts where it was measured', () => {
-  for (const [W, H] of SCREENS) {
-    it(`the group built in step 2 is carried back to the step 3 anchor at ${W}x${H}`, () => {
-      withTutorial(W, H, 'lock', (tut, game) => {
+describe('nothing happens until the player acts', () => {
+  for (const s of TUTORIAL_STEPS) {
+    it(`${s}: no throw without a touch, and one touch is one throw`, () => {
+      withTutorial(380, 620, s, (tut, game) => {
+        let clock = 0, threw = 0;
+        const run = (seconds: number) => {
+          for (let f = 0; f < 60 * seconds; f++) { const r = step(tut, game, 380, 620, clock); clock = r.clock; threw += r.threw; }
+        };
+        // Left alone at the default aim, straight up, the launcher never fires.
+        run(10);
+        expect(threw).toBe(0);
+        // Aim away from the target so the throw cannot end the step.
+        game.players[0].aimDeg = -80;
         noteTouch(tut);
-        let clock = 0;
-        for (let f = 0; f < 60 * 60 && tut.step !== 'boom'; f++) {
-          const c = centreOf(tut, game);
-          aimAt(game.players[0], c.x, c.y, W, H, false);
-          game.players[0].strength = TEACH_STRENGTH.lock;
-          clock = step(tut, game, W, H, clock).clock;
-        }
-        expect(tut.step).toBe('boom');
-        const c = centreOf(tut, game);
-        const R = PhysicsConfig.R;
-        expect(Math.abs(c.x - TUTORIAL_LAYOUTS.boom.fx * W), 'x').toBeLessThan(R * 1.5);
-        expect(Math.abs(c.y - TUTORIAL_LAYOUTS.boom.fy * H), 'y').toBeLessThan(R * 1.5);
-        const g = game.byId.get(tut.targetIds[0])!.group;
-        expect(Math.hypot(g.vx, g.vy)).toBe(0);
+        run(4);
+        expect(threw).toBe(1);
+        // And having thrown, it waits for the player again.
+        run(8);
+        expect(threw).toBe(1);
       });
     });
   }
+
+  it('a throw that misses says so, and the step waits', () => {
+    withTutorial(380, 620, 'aim', (tut, game) => {
+      const p = game.players[0];
+      p.aimDeg = -80; p.strength = 0.3;
+      noteTouch(tut);
+      let clock = 0;
+      const events: TutorialEvent[] = [];
+      for (let f = 0; f < 60 * (3 + AGAIN_AFTER + 1); f++) {
+        clock = step(tut, game, 380, 620, clock).clock;
+        events.push(...drainTutorialEvents(tut));
+      }
+      expect(events.some(e => e.type === 'again' && e.step === 'aim')).toBe(true);
+      expect(tut.step).toBe('aim');
+    });
+  });
 });
 
-describe('the whole tutorial, played by aiming at the target', () => {
+describe('the whole tutorial, played by aiming at the ring', () => {
   for (const [W, H] of SCREENS) {
-    it(`finishes all three steps at ${W}x${H}`, () => {
-      const seen = withTutorial(W, H, 'aim', (tut, game) => {
-        const events: TutorialEvent[] = [];
-        let clock = 0;
-        noteTouch(tut);
-        for (let f = 0; f < 60 * 90 && tut.step !== 'done'; f++) {
-          if (tut.step !== 'done' && tut.targetIds.length) {
-            const c = centreOf(tut, game);
-            const p = game.players[0];
-            aimAt(p, c.x, c.y, W, H, false);
-            p.strength = TEACH_STRENGTH[tut.step];
-          }
-          clock = step(tut, game, W, H, clock).clock;
-          events.push(...drainTutorialEvents(tut));
-        }
-        return { done: tut.step === 'done', events };
-      });
-      expect(seen.done).toBe(true);
-      const kinds = seen.events.map(e => e.type);
-      expect(kinds.filter(k => k === 'stepDone')).toHaveLength(3);
-      expect(kinds[kinds.length - 1]).toBe('finished');
-      // The card after step 3 quotes what building and booming really paid.
-      const boom = seen.events.find(e => e.type === 'stepDone' && e.step === 'boom') as Extract<TutorialEvent, { type: 'stepDone' }>;
+    it(`finishes all five steps at ${W}x${H}`, () => {
+      const { tut, events } = playThrough(W, H, 'aim', t => t.step === 'done');
+      expect(tut.step).toBe('done');
+      const done = events.filter(e => e.type === 'stepDone') as Extract<TutorialEvent, { type: 'stepDone' }>[];
+      expect(done.map(e => e.step)).toEqual(TUTORIAL_STEPS);
+      expect(events[events.length - 1].type).toBe('finished');
+      // The boom line quotes what building and booming really paid.
+      const boom = done.find(e => e.step === 'boom')!;
       expect(boom.lockPts).toBeGreaterThan(0);
       expect(boom.boomPts).toBeGreaterThan(boom.lockPts);
     });
   }
 });
 
-describe('the tutorial runs beside the game without changing it', () => {
-  it('holds the first ball until the player touches the field', () => {
-    withTutorial(380, 620, 'aim', (tut, game) => {
-      let clock = 0, threw = 0;
-      for (let f = 0; f < 60 * 10; f++) {
-        const r = step(tut, game, 380, 620, clock); clock = r.clock; threw += r.threw;
-      }
-      expect(threw).toBe(0);
-      noteTouch(tut);
-      for (let f = 0; f < 60 * 4; f++) {
-        const r = step(tut, game, 380, 620, clock); clock = r.clock; threw += r.threw;
-      }
-      expect(threw).toBe(1);
-    });
-  });
+describe('a built group carries into the next step, back where it was measured', () => {
+  const cases: [TutorialStep, TutorialStep][] = [['lock', 'boom'], ['black', 'white']];
+  for (const [from, to] of cases) {
+    for (const [W, H] of SCREENS) {
+      it(`${from} -> ${to} at ${W}x${H}`, () => {
+        const { tut, game } = playThrough(W, H, from, t => t.step === to);
+        expect(tut.step).toBe(to);
+        const c = centreOf(tut, game);
+        const R = PhysicsConfig.R;
+        expect(Math.abs(c.x - TUTORIAL_LAYOUTS[to].fx * W), 'x').toBeLessThan(R * 1.5);
+        expect(Math.abs(c.y - TUTORIAL_LAYOUTS[to].fy * H), 'y').toBeLessThan(R * 1.5);
+        const g = game.byId.get(tut.targetIds[0])!.group;
+        expect(Math.hypot(g.vx, g.vy)).toBe(0);
+        if (to === 'boom') expect(tut.targetIds.length).toBeGreaterThanOrEqual(LOCK_GOAL);
+        // The white booms the group the black step built, black and all.
+        if (to === 'white') expect(g.members.some(m => m.special === 'black')).toBe(true);
+      });
+    }
+  }
+});
 
-  it('deals the step colour into every slot, and never a special', () => {
-    withTutorial(380, 620, 'lock', (tut, game) => {
-      noteTouch(tut);
-      let clock = 0;
-      const kinds = new Set<number>();
-      for (let f = 0; f < 60 * 12; f++) {
-        clock = step(tut, game, 380, 620, clock).clock;
+describe('the tutorial runs beside the game without changing it', () => {
+  it('deals each step its own ball in every slot', () => {
+    const want: Record<TutorialStep, (c: { kind: number; special: string | null }) => boolean> = {
+      aim: c => c.special === null, lock: c => c.special === null, boom: c => c.special === null,
+      black: c => c.special === 'black', white: c => c.special === 'white',
+    };
+    for (const s of TUTORIAL_STEPS) {
+      withTutorial(380, 620, s, (tut, game) => {
+        tutorialBeforeFrame(tut, game);
         const p = game.players[0];
-        for (const c of [p.loaded, p.nextUp, p.then]) { expect(c!.special).toBeNull(); kinds.add(c!.kind); }
-        if (tut.step !== 'lock') break;
-      }
-      expect(kinds.size).toBe(1);
-    });
+        const cards = [p.loaded!, p.nextUp!, p.then!];
+        for (const c of cards) expect(want[s](c), `${s}: ${JSON.stringify(c)}`).toBe(true);
+        expect(new Set(cards.map(c => `${c.kind}/${c.special}`)).size).toBe(1);
+      });
+    }
   });
 
   it('forces the gameplay knobs and puts every one back, without touching sound', () => {
@@ -259,23 +292,5 @@ describe('the tutorial runs beside the game without changing it', () => {
     } finally {
       restoreConfig(snap);
     }
-  });
-
-  it('builds on the group from step 2 rather than laying a new one', () => {
-    withTutorial(380, 620, 'lock', (tut, game) => {
-      noteTouch(tut);
-      let clock = 0;
-      let built: number[] = [];
-      for (let f = 0; f < 60 * 60 && tut.step !== 'boom'; f++) {
-        const c = centreOf(tut, game);
-        aimAt(game.players[0], c.x, c.y, 380, 620, false);
-        game.players[0].strength = TEACH_STRENGTH.lock;
-        clock = step(tut, game, 380, 620, clock).clock;
-        if (tut.beat > 0) built = game.byId.get(tut.targetIds[0])!.group.members.map(m => m.id);
-      }
-      expect(tut.step).toBe('boom');
-      expect(built.length).toBeGreaterThanOrEqual(LOCK_GOAL);
-      for (const id of built) expect(tut.targetIds).toContain(id);
-    });
   });
 });

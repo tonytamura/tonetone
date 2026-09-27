@@ -278,12 +278,15 @@ newMatch();
 setTimeout(handleResize, 60);
 setTimeout(handleResize, 300);
 requestAnimationFrame(frame);
-// `?tutorial` opens straight into the tutorial. Temporary: it is how the
-// tutorial can be tried before Phase 3 gives it a real way in (the first-play
-// offer and the help button). Started after the resize passes above settle,
-// since the board is laid out in fractions of the field.
-if (new URLSearchParams(window.location.search).has('tutorial')) {
-  setTimeout(() => tutorial.start(), 350);
+// `?tutorial` opens straight into the tutorial, ending on "Back to menu";
+// `?tutorial=solo` (or `ai`, `duel`) ends on "Start game" into that mode, the
+// way the first-play offer will. Temporary: it is how the tutorial can be tried
+// before Phase 3 gives it a real way in. Started after the resize passes above
+// settle, since the board is laid out in fractions of the field.
+const tutorialParam = new URLSearchParams(window.location.search).get('tutorial');
+if (tutorialParam !== null) {
+  const then = (['solo', 'ai', 'duel'] as PlayMode[]).find(m => m === tutorialParam) ?? null;
+  setTimeout(() => tutorial.start({ then }), 350);
 } else {
   showMenu();
 }
