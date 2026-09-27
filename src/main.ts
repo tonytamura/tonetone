@@ -1,6 +1,6 @@
 import { PlayMode, createGame, resetField, startMatch } from './game/GameState';
 import { advanceFrame } from './sim/Frame';
-import { createRenderContext, resizeRenderer, drawGame, drawResultsCanvas } from './graphics/Renderer';
+import { createRenderContext, resizeRenderer, drawGame, drawResultsCanvas, drawTutorialRing } from './graphics/Renderer';
 import { clearSpriteCache } from './graphics/Sprites';
 import { createStrip } from './ui/ControlStrips';
 import { setupTouchControls } from './ui/TouchControls';
@@ -9,11 +9,12 @@ import { setupSettingsKnobs } from './ui/SettingsModal';
 import { setHidden } from './ui/Dom';
 import { resetStartCountdown, updateCountdown } from './ui/Countdown';
 import { updateResultsEffects } from './ui/ResultsCelebration';
-import { setPaused, setupMatchControls } from './ui/MatchControls';
+import { exitToMenu, onExitToMenu, setPaused, setupMatchControls } from './ui/MatchControls';
+import { TUTORIAL_CLOCK, createTutorialSession } from './ui/TutorialUI';
 import { settingsLine } from './game/Settings';
 import { initAudio, wakeAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
 import { uiClick } from './audio/UiSounds';
-import { initMenuScreen, showMenu, isMenuOccluding, slideOutRight, slideInFromRight } from './ui/menu/MenuScreen';
+import { initMenuScreen, showMenu, hideMenu, isMenuOccluding, slideOutRight, slideInFromRight } from './ui/menu/MenuScreen';
 
 const stageEl = document.getElementById('stage') as HTMLElement;
 const cv = document.getElementById('c') as HTMLCanvasElement;
@@ -98,6 +99,27 @@ function refreshAllStrips() {
 
 setupTouchControls(cv, () => game, syncAllStrips);
 setupMatchControls(game);
+
+const tutorial = createTutorialSession({
+  game,
+  canvas: cv,
+  size: () => ({ W: renderCtx.W || window.innerWidth, H: renderCtx.H || window.innerHeight }),
+  prepare: () => {
+    // A solo stage: the top strip goes, so the field is measured without it
+    // before the tutorial lays its board out in fractions of that field.
+    // The menu is an opaque cover, and the frame loop does not run under it.
+    hideMenu();
+    setPaused(game, false);
+    setHidden(document.getElementById('over'), true);
+    setHidden(document.getElementById('cue2'), true);
+    fadeDroneForResults(false);
+    handleResize();
+  },
+  play: mode => setPlayers(mode),
+  toMenu: () => exitToMenu(game),
+});
+// However the player leaves for the menu, the tutorial hands its settings back.
+onExitToMenu(() => tutorial.stop());
 
 function newMatch() {
   resetField(game, renderCtx.W, renderCtx.H);
@@ -214,17 +236,21 @@ function frame(ts: number) {
   const W = renderCtx.W || window.innerWidth;
   const H = renderCtx.H || window.innerHeight;
 
-  clock = advanceFrame(game, rawDt, W, H, clock, {
+  tutorial.before();
+  const fr = advanceFrame(game, rawDt, W, H, clock, {
     onMatchOver: g => { setPaused(g, false); endMatchUI(g, newMatch); },
-  }).clock;
+  });
+  clock = fr.clock;
+  tutorial.after(fr.dt, fr.threw);
 
   if (game.matchOver && !game.paused) {
     updateResultsEffects(game, rawDt, W, H);
   }
 
   drawGame(renderCtx, game, clock);
+  if (tutorial.isActive()) drawTutorialRing(renderCtx, tutorial.ringBalls(), clock);
   drawResultsCanvas(renderCtx, game);
-  updateHUD(game);
+  updateHUD(game, tutorial.isActive() ? TUTORIAL_CLOCK : undefined);
   refreshAllStrips();
   updateCountdown(game, rawDt);
 
@@ -234,10 +260,12 @@ function frame(ts: number) {
 initMenuScreen(
   (selectedMode: PlayMode) => {
     initAudio();
+    tutorial.stop();
     setPlayers(selectedMode);
   },
   () => {
     initAudio();
+    tutorial.stop();
     showOptionsPanel();
     slideOutRight();
   }
@@ -250,4 +278,12 @@ newMatch();
 setTimeout(handleResize, 60);
 setTimeout(handleResize, 300);
 requestAnimationFrame(frame);
-showMenu();
+// `?tutorial` opens straight into the tutorial. Temporary: it is how the
+// tutorial can be tried before Phase 3 gives it a real way in (the first-play
+// offer and the help button). Started after the resize passes above settle,
+// since the board is laid out in fractions of the field.
+if (new URLSearchParams(window.location.search).has('tutorial')) {
+  setTimeout(() => tutorial.start(), 350);
+} else {
+  showMenu();
+}

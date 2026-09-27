@@ -41,7 +41,7 @@ function el(id: string): any {
   return node;
 }
 
-export function updateHUD(game: Game) {
+export function updateHUD(game: Game, clockText?: string) {
   write(el('hudBig'), 'textContent', String(game.killBig));
   write(el('hudGroups'), 'textContent', String(game.killGroups));
   write(el('hudBalls'), 'textContent', String(game.killBalls));
@@ -70,7 +70,8 @@ export function updateHUD(game: Game) {
   }
 
   // Time display: time left in a windowed match, time elapsed in an endless one.
-  const timeStr = formatClock(
+  // The tutorial has no clock at all, and says so with `clockText`.
+  const timeStr = clockText ?? formatClock(
     game.matchLen > 0 ? Math.max(0, game.matchLen - game.matchT) : game.matchT
   );
 

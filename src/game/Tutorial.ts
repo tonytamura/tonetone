@@ -47,8 +47,12 @@ export const LOCK_GOAL = 4;
  * 10% more at 30% of the way up and 21-24% more at 55%. So step 3 cannot say
  * "until the arrow turns red", and `tests/game/Tutorial.test.ts` holds the
  * wording to that measurement.
+ *
+ * 0.85 rather than 0.7 because it has to match the words. The arrow reddens
+ * from white at the threshold to pure red at full strength, and at 0.7 it is
+ * a salmon pink (#ff8787); "deep red" is where it reaches #ff4848, at 0.85.
  */
-export const TEACH_STRENGTH: Record<TutorialStep, number> = { aim: 0.3, lock: 0.3, boom: 0.7 };
+export const TEACH_STRENGTH: Record<TutorialStep, number> = { aim: 0.3, lock: 0.3, boom: 0.85 };
 
 /**
  * Seconds between a step being met and the next one starting: long enough to
@@ -90,12 +94,12 @@ export const TUTORIAL_LAYOUTS: Record<TutorialStep, Layout> = {
   // straight-up throw misses and the player has to aim.
   aim: { fx: 0.66, fy: 0.6, balls: [{ dx: 0, dy: 0, kind: KIND_LONE }], bonds: [] },
   // A bonded pair, central and a little below the middle. Step 3 booms the
-  // group built here without moving it, so this height is chosen for step 3.
-  // Measured on the real loop at `TEACH_STRENGTH.boom`, the unbroken run of
-  // booming aim angles is 21 / 7 / 11 degrees (380x620 / 768x1024 / 1280x720)
-  // 38% of the way up, against 13 / 7 / 11 at 55% up: the phone gains, the
-  // others hold. The weakest booming throw also drops from 21-24% over the red
-  // threshold to 14-17%.
+  // group built here (glided back here after the step, see `glideHome`), so
+  // this height is chosen for step 3. Measured on the real loop at strength
+  // 0.7, the unbroken run of booming aim angles is 21 / 7 / 11 degrees
+  // (380x620 / 768x1024 / 1280x720) 38% of the way up, against 13 / 7 / 11 at
+  // 55% up, and the weakest booming throw drops from 21-24% over the red
+  // threshold to 14-17%. At the 0.85 step 3 teaches it is 17 / 11 / 17.
   lock: {
     fx: 0.5, fy: 0.62,
     balls: [{ dx: -TOUCH / 2, dy: 0, kind: KIND_A }, { dx: TOUCH / 2, dy: 0, kind: KIND_A }],
@@ -249,6 +253,11 @@ export function beginStep(tut: Tutorial, game: Game, step: TutorialStep, width: 
   tut.firstLockSeen = false;
   clearExcept(game, new Set(keep));
   tut.targetIds = keep.length ? keep : layOut(game, TUTORIAL_LAYOUTS[step], width, height);
+  // A kept group glided here; it starts the step at rest, as a laid-out one does.
+  for (const id of keep) {
+    const g = game.byId.get(id)?.group;
+    if (g) { g.vx = 0; g.vy = 0; g.av = 0; }
+  }
   tut.base = counters(game);
   enforceDeck(tut, game);
   tut.events.push({ type: 'step', step });
@@ -329,8 +338,10 @@ export function noteTouch(tut: Tutorial) {
  * the first ball to fly is always one they aimed, and keeps the deck dealt.
  */
 export function tutorialBeforeFrame(tut: Tutorial, game: Game) {
-  if (tut.step === 'done') return;
   const p = game.players[0];
+  // Finished: the closing cards are up, and a ball flying behind them every
+  // three seconds would only pull the eye away from them.
+  if (tut.step === 'done') { p.reload = game.reloadTime; return; }
   if (tut.step === 'aim' && !tut.touched) p.reload = game.reloadTime;
   // Between steps nothing should fly into the next board before it is laid.
   if (tut.beat > 0) p.reload = Math.max(p.reload, Math.min(game.reloadTime, tut.beat + 0.5));
@@ -351,6 +362,7 @@ export function tutorialAfterFrame(tut: Tutorial, game: Game, width: number, hei
 
   if (tut.beat > 0) {
     tut.beat -= dt;
+    if (tut.step === 'lock') glideHome(tut, game, width, height);
     if (tut.beat > 0) return;
     if (tut.step === 'aim') beginStep(tut, game, 'lock', width, height);
     else if (tut.step === 'lock') {
@@ -396,6 +408,28 @@ export function tutorialAfterFrame(tut: Tutorial, game: Game, width: number, hei
   if (now.peels > tut.base.peels) { tut.base.peels = now.peels; tut.events.push({ type: 'peel' }); }
   const size = g ? g.members.filter(m => !m.ghost).length : 0;
   if (size < 2) { beginStep(tut, game, 'boom', width, height); tut.events.push({ type: 'respawn', step: 'boom' }); }
+}
+
+/**
+ * Carry the group the player built back to where step 3 was measured.
+ *
+ * Each ball that locks on pushes the group, and two locks can carry it from
+ * 62% down the field to a quarter, up under the banner and far past where the
+ * boom windows were measured. So during the beat after step 2 the same group,
+ * the same balls in the same shape, glides back to the layout's anchor. The
+ * steps themselves are left to the physics; only the pause between them is
+ * scripted, which is the controller's job.
+ */
+function glideHome(tut: Tutorial, game: Game, width: number, height: number) {
+  const g = targetGroup(tut, game);
+  if (!g) return;
+  const home = TUTORIAL_LAYOUTS.boom;
+  const dx = home.fx * width - g.com.x, dy = home.fy * height - g.com.y;
+  // Arrive a little before the beat ends, and settle the spin on the way.
+  const t = Math.max(0.12, tut.beat - 0.25);
+  g.vx = dx / t;
+  g.vy = dy / t;
+  g.av *= 0.85;
 }
 
 function succeed(tut: Tutorial, now: Counters) {

@@ -1,0 +1,79 @@
+import { describe, it, expect } from 'vitest';
+import { TUTORIAL_CLOCK, closingCard, successCard, tutorialLine } from '../../src/ui/TutorialUI';
+import { TutorialEvent, TUTORIAL_STEPS } from '../../src/game/Tutorial';
+
+/**
+ * The tutorial's words, held to the rules the design sets for them. They are
+ * pure functions, so no DOM is needed to check them.
+ */
+
+const EVENTS: TutorialEvent[] = [
+  ...TUTORIAL_STEPS.map(step => ({ type: 'step', step }) as TutorialEvent),
+  { type: 'touched' },
+  { type: 'firstLock' },
+  { type: 'tooHard' },
+  { type: 'peel' },
+  ...TUTORIAL_STEPS.map(step => ({ type: 'stepDone', step, lockPts: 6, boomPts: 27 }) as TutorialEvent),
+];
+
+// The names of ball colours. The arrow's red is a cue, not a ball, and may be
+// named; a ball colour may not, because colour names fail for colour-blind
+// players. The ring on the field points instead.
+const BALL_COLOUR_WORDS = ['gold', 'yellow', 'purple', 'violet', 'pink', 'magenta', 'cyan', 'teal', 'green', 'blue', 'orange'];
+
+function allText(): string[] {
+  const out: string[] = [];
+  for (const e of EVENTS) {
+    const b = tutorialLine(e);
+    if (b) { out.push(b.line); if (b.sub) out.push(b.sub); }
+  }
+  for (const c of [successCard(6, 27), closingCard(120)]) out.push(c.title, ...c.lines, c.small || '');
+  return out;
+}
+
+describe('tutorial copy', () => {
+  it('has a line for every event a step can raise', () => {
+    for (const e of EVENTS) expect(tutorialLine(e), JSON.stringify(e)).not.toBeNull();
+  });
+
+  it('never names a ball colour', () => {
+    for (const text of allText()) {
+      for (const word of BALL_COLOUR_WORDS) {
+        expect(text.toLowerCase(), `"${text}" names ${word}`).not.toMatch(new RegExp(`\\b${word}\\b`));
+      }
+    }
+  });
+
+  it('fits two short lines on a 360px phone', () => {
+    // At the banner's 16px bold, a 360px phone carries about 34 characters a
+    // line; a line and a sub at these lengths wrap to two lines each at most.
+    for (const e of EVENTS) {
+      const b = tutorialLine(e)!;
+      expect(b.line.length, b.line).toBeLessThanOrEqual(60);
+      if (b.sub) expect(b.sub.length, b.sub).toBeLessThanOrEqual(48);
+    }
+  });
+
+  it('teaches deep red for the boom, never just red', () => {
+    // Measured: a throw at the red threshold never booms the step 3 group.
+    const boom = tutorialLine({ type: 'step', step: 'boom' })!;
+    expect(boom.sub).toMatch(/deep red/);
+    expect(allText().join(' ')).not.toMatch(/turns red/);
+  });
+
+  it('quotes what the player really earned', () => {
+    const c = successCard(9, 41);
+    expect(c.lines.join(' ')).toContain('+41');
+    expect(c.lines.join(' ')).toContain('+9');
+  });
+
+  it('quotes the real match length on the closing card', () => {
+    expect(closingCard(120).small).toBe('Most points in 2:00 wins.');
+    expect(closingCard(180).small).toBe('Most points in 3:00 wins.');
+    expect(closingCard(0).small).toBe('Most points wins.');
+  });
+
+  it('shows no time on the clock', () => {
+    expect(TUTORIAL_CLOCK).not.toMatch(/\d/);
+  });
+});

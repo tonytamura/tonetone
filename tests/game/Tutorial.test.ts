@@ -6,9 +6,9 @@ import { withSeed } from '../../src/sim/Rng';
 import { snapshotConfig, restoreConfig, applyKnobs } from '../../src/sim/Knobs';
 import { AudioStore } from '../../src/audio/SynthEngine';
 import { SPECIALS } from '../../src/game/Rules';
-import { aimAt, boomsOnImpact } from '../../src/physics/LauncherBays';
+import { aimAt, boomHeatOf, boomsOnImpact } from '../../src/physics/LauncherBays';
 import {
-  Tutorial, TutorialEvent, TutorialStep, LOCK_GOAL, TEACH_STRENGTH,
+  Tutorial, TutorialEvent, TutorialStep, LOCK_GOAL, TEACH_STRENGTH, TUTORIAL_LAYOUTS,
   startTutorial, endTutorial, noteTouch, tutorialBeforeFrame, tutorialAfterFrame, drainTutorialEvents,
 } from '../../src/game/Tutorial';
 
@@ -113,7 +113,7 @@ describe('every step can be won with the throw it teaches', () => {
         const width = windowWidth(W, H, s, TEACH_STRENGTH[s]);
         // A few degrees is what a first-time player's drag can hold. Measured
         // at the time of writing (380x620 / 768x1024 / 1280x720): aim 13/8/8,
-        // lock 21/11/17, boom 21/7/11. The tablet's boom window is the tightest.
+        // lock 21/11/17, boom 17/11/17. The tablet's are the tightest.
         expect(width, `${s} window at ${W}x${H}`).toBeGreaterThanOrEqual(5);
       });
     }
@@ -133,9 +133,45 @@ describe('step 3 teaches deep red, not just red', () => {
     it(`a deep red throw does, well inside the strength the step teaches, at ${W}x${H}`, () => {
       const red = redStrength(W, H);
       // Measured: the weakest booming throw is 14-17% over the threshold here.
-      // The step teaches 0.7, far past both.
+      // The step teaches 0.85, far past both.
       expect(TEACH_STRENGTH.boom).toBeGreaterThan(red * 1.5);
       expect(oneThrow(W, H, 'boom', Math.round(targetDeg(W, H, 'boom')), red * 1.3)).toBe(true);
+    });
+  }
+});
+
+describe('the words match the arrow', () => {
+  it('shows a deep red arrow at the strength step 3 teaches', () => {
+    // "Deep red" has to be what the player sees: the arrow runs from white at
+    // the boom threshold (heat 0) to pure red at full strength (heat 1).
+    withTutorial(380, 620, 'boom', (_tut, game) => {
+      const p = game.players[0];
+      p.strength = TEACH_STRENGTH.boom;
+      expect(boomHeatOf(p, false)).toBeGreaterThanOrEqual(0.7);
+    });
+  });
+});
+
+describe('step 3 starts where it was measured', () => {
+  for (const [W, H] of SCREENS) {
+    it(`the group built in step 2 is carried back to the step 3 anchor at ${W}x${H}`, () => {
+      withTutorial(W, H, 'lock', (tut, game) => {
+        noteTouch(tut);
+        let clock = 0;
+        for (let f = 0; f < 60 * 60 && tut.step !== 'boom'; f++) {
+          const c = centreOf(tut, game);
+          aimAt(game.players[0], c.x, c.y, W, H, false);
+          game.players[0].strength = TEACH_STRENGTH.lock;
+          clock = step(tut, game, W, H, clock).clock;
+        }
+        expect(tut.step).toBe('boom');
+        const c = centreOf(tut, game);
+        const R = PhysicsConfig.R;
+        expect(Math.abs(c.x - TUTORIAL_LAYOUTS.boom.fx * W), 'x').toBeLessThan(R * 1.5);
+        expect(Math.abs(c.y - TUTORIAL_LAYOUTS.boom.fy * H), 'y').toBeLessThan(R * 1.5);
+        const g = game.byId.get(tut.targetIds[0])!.group;
+        expect(Math.hypot(g.vx, g.vy)).toBe(0);
+      });
     });
   }
 });

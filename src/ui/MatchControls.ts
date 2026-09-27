@@ -44,7 +44,18 @@ function togglePause(game: Game) {
  * the menu comes up with the score card still stacked over it and the ambient
  * drone silenced until the next match starts.
  */
+const menuExitListeners: (() => void)[] = [];
+
+/**
+ * Be told whenever the player leaves for the main menu, by any route. The
+ * tutorial uses it to hand back the settings it borrowed.
+ */
+export function onExitToMenu(fn: () => void) {
+  menuExitListeners.push(fn);
+}
+
 export function exitToMenu(game: Game) {
+  for (const fn of menuExitListeners) fn();
   setHidden(el('menu-confirm-overlay'), true);
   setPaused(game, false);
   setHidden(el('over'), true);

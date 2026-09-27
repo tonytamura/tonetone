@@ -225,6 +225,38 @@ export function drawPops(rc: RenderContext, game: Game) {
   ctx.globalAlpha = 1;
 }
 
+/**
+ * The tutorial's pointer: one slow pulsing ring around the balls a step is
+ * about. It points instead of naming a colour, since colour names fail for
+ * colour-blind players. Display only, like everything in this file.
+ */
+export function drawTutorialRing(rc: RenderContext, balls: { x: number; y: number }[], time: number) {
+  if (!balls.length) return;
+  const { ctx } = rc;
+  const R = PhysicsConfig.R;
+  let cx = 0, cy = 0;
+  for (const b of balls) { cx += b.x; cy += b.y; }
+  cx /= balls.length; cy /= balls.length;
+  let reach = 0;
+  for (const b of balls) reach = Math.max(reach, Math.hypot(b.x - cx, b.y - cy));
+  // One breath every 1.6s: slow enough to read as "here", not as an alarm.
+  const pulse = 0.5 + 0.5 * Math.sin((time * TAU) / 1.6);
+  const r = reach + R * (1.7 + 0.35 * pulse);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = hex(MENU_CYAN);
+  ctx.shadowColor = hex(MENU_CYAN);
+  ctx.shadowBlur = 14;
+  ctx.globalAlpha = 0.35 + 0.4 * pulse;
+  ctx.lineWidth = Math.max(2, R * 0.2);
+  ctx.setLineDash([R * 0.9, R * 0.55]);
+  ctx.lineDashOffset = -time * R * 1.2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, TAU);
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawLaunchers(rc: RenderContext, game: Game, time: number) {
   const activePlayers = game.twoPlayer ? game.players : [game.players[0]];
   for (const p of activePlayers) drawOneLauncher(rc, game, p, time);
