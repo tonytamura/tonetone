@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { playNote, playSwoosh, playKnock, getBoomProps, boomPitches, playBoom, playCountdownTick, playMagneticElectricSound, BOND_VOICE, BREAK_VOICE, BOOM_HARMONICS, KNOCK_MODES, KNOCK_RING, TICK_LEVEL, TICK_GO_LEVEL, SWOOSH_METAL_MODES, boomEchoSpec, getMagnetLockProps, PAIR_LIFT, PAIR_SUB_LIFT, PAIR_DUR, PAIR_VOL, pickGameBoom, playRandomGameBoom, resetAttractBooms, getWhiteBlackBoomVol, boomVolumeRamp, BOOM_VOL_RAMP, WHITE_BLACK_VOL_RAMP, BOOM_TIER_COUNT } from '../../src/audio/Voices';
+import { playNote, playSwoosh, playKnock, getBoomProps, boomPitches, playBoom, playCountdownTick, playMagneticElectricSound, BOND_VOICE, BREAK_VOICE, BOOM_HARMONICS, KNOCK_MODES, KNOCK_RING, TICK_LEVEL, TICK_GO_LEVEL, SWOOSH_METAL_MODES, boomEchoSpec, getMagnetLockProps, PAIR_LIFT, PAIR_SUB_LIFT, PAIR_DUR, PAIR_VOL, pickGameBoom, playRandomGameBoom, resetAttractBooms, getWhiteBlackBoomVol, boomVolumeRamp, BOOM_VOL_RAMP, WHITE_BLACK_VOL_RAMP, BOOM_TIER_COUNT, aWeightPower, lockArcGain, LOCK_ARC_MAKEUP, LOCK_ARC_CENTRE } from '../../src/audio/Voices';
 import { AudioStore, BEAT, SCALE_NOTES, SCALE_ROOT, SCALE_STEPS, inKey } from '../../src/audio/SynthEngine';
 import { clickHz, playBinauralClick, resetUiSoundsForTesting, setClickLockMs } from '../../src/audio/UiSounds';
 
@@ -664,6 +664,26 @@ describe('Voices module', () => {
       const interval = pair[carrier] / single[carrier];
       expect(Math.abs(interval - PAIR_LIFT) / PAIR_LIFT).toBeLessThan(0.03);
       expect(interval).toBeGreaterThan(1.3);
+    });
+
+    it('keeps the lock equally loud as lockTone moves the arc', () => {
+      // A-weighting is 0 dB at 1 kHz by definition; the curve is the whole model.
+      expect(aWeightPower(1000)).toBeCloseTo(1, 3);
+      // At lockTone 1 the arc gets only the make-up for the lowered Q.
+      expect(lockArcGain(1)).toBeCloseTo(LOCK_ARC_MAKEUP, 6);
+      // Below 1 the arc moves where the ear hears less, so the gain must rise
+      // steadily as the knob goes down — never dip, or a darker setting would
+      // also be a quieter one.
+      const tones = [0.15, 0.2, 0.3, 0.45, 0.6, 0.8, 1];
+      for (let i = 1; i < tones.length; i++) {
+        expect(lockArcGain(tones[i - 1])).toBeGreaterThan(lockArcGain(tones[i]));
+      }
+      // The default: measured 5.6 dB of arc gain needed to match the voice as
+      // it first shipped. Pinned loosely so a retune of the fit is deliberate.
+      const atDefault = 20 * Math.log10(lockArcGain(0.3));
+      expect(atDefault).toBeGreaterThan(5.0);
+      expect(atDefault).toBeLessThan(6.5);
+      expect(LOCK_ARC_CENTRE).toBe(2000);
     });
 
     it('scales the arc with lockTone and leaves the suction sub alone', () => {

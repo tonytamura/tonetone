@@ -1,5 +1,5 @@
 import { AudioStore, BEAT, initAudio, applyGain, inKey } from '../audio/SynthEngine';
-import { BOND_VOICE, KNOCK_MODES, KNOCK_RING, TICK_LEVEL, TICK_GO_LEVEL, playNote, playSwoosh, playKnock, playCountdownTick, getBoomProps, boomPitches, getMagnetLockProps, getWhiteBlackBoomVol, boomEchoSpec, playMagneticElectricSound, PAIR_LIFT, PAIR_SUB_LIFT, PAIR_DUR, PAIR_VOL } from '../audio/Voices';
+import { BOND_VOICE, KNOCK_MODES, KNOCK_RING, TICK_LEVEL, TICK_GO_LEVEL, playNote, playSwoosh, playKnock, playCountdownTick, getBoomProps, boomPitches, getMagnetLockProps, lockArcGain, getWhiteBlackBoomVol, boomEchoSpec, playMagneticElectricSound, PAIR_LIFT, PAIR_SUB_LIFT, PAIR_DUR, PAIR_VOL } from '../audio/Voices';
 import { clickHz, playBinauralClick } from '../audio/UiSounds';
 import { pitchOf } from '../audio/SoundEvents';
 import { COLORS } from '../game/Rules';
@@ -78,7 +78,7 @@ const BLACK_LOCK_LEVELS: SoundDef[] = LEVEL_TIERS.flatMap(({ boomSize, label }) 
       const lift = (isPair ? PAIR_LIFT : 1) * AudioStore.lockTone;
       const dur = l.dur * (isPair ? PAIR_DUR : 1);
       const vol = l.vol * (isPair ? PAIR_VOL : 1);
-      return `Arc: ${Math.round(inKey(2400 * lift))}Hz → ${Math.round(inKey(450 * lift))}Hz | Dur: ${dur.toFixed(2)}s | Drive ×${l.drive.toFixed(2)} | Sub ×${(l.sub * (isPair ? PAIR_SUB_LIFT : 1)).toFixed(2)} | Vol: lockVol × ${vol.toFixed(2)} (${Math.round(AudioStore.lockVol * vol * 100)}%)`;
+      return `Arc: ${Math.round(inKey(2400 * lift))}Hz → ${Math.round(inKey(450 * lift))}Hz, gain ×${lockArcGain(AudioStore.lockTone).toFixed(2)} | Dur: ${dur.toFixed(2)}s | Drive ×${l.drive.toFixed(2)} | Sub ×${(l.sub * (isPair ? PAIR_SUB_LIFT : 1)).toFixed(2)} | Vol: lockVol × ${vol.toFixed(2)} (${Math.round(AudioStore.lockVol * vol * 100)}%)`;
     },
     play: () => {
       initAudio();

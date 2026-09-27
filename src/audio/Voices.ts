@@ -923,6 +923,57 @@ export const PAIR_SUB_LIFT = 1.25;
 export const PAIR_DUR = 1.25;
 export const PAIR_VOL = 1.2;
 
+/**
+ * IEC 61672 A-weighting as a power ratio, 1 at 1 kHz: how much of a tone at
+ * `freq` the ear actually hears, relative to the same level at 1 kHz.
+ */
+export function aWeightPower(freq: number): number {
+  const f2 = freq * freq;
+  const ra = (12194 ** 2 * f2 * f2) /
+    ((f2 + 20.6 ** 2) * Math.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2)) * (f2 + 12194 ** 2));
+  // The standard's +2.00 dB is what brings the curve to exactly 0 dB at 1 kHz.
+  const g = ra * Math.pow(10, 2.0 / 20);
+  return g * g;
+}
+
+/**
+ * Where the magnet lock's arc carries its energy at `lockTone` 1, for the
+ * purpose of keeping it equally loud as the knob moves it.
+ *
+ * Lowering `lockTone` moves the arc down, and below about 1 kHz the ear hears
+ * steeply less of the same level: at 0.3 the single lock measured 4.6 dB quieter,
+ * A-weighted, than it first shipped, though its peak had not moved. The energy
+ * was still there, 6.4 dB lower in the 500 Hz-4 kHz band and 6.6 dB higher
+ * under 500 Hz. Treating the arc as centred on this frequency and restoring
+ * what A-weighting takes off it reproduces the measured shortfall across
+ * `lockTone` 0.15-0.8 to within 0.29 dB rms. Fitted, not chosen.
+ */
+export const LOCK_ARC_CENTRE = 2000;
+
+/**
+ * Level the arc lost when the lowpass Q came down from 8 to 4.5, put back.
+ *
+ * The resonant peak was part of the arc's loudness: with the Q lowered and
+ * nothing else changed, the lock measured 2.2 dB quieter, A-weighted.
+ */
+export const LOCK_ARC_MAKEUP = 1.29;
+
+/**
+ * Gain on the magnet lock's arc and noise sizzle, so `lockTone` changes what
+ * the lock sounds like and not how loud it is.
+ *
+ * Only the arc: the suction sub was never moved by the knob and did not get
+ * quieter, and a whole-voice correction handed it the arc's make-up too — at
+ * `lockTone` 0.3 that put the 20+ tier 5.1 dB over the voice as it first
+ * shipped. Arc-only, the tiers land at -0.0 / +0.3 / +1.7 dB (0-4, 10-14, 20+)
+ * and a black pair at +1.8 dB. Measured by rendering this voice through the
+ * master chain in an OfflineAudioContext against the pre-change voice.
+ */
+export function lockArcGain(tone: number): number {
+  return LOCK_ARC_MAKEUP *
+    Math.sqrt(aWeightPower(LOCK_ARC_CENTRE) / aWeightPower(LOCK_ARC_CENTRE * tone));
+}
+
 export function playMagneticElectricSound(xNorm: number = 0, opts: MagnetLockOptions = {}) {
   const { ignoreOptionsGuard = false, isPair = false, groupSize = 2 } = opts;
   if (!voiceAllowed(ignoreOptionsGuard)) return;
@@ -935,6 +986,7 @@ export function playMagneticElectricSound(xNorm: number = 0, opts: MagnetLockOpt
   const lift = (isPair ? PAIR_LIFT : 1) * AudioStore.lockTone;
   const subLift = isPair ? PAIR_SUB_LIFT : 1;
   const level = getMagnetLockProps(groupSize);
+  const arcGain = lockArcGain(AudioStore.lockTone);
 
   const now = actx.currentTime;
   const t = now + LOOKAHEAD.short;
@@ -1016,7 +1068,7 @@ export function playMagneticElectricSound(xNorm: number = 0, opts: MagnetLockOpt
 
   const carrierGain = actx.createGain();
   parts.push(carrierGain);
-  carrierGain.gain.value = 0.40;
+  carrierGain.gain.value = 0.40 * arcGain;
   carrier.connect(carrierGain);
   carrierGain.connect(env);
 
@@ -1041,7 +1093,7 @@ export function playMagneticElectricSound(xNorm: number = 0, opts: MagnetLockOpt
 
     ng.gain.value = SILENCE;
     ng.gain.setValueAtTime(SILENCE, now);
-    ng.gain.setValueAtTime(peak * 0.45, t);
+    ng.gain.setValueAtTime(peak * 0.45 * arcGain, t);
     ng.gain.linearRampToValueAtTime(SILENCE, t + 0.06);
     ng.gain.linearRampToValueAtTime(0, t + 0.08);
 
