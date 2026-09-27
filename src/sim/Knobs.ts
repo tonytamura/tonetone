@@ -268,12 +268,14 @@ const KNOB_SPECS = {
    *
    * 1 is where the lock shipped, with the arc from 2.4 kHz and the lowpass
    * resonance at 5.2 kHz — doubled again for a black-on-black pair, which put
-   * that pair's resonance at 10 kHz. The default is 0.6 because the whole family
-   * read as shrill. Like `boomcut`, it is a knob because the value that stops
-   * being irritating depends on the speaker.
+   * that pair's resonance at 10 kHz. The whole family read as shrill; 0.6 was
+   * tried first and still read as too bright, and 0.3 is the value chosen by
+   * ear. The range reaches below it to 0.15 so the default is not sitting on
+   * the slider's end stop. Like `boomcut`, it is a knob because the value that
+   * stops being irritating depends on the speaker.
    */
   locktone: {
-    group: 'audio', kind: 'range', min: 0.3, max: 1.5, step: 0.05, default: 0.6,
+    group: 'audio', kind: 'range', min: 0.15, max: 1.5, step: 0.05, default: 0.3,
     wakesAudio: true, cosmetic: true,
     apply: v => { AudioStore.lockTone = v as number; },
     format: v => Math.round(2400 * (v as number)) + 'Hz arc',

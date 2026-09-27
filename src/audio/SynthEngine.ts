@@ -134,7 +134,7 @@ export const AudioStore: AudioState = {
   drone: 0.25,
   haptics: 1,
   boomCut: 300,
-  lockTone: 0.6,
+  lockTone: 0.3,
   latency: 0.05,
 };
 

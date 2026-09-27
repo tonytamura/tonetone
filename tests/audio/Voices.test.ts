@@ -672,7 +672,7 @@ describe('Voices module', () => {
         // Whatever the knob is set to, the arc follows it and the sub does not.
         // That is the point of the knob: turning it down shifts the voice's
         // weight onto the sub rather than only taking brightness away.
-        for (const tone of [0.3, 0.6, 1, 1.5]) {
+        for (const tone of [0.15, 0.3, 1, 1.5]) {
           AudioStore.lockTone = tone;
           const freqs = arcFrequencies(false);
           expect(freqs, `carrier at lockTone ${tone}`).toContain(inKey(2400 * tone));
