@@ -342,13 +342,24 @@ input[type=range] {
 }
 #cue, #cue2 {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  /* Each side is at least as wide as what it holds, so the right side, which
+     carries the second score and the clock, borrows from the left rather than
+     running off the screen. While there is room to spare the two sides are
+     equal and the chips sit in the middle. Checked with 9999 against 9999 and
+     a 20:00 clock from 320px up (scratchpad strip test, 2026-09-28). */
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
   align-items: center;
   gap: 20px;
   padding: 8px 16px;
   background: rgba(18, 7, 38, 0.94);
   border-top: 1px solid rgba(79, 240, 255, 0.32);
   z-index: 10;
+}
+/* A 320px phone needs the room: at the full 20px gap and 16px padding, vs AI's
+   "YOU 9999 · chips · AI 9999 20:00" ran a pixel off the right edge. */
+@media (max-width: 360px) {
+  #cue, #cue2 { gap: 12px; padding: 8px 10px; }
+  .cue-right { gap: 8px; }
 }
 #cue2 {
   border-top: none;
@@ -417,19 +428,6 @@ input[type=range] {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
-}
-
-.clock-icon {
-  width: 18px;
-  height: 18px;
-  color: var(--cyan);
-  opacity: 0.9;
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 5px rgba(79, 240, 255, 0.45));
-}
-#cue2 .clock-icon {
-  color: var(--pink);
-  filter: drop-shadow(0 0 5px rgba(255, 26, 217, 0.45));
 }
 
 .cuecenter {

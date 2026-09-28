@@ -16,7 +16,8 @@
     "verify": "npm run build && npm test && npm run sim:physics && npm run sim:invariants && npm run sim:baseline",
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
-    "cap:ios": "cap open ios"
+    "cap:ios": "cap open ios",
+    "check:strip": "vite-node scripts/check-strip.ts"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^6.0.0",
+    "playwright-core": "^1.63.0",
     "typescript": "^5.3.3",
     "vite": "^5.1.4",
     "vitest": "^1.6.1"
