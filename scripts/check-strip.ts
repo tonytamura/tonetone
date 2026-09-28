@@ -68,7 +68,7 @@ async function main() {
         // the ladder, AGI.
         await ctx.addInitScript(() => {
           localStorage.setItem('toneboom.tutorial', 'done');
-          localStorage.setItem('toneboom.ladder', JSON.stringify({ v: 1, level: 9 }));
+          localStorage.setItem('toneboom.ladder', JSON.stringify({ v: 1, level: 3 }));
         });
         const page = await ctx.newPage();
         await page.goto(url);

@@ -11,7 +11,7 @@ import {
 } from '../game/GameState';
 import { LauncherPlayer, Shot } from '../physics/Types';
 import { recalcThresholds } from '../physics/Config';
-import { CLASSIC_LEVEL, aiAim, aiAimLevel, levelIndex } from '../game/AI';
+import { aiAim, aiAimProfile, profileNamed } from '../game/AI';
 import { AudioStore } from '../audio/SynthEngine';
 import { FALLBACK_DT, advanceFrame } from './Frame';
 import { installSeededRandom, restoreRandom } from './Rng';
@@ -55,11 +55,12 @@ export const LONG_CHAIN = 8;
 export type PolicyName = 'engine-ai' | 'fixed' | 'random' | 'sweep' | string;
 
 /**
- * A policy name that seats a rung of the AI ladder (`ai1` … `ai9`, `agi`), or -1.
- * `engine-ai` is the classic rung, the AI as it shipped before the ladder.
+ * The AI a policy name seats: a ladder rung (`ai1`, `ai2`, `ai3`, `agi`), a
+ * named strategy (`random`, `careless`, `current`, `hard`, `nearest`, `value`,
+ * `valueSoft`, `planner`, `agi`), or null for the non-AI policies.
  */
-export function policyLevel(policy: PolicyName): number {
-  return policy === 'engine-ai' ? CLASSIC_LEVEL : levelIndex(policy);
+export function policyProfile(policy: PolicyName) {
+  return profileNamed(policy);
 }
 
 export type Mode = PlayMode | 'idle';
@@ -212,9 +213,11 @@ function applyPolicy(
       return;
     case 'fixed':
       return;
-    default:
-      if (policyLevel(policy) >= 0) aiAimLevel(p, game, width, height, policyLevel(policy));
+    default: {
+      const prof = policyProfile(policy);
+      if (prof) aiAimProfile(p, game, width, height, prof);
       return;
+    }
   }
 }
 

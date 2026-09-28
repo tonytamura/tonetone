@@ -12,7 +12,7 @@ import { dirname, resolve } from 'node:path';
 import {
   EXTRACTORS, LONG_CHAIN, Mode, PolicyName, RunResult, SimOptions,
   extract, extractorNames, runMany, runSim,
-  policyLevel,
+  policyProfile,
 } from '../src/sim/Harness';
 import {
   KNOBS,
@@ -25,7 +25,7 @@ import {
 } from '../src/sim/Knobs';
 import { TOLERANCE, violations } from '../src/sim/Metrics';
 import { catchUp, compare, estimate } from '../src/sim/Stats';
-import { AI_LEVELS } from '../src/game/AI';
+import { AI_LEVELS, AI_STRATEGIES, levelIndex } from '../src/game/AI';
 import { runPhysicsChecks } from '../src/sim/PhysicsChecks';
 import {
   BASELINE_VERSION, BaselineFile, INVARIANT_SCENARIOS,
@@ -68,6 +68,7 @@ const COMMAND_FLAGS: Record<string, readonly string[]> = {
   sweep: [...RUN_FLAGS, 'runs', 'metrics', 'json'],
   compare: [...RUN_FLAGS, 'runs', 'metrics', 'a', 'b', 'json'],
   ladder: [...RUN_FLAGS, 'runs', 'levels', 'reference', 'json'],
+  tournament: [...RUN_FLAGS, 'runs', 'strategies', 'json'],
   invariants: ['seconds', 'json'],
   physics: ['json'],
   baseline: ['tolerance', 'json'],
@@ -165,11 +166,11 @@ function simOptionsFrom(args: Args): SimOptions {
   const mode = String(args.flags.mode ?? 'solo') as Mode;
   if (!['solo', 'duel', 'ai', 'idle'].includes(mode)) fail(`--mode must be solo, duel, ai or idle`);
   const policy = String(args.flags.policy ?? 'engine-ai') as PolicyName;
-  if (!['engine-ai', 'fixed', 'random', 'sweep'].includes(policy) && policyLevel(policy) < 0) {
-    fail(`--policy must be engine-ai, fixed, random, sweep or an AI level (${AI_LEVELS.map(l => l.id).join(', ')})`);
+  if (!['engine-ai', 'fixed', 'random', 'sweep'].includes(policy) && !policyProfile(policy)) {
+    fail(`--policy must be engine-ai, fixed, random, sweep, a rung (${AI_LEVELS.map(l => l.id).join(', ')}) or a strategy (${Object.keys(AI_STRATEGIES).join(', ')})`);
   }
   const aiFlag = args.flags.ai;
-  const aiLevel = aiFlag === undefined ? undefined : policyLevel(String(aiFlag));
+  const aiLevel = aiFlag === undefined ? undefined : levelIndex(String(aiFlag));
   if (aiLevel !== undefined && aiLevel < 0) fail(`--ai must be one of ${AI_LEVELS.map(l => l.id).join(', ')}`);
   return {
     mode,
@@ -430,9 +431,9 @@ function cmdLadder(args: Args): number {
     knobs: { ...(base.knobs || {}), match },
   };
   const ids = args.flags.levels ? String(args.flags.levels).split(',') : AI_LEVELS.map(l => l.id);
-  for (const id of ids) if (policyLevel(id) < 0) fail(`unknown level "${id}"`);
+  for (const id of ids) if (!policyProfile(id)) fail(`unknown level or strategy "${id}"`);
   const reference = args.flags.reference ? String(args.flags.reference) : null;
-  if (reference && policyLevel(reference) < 0) fail(`unknown reference "${reference}"`);
+  if (reference && !policyProfile(reference)) fail(`unknown reference "${reference}"`);
 
   /** hi against lo, `runs` seeds in each seat: hi's results. */
   function seat(hi: string, lo: string) {
@@ -475,6 +476,57 @@ function cmdLadder(args: Args): number {
   console.log('A step counts only when the win rate clears 50% by 2x its standard error.\n');
   table(['pairing', 'win rate', 'draws', 'score margin', 'verdict'], rows);
   if (refRows.length) { console.log(''); table(['against the reference', 'win rate', 'draws', 'score margin', 'verdict'], refRows); }
+  return 0;
+}
+
+/**
+ * Every strategy against every other, in both seats, and the longest chain in
+ * which each beats the one before head to head by 2 standard errors: the test a
+ * ladder of AIs has to pass.
+ */
+function cmdTournament(args: Args): number {
+  const runs = Math.max(2, num(args.flags, 'runs', 20));
+  const base = simOptionsFrom(args);
+  const match = Number((base.knobs && base.knobs.match) ?? presetKnobs(String(args.flags.preset ?? 'normal')).match ?? 120);
+  const common: SimOptions = { ...base, mode: 'duel', seconds: match + 1, invariants: false, knobs: { ...(base.knobs || {}), match } };
+  const ids = args.flags.strategies ? String(args.flags.strategies).split(',') : Object.keys(AI_STRATEGIES);
+  for (const id of ids) if (!policyProfile(id)) fail(`unknown strategy "${id}"`);
+
+  type Cell = { win: number; stderr: number; margin: number };
+  const W: Record<string, Record<string, Cell>> = {};
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+    const a = ids[i], b = ids[j];
+    const out: number[] = [], margin: number[] = [];
+    for (let k = 0; k < runs; k++) for (const aFirst of [true, false]) {
+      const r = runSim({ ...common, seed: base.seed! + k, policies: aFirst ? [a, b] : [b, a] });
+      const mine = r.finalScores[aFirst ? 0 : 1], theirs = r.finalScores[aFirst ? 1 : 0];
+      out.push(mine > theirs ? 1 : mine < theirs ? 0 : 0.5);
+      margin.push(mine - theirs);
+    }
+    const w = estimate(out), m = estimate(margin);
+    (W[a] ||= {})[b] = { win: w.mean, stderr: w.stderr, margin: m.mean };
+    (W[b] ||= {})[a] = { win: 1 - w.mean, stderr: w.stderr, margin: -m.mean };
+  }
+  const avg = (s: string) => ids.filter(t => t !== s).reduce((acc, t) => acc + W[s][t].win, 0) / (ids.length - 1);
+  const order = [...ids].sort((x, y) => avg(x) - avg(y));
+  const beats = (x: string, y: string) => W[x][y].win - 0.5 > 2 * W[x][y].stderr;
+  let chain: string[] = [];
+  const grow = (c: string[]) => {
+    if (c.length > chain.length) chain = [...c];
+    for (const s of order) if (!c.includes(s) && beats(s, c[c.length - 1])) grow([...c, s]);
+  };
+  for (const s of order) grow([s]);
+
+  if (args.flags.json) { console.log(JSON.stringify({ runs, match, order, matrix: W, chain }, null, 2)); return 0; }
+  console.log(`\ntournament \u2014 ${runs} seeds x 2 seats per pairing, ${match}s matches, preset ${args.flags.preset ?? 'normal'}`);
+  console.log('Row beats column, win % \u00b1 SE; + or - where it clears 2 SE.\n');
+  const cell = (x: string, y: string) => {
+    const c = W[x][y];
+    const sig = Math.abs(c.win - 0.5) > 2 * c.stderr ? (c.win > 0.5 ? '+' : '-') : ' ';
+    return `${fixed(c.win * 100, 0)}${sig}\u00b1${fixed(c.stderr * 100, 0)}`;
+  };
+  table(['', ...order, 'average'], order.map(x => [x, ...order.map(y => (x === y ? '\u2014' : cell(x, y))), `${fixed(avg(x) * 100, 0)}%`]));
+  console.log(`\nLongest chain, each beating the one before by 2 SE head to head:\n  ${chain.join(' < ')}`);
   return 0;
 }
 
@@ -636,6 +688,7 @@ Commands
   sweep <knob>=<v,v,v>     Run a knob across values, with error bars
   compare --a <k=v> --b    Compare two configurations on paired statistics
   ladder                   Seat each AI level against the one below it
+  tournament               Every AI strategy against every other
   invariants               Assert the geometric invariants on every frame
   physics                  Assert textbook results for the collision solver
   baseline save|check      Record or verify exact simulation behaviour
@@ -652,8 +705,12 @@ Common options
   --set a=1,b=2              Knob overrides, applied on top of --preset
   --runs <n>                 Repeats, for sweep and compare
   --metrics a,b,c            Which metrics to report
-  --policy engine-ai|fixed|random|sweep|ai1..ai9|agi
-  --ai ai1..ai9|agi          ai mode: which AI level plays player 2
+  --policy engine-ai|fixed|random|sweep|<rung>|<strategy>
+                             rungs ai1, ai2, ai3, agi; strategies random,
+                             careless, current, hard, nearest, value,
+                             valueSoft, planner, agi
+  --ai ai1|ai2|ai3|agi       ai mode: which rung plays player 2
+  --strategies a,b,c         tournament: which strategies (default all)
   --levels a,b,c             ladder: which levels, in order (default all)
   --reference <level>        ladder: also seat every level against this one
   --json                     Machine-readable output
@@ -679,6 +736,7 @@ const commands: Record<string, (a: Args) => number> = {
   sweep: cmdSweep,
   compare: cmdCompare,
   ladder: cmdLadder,
+  tournament: cmdTournament,
   invariants: cmdInvariants,
   physics: cmdPhysics,
   baseline: cmdBaseline,

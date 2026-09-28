@@ -54,7 +54,10 @@ export interface Game {
   nextId: number;
   twoPlayer: boolean;
   aiOn: boolean;
-  /** Which rung of the AI ladder plays player 2 when `aiOn`; see `AI_LEVELS`. */
+  /**
+   * Which rung of the AI ladder plays player 2 when `aiOn` (see `AI_LEVELS`),
+   * or `CLASSIC_LEVEL` (-1) for the pre-ladder AI, which the harness plays.
+   */
   aiLevel: number;
   showLabels: boolean;
   showStats: boolean;

@@ -118,46 +118,64 @@ const CLASSIC: Omit<AiProfile, 'id' | 'label'> = {
   target: 'biggest', power: 'random', clearLine: false, aimErrorDeg: 0, powerError: 0, turn: 0.15, boomMargin: 1,
 };
 
-/**
- * The ladder, weakest first. The tenth rung is AGI.
- *
- * Measured, not assumed (the AI ladder task in Notion has every figure). In
- * this game aim precision and rule-of-thumb shot choice hardly move a result:
- * an AI with 14 degrees of aim error played the pre-ladder AI to 53% ±8, and
- * ones that picked targets by the pay table and threw softly to lock lost to
- * it (25-31%). What does move it is how many throws are careless, at the
- * bottom, and simulating throws before choosing one, at the top.
- *
- * Win rates against AI5, the pre-ladder AI, 30-60 matches each, both seats:
- * AI1 10% ±6, AI2 17% ±5, AI3 22% ±5, AI4 37% ±6, AI6 67% ±9, AI7 80% ±7,
- * AI8 57% ±9, AI9 70% ±9, AGI 80% ±7. The bottom five are in order. Above AI5
- * every planner beats it, but the planners cannot be told apart from each other
- * inside the noise, except AGI, whose score margin (+229 ±47) is the largest by
- * far. They are ordered by how much each thinks.
- */
-const WILD: Omit<AiProfile, 'id' | 'label' | 'wild'> = { ...CLASSIC };
 const PLAN = (targets: number, grid: number, seconds: number, rollouts = 1): Omit<AiProfile, 'id' | 'label'> => ({
   ...CLASSIC, turn: 0.35, plan: { window: 2, seconds, strengths: [1], grid, targets, rollouts },
 });
 
+/**
+ * Every way of playing the harness can seat, by name: the four the ladder is
+ * built from and the others they were measured against. `npm run sim --
+ * tournament` plays them all against each other.
+ */
+export const AI_STRATEGIES: Record<string, AiProfile> = {
+  random: { id: 'random', label: 'random', ...CLASSIC, wild: 1 },
+  careless: { id: 'careless', label: 'careless', ...CLASSIC, wild: 0.5 },
+  current: { id: 'current', label: 'current', ...CLASSIC, classic: true },
+  hard: { id: 'hard', label: 'hard', ...CLASSIC, power: 'max' },
+  nearest: { id: 'nearest', label: 'nearest', ...CLASSIC, target: 'nearest' },
+  value: { id: 'value', label: 'value', ...CLASSIC, target: 'value', boomMargin: 1.1 },
+  valueSoft: { id: 'valueSoft', label: 'valueSoft', ...CLASSIC, target: 'value', power: 'intent', clearLine: true, boomMargin: 1.1 },
+  planner: { id: 'planner', label: 'planner', ...PLAN(6, 5, 1.2) },
+  agi: { id: 'agi', label: 'agi', ...PLAN(6, 9, 1.5, 3) },
+};
+
+/**
+ * The ladder, weakest first: only rungs proven to beat the one below.
+ *
+ * Found by a round-robin of the strategies above, 40 matches a pairing, both
+ * seats, 2:00 on Normal (the AI ladder task in Notion has the whole table), then
+ * keeping the longest chain in which each rung beats the one below head to head
+ * by more than 2 standard errors:
+ *
+ *   AI1 random                                   —
+ *   AI2 careless: half its throws at random      beats AI1 63% ±4 (160 matches)
+ *   AI3 hard: the biggest group, full power      beats AI2 68% ±7
+ *   AGI simulates 15 throws x 3 tries, then aims beats AI3 66% ±7
+ *
+ * Longer ladders were tried and did not hold: aim precision and rule-of-thumb
+ * shot choice barely move a result in this game, and the planners short of AGI
+ * could not be told apart from it (55% ±8). The pre-ladder AI (`current`) plays
+ * as well as AI3 (48% ±8) but separates less clearly from the weaker rungs; it
+ * is no longer a rung, and is what `engine-ai` and the baseline still play.
+ */
 export const AI_LEVELS: AiProfile[] = [
-  { id: 'ai1', label: 'AI1', ...WILD, wild: 1 },
-  { id: 'ai2', label: 'AI2', ...WILD, wild: 0.85 },
-  { id: 'ai3', label: 'AI3', ...WILD, wild: 0.6 },
-  { id: 'ai4', label: 'AI4', ...WILD, wild: 0.3 },
-  { id: 'ai5', label: 'AI5', ...CLASSIC, classic: true },
-  { id: 'ai6', label: 'AI6', ...PLAN(4, 0, 1.2) },
-  { id: 'ai7', label: 'AI7', ...PLAN(6, 5, 1.2) },
-  { id: 'ai8', label: 'AI8', ...PLAN(6, 5, 1.2, 3) },
-  { id: 'ai9', label: 'AI9', ...PLAN(6, 9, 1.5) },
-  { id: 'agi', label: 'AGI', ...PLAN(6, 9, 1.5, 3) },
+  { ...AI_STRATEGIES.random, id: 'ai1', label: 'AI1' },
+  { ...AI_STRATEGIES.careless, id: 'ai2', label: 'AI2' },
+  { ...AI_STRATEGIES.hard, id: 'ai3', label: 'AI3' },
+  { ...AI_STRATEGIES.agi, id: 'agi', label: 'AGI' },
 ];
 
-/** The rung that plays as the pre-ladder AI did. */
-export const CLASSIC_LEVEL = AI_LEVELS.findIndex(l => l.classic);
+/** `game.aiLevel` for the pre-ladder AI, which is not a rung: what the harness plays by default. */
+export const CLASSIC_LEVEL = -1;
 
 export function levelIndex(id: string): number {
   return AI_LEVELS.findIndex(l => l.id === id);
+}
+
+/** A ladder rung or a named strategy, by id; `engine-ai` is the pre-ladder AI. */
+export function profileNamed(name: string): AiProfile | null {
+  if (name === 'engine-ai') return AI_STRATEGIES.current;
+  return AI_LEVELS.find(l => l.id === name) ?? AI_STRATEGIES[name] ?? null;
 }
 
 /** Win: one rung up. Loss: one down. Draw: stay. The ends hold. */
@@ -314,7 +332,11 @@ function planCandidates(p: LauncherPlayer, game: Game, width: number, height: nu
 }
 
 export function aiAimLevel(p: LauncherPlayer, game: Game, width: number, height: number, level: number) {
-  const prof = AI_LEVELS[Math.max(0, Math.min(AI_LEVELS.length - 1, level))];
+  aiAimProfile(p, game, width, height, level < 0 ? AI_STRATEGIES.current : AI_LEVELS[Math.min(AI_LEVELS.length - 1, level)]);
+}
+
+/** Aim player `p` the way `prof` plays. */
+export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, height: number, prof: AiProfile) {
   if (prof.classic) {
     aiAim(p, game.groups, game.balls, width, height, game.twoPlayer);
     return;

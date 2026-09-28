@@ -69,22 +69,26 @@ describe('AI module', () => {
   });
 });
 
-import { AI_LEVELS, CLASSIC_LEVEL, ladderStep, launchSpeedToArrive, strengthForSpeed } from '../../src/game/AI';
+import { AI_LEVELS, AI_STRATEGIES, CLASSIC_LEVEL, ladderStep, launchSpeedToArrive, profileNamed, strengthForSpeed } from '../../src/game/AI';
 import { launchSpeedOf } from '../../src/physics/LauncherBays';
 import { PhysicsConfig } from '../../src/physics/Config';
 
 describe('the AI ladder', () => {
-  it('has ten rungs, AI1 to AI9 then AGI, with the pre-ladder AI among them', () => {
-    expect(AI_LEVELS.map(l => l.label)).toEqual(['AI1', 'AI2', 'AI3', 'AI4', 'AI5', 'AI6', 'AI7', 'AI8', 'AI9', 'AGI']);
-    expect(AI_LEVELS.filter(l => l.classic).length).toBe(1);
-    expect(AI_LEVELS[CLASSIC_LEVEL].classic).toBe(true);
+  it('has the four rungs that were proven apart, AGI on top', () => {
+    expect(AI_LEVELS.map(l => l.label)).toEqual(['AI1', 'AI2', 'AI3', 'AGI']);
+    // The pre-ladder AI is not a rung; it is what plays when no rung is set.
+    expect(AI_LEVELS.some(l => l.classic)).toBe(false);
+    expect(CLASSIC_LEVEL).toBe(-1);
+    expect(profileNamed('engine-ai')).toBe(AI_STRATEGIES.current);
+    expect(profileNamed('ai3')?.power).toBe('max');
+    expect(profileNamed('agi')?.plan).toBeTruthy();
   });
 
   it('moves up on a win, down on a loss, nowhere on a draw, and holds at both ends', () => {
     const top = AI_LEVELS.length - 1;
-    expect(ladderStep(3, 500, 400)).toBe(4);
-    expect(ladderStep(3, 400, 500)).toBe(2);
-    expect(ladderStep(3, 450, 450)).toBe(3);
+    expect(ladderStep(1, 500, 400)).toBe(2);
+    expect(ladderStep(2, 400, 500)).toBe(1);
+    expect(ladderStep(2, 450, 450)).toBe(2);
     expect(ladderStep(0, 100, 900)).toBe(0);
     expect(ladderStep(top, 900, 100)).toBe(top);
   });
