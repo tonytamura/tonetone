@@ -14,9 +14,18 @@ import { P_COLOR, P_RGB } from '../../src/graphics/Renderer';
  * was made to fix, so they are held together here the way
  * `tests/sim/Knobs.test.ts` holds the knob registry to the markup.
  */
-function cssVars(): Record<string, string> {
+/** The first `:root { … }` block of `index.css`, and everything outside it. */
+function splitRoot(): { root: string; rest: string } {
   const src = readFileSync(resolve(__dirname, '../../index.css'), 'utf8');
-  const root = src.slice(0, src.indexOf('}'));
+  // Found by name, not taken as the first block: the @font-face rules sit
+  // above it.
+  const start = src.indexOf(':root {');
+  const end = src.indexOf('}', start);
+  return { root: src.slice(start, end), rest: src.slice(0, start) + src.slice(end) };
+}
+
+function cssVars(): Record<string, string> {
+  const { root } = splitRoot();
   const out: Record<string, string> = {};
   for (const m of root.matchAll(/(--[\w-]+)\s*:\s*(#[0-9a-fA-F]{6})\s*;/g)) {
     out[m[1]] = m[2].toLowerCase();
@@ -44,8 +53,7 @@ describe('Palette', () => {
     }
 
     it('leaves no brand colour spelled out as a literal outside :root', () => {
-      const src = readFileSync(resolve(__dirname, '../../index.css'), 'utf8');
-      const body = src.slice(src.indexOf('}'));
+      const body = splitRoot().rest;
       const named = [CYAN, PINK, VOID, INK, MENU_CYAN, MENU_PINK_DEEP].map(hex);
       const found = named.filter(h => body.toLowerCase().includes(h));
       expect(found, 'use var(--…) rather than repeating a named colour').toEqual([]);

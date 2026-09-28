@@ -6,8 +6,9 @@
  * `--font-display` there; change both together or the HUD and the playfield
  * drift apart again.
  *
- * Weights are limited to the ones `index.html` actually loads (400/600/700/800
- * for Outfit, italic 800/900 for Montserrat). Asking for an unloaded weight
+ * Weights are limited to the ones the `@font-face` rules at the top of
+ * `index.css` ship (400-800 for Outfit, italic 800-900 for Montserrat; both
+ * files are variable fonts cut to those ranges). Asking for a weight outside them
  * gets a synthesised approximation, which is how the old `500` and `900`
  * declarations ended up rendering as something else entirely.
  */

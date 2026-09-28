@@ -12,6 +12,7 @@
 import { PlayMode } from '../game/GameState';
 import { uiClick } from '../audio/UiSounds';
 import { RULE_ROWS } from './RulesText';
+import { fillCredits } from './Credits';
 import { setHidden } from './Dom';
 
 /** Offer the tutorial exactly when it has not been seen, whichever mode was chosen. */
@@ -62,7 +63,8 @@ export function createFirstPlayOffer(handlers: {
 }
 
 /**
- * The help screen over the main menu: replay the tutorial, and the rules card.
+ * The help screen over the main menu: replay the tutorial, the rules card, and
+ * the credits.
  * Replaying never resets the "seen" flag; it only shows the lesson again.
  */
 export function setupHelpScreen(onReplay: () => void) {
@@ -77,6 +79,7 @@ export function setupHelpScreen(onReplay: () => void) {
       rules.append(dt, dd);
     }
   }
+  fillCredits(el('help-credits'));
   const close = () => setHidden(el('help-overlay'), true);
   el('helpBtn')?.addEventListener('click', e => {
     e.stopPropagation();

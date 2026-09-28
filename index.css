@@ -1,3 +1,41 @@
+/* The two typefaces, shipped with the game rather than fetched from Google
+   Fonts, so the app looks the same with no connection. Each file is a
+   variable font cut to the weights the UI uses (src/graphics/Fonts.ts), in
+   Google's latin and latin-ext subsets. Both are under the SIL Open Font
+   License; the texts are in src/assets/licenses and on the Help screen. */
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('./src/assets/fonts/outfit-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('./src/assets/fonts/outfit-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-style: italic;
+  font-weight: 800 900;
+  font-display: swap;
+  src: url('./src/assets/fonts/montserrat-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-style: italic;
+  font-weight: 800 900;
+  font-display: swap;
+  src: url('./src/assets/fonts/montserrat-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   --void: #120726;
   --void-2: #22103f;
@@ -1301,6 +1339,7 @@ select option {
   width: 100%;
   max-height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px 22px;
 }
 
@@ -1331,4 +1370,70 @@ select option {
   margin: 0;
   font-weight: var(--fw-meta);
   color: var(--ink);
+}
+
+/* Credits, at the foot of the Help screen: quieter than the rules above. */
+.help-credits {
+  margin: 4px 0 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(172, 145, 208, 0.25);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.help-credits-title {
+  font-weight: var(--fw-strong);
+  color: var(--menu-cyan);
+  margin-bottom: 4px;
+}
+
+.help-credits-by {
+  font-weight: var(--fw-strong);
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.help-licenses {
+  margin-top: 10px;
+  text-align: left;
+}
+
+.help-licenses summary {
+  cursor: pointer;
+  text-align: center;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 6px 0;
+}
+
+.help-license-name {
+  margin: 12px 0 4px;
+  font-weight: var(--fw-strong);
+  color: var(--ink);
+}
+
+.help-license-text {
+  margin: 0;
+  max-height: 180px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  /* The OFL text has a rule of dashes with no break in it, which would
+     otherwise push the card sideways on a narrow phone. */
+  overflow-wrap: anywhere;
+  color: var(--ink-soft);
+}
+
+.help-credits-footer {
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.8;
 }
