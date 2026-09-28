@@ -11,7 +11,8 @@ import { formatClock } from '../game/Clock';
 import { Ball } from '../physics/Types';
 import {
   Tutorial, TutorialEvent, TUTORIAL_STEPS,
-  drainTutorialEvents, endTutorial, noteTouch, startTutorial, tutorialAfterFrame, tutorialBeforeFrame,
+  drainTutorialEvents, endTutorial, noteTouch, startTutorial, targetGroupOf, tutorialAfterFrame, tutorialBeforeFrame,
+  tutorialHint,
 } from '../game/Tutorial';
 import { uiClick } from '../audio/UiSounds';
 import { CORE_RULES } from './RulesText';
@@ -56,6 +57,8 @@ export function tutorialLine(event: TutorialEvent): BannerLine | null {
       return { line: 'Too soft — that only knocked one loose.', sub: 'Pull farther.' };
     case 'again':
       return { line: 'Not quite.', sub: 'Drag to aim, and try again.' };
+    case 'hint':
+      return { line: 'Try it like this.', sub: 'Drag to where the circle stops.' };
     case 'stepDone':
       switch (event.step) {
         case 'aim': return { line: 'Nice.' };
@@ -123,6 +126,8 @@ export interface TutorialSession {
   after(dt: number, threw: number): void;
   /** The balls the ring should circle this frame. */
   ringBalls(): Ball[];
+  /** Where the hint's fingertip loops this frame, or null when there is no hint. */
+  hint(): { from: { x: number; y: number }; to: { x: number; y: number } } | null;
   /** End it, put the settings back and clear the screen, without going anywhere. */
   stop(): void;
 }
@@ -251,6 +256,13 @@ export function createTutorialSession(deps: TutorialSessionDeps): TutorialSessio
     after(dt, threw) {
       if (!tut) return;
       const { W, H } = deps.size();
+      // What the banner really covers, so a group stopped under it is moved
+      // out. Read each frame: the banner reflows when its line changes.
+      const banner = el('tut-banner');
+      if (banner && !banner.hidden) {
+        const bottom = banner.getBoundingClientRect().bottom - deps.canvas.getBoundingClientRect().top;
+        if (bottom > 0) tut.topInset = bottom;
+      }
       tutorialAfterFrame(tut, game, W, H, dt, threw);
       for (const e of drainTutorialEvents(tut)) handle(e);
     },
@@ -258,11 +270,13 @@ export function createTutorialSession(deps: TutorialSessionDeps): TutorialSessio
       if (!tut || tut.step === 'done') return [];
       // The whole group the target belongs to, so the ring grows with what the
       // player builds rather than staying on the pair it began as.
-      for (const id of tut.targetIds) {
-        const b = game.byId.get(id);
-        if (b && !b.ghost) return b.group.members.filter(m => !m.ghost);
-      }
-      return [];
+      const g = targetGroupOf(tut, game);
+      return g ? g.members.filter(m => !m.ghost) : [];
+    },
+    hint() {
+      if (!tut) return null;
+      const { W, H } = deps.size();
+      return tutorialHint(tut, game, W, H);
     },
     stop,
   };

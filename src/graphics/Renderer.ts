@@ -257,6 +257,61 @@ export function drawTutorialRing(rc: RenderContext, balls: { x: number; y: numbe
   ctx.restore();
 }
 
+/**
+ * The tutorial's hint: a fingertip that presses at the launcher, drags out to
+ * where a winning throw's drag ends, holds there, and lifts — on a loop, with
+ * the path it takes left faintly behind it. `from` and `to` come from
+ * `tutorialHint` in `game/Tutorial.ts`, recomputed each frame.
+ */
+export function drawTutorialHint(rc: RenderContext, hint: { from: { x: number; y: number }; to: { x: number; y: number } } | null, time: number) {
+  if (!hint) return;
+  const { ctx } = rc;
+  const R = PhysicsConfig.R;
+  const { from, to } = hint;
+  // 2.4s a loop: press 0.25, drag 1.1, hold 0.6, lift 0.45.
+  const t = (time % 2.4 + 2.4) % 2.4;
+  const ease = (u: number) => u * u * (3 - 2 * u);
+  const along = t < 0.25 ? 0 : t < 1.35 ? ease((t - 0.25) / 1.1) : 1;
+  const alpha = t < 0.25 ? t / 0.25 : t < 1.95 ? 1 : 1 - (t - 1.95) / 0.45;
+  const x = from.x + (to.x - from.x) * along, y = from.y + (to.y - from.y) * along;
+
+  ctx.save();
+  // The path, dashed, so the eye can follow it between loops.
+  ctx.globalAlpha = 0.6;
+  ctx.strokeStyle = hex(WHITE);
+  ctx.lineWidth = Math.max(2, R * 0.16);
+  ctx.setLineDash([R * 0.45, R * 0.4]);
+  ctx.beginPath();
+  ctx.moveTo(from.x, from.y);
+  ctx.lineTo(to.x, to.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Where it ends: a ring that stays and breathes, so the goal of the drag is
+  // never lost, even while the fingertip is back at the launcher. Soft throws
+  // end close to the mouth, so it is drawn bold enough to read over the bay.
+  const breath = 0.5 + 0.5 * Math.sin((time * TAU) / 1.2);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = hex(MENU_CYAN);
+  ctx.shadowColor = hex(MENU_CYAN);
+  ctx.shadowBlur = 12;
+  ctx.globalAlpha = 0.65 + 0.3 * breath;
+  ctx.lineWidth = Math.max(2.5, R * 0.22);
+  ctx.beginPath();
+  ctx.arc(to.x, to.y, R * (1.25 + 0.15 * breath), 0, TAU);
+  ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
+  // The fingertip: pressed while it drags, a little larger as it lifts.
+  const lift = t > 1.95 ? (t - 1.95) / 0.45 : 0;
+  ctx.globalAlpha = 0.85 * Math.max(0, alpha);
+  ctx.fillStyle = hex(WHITE);
+  ctx.shadowColor = hex(MENU_CYAN);
+  ctx.shadowBlur = 18;
+  ctx.beginPath();
+  ctx.arc(x, y, R * (1.0 + 0.4 * lift), 0, TAU);
+  ctx.fill();
+  ctx.restore();
+}
+
 export function drawLaunchers(rc: RenderContext, game: Game, time: number) {
   const activePlayers = game.twoPlayer ? game.players : [game.players[0]];
   for (const p of activePlayers) drawOneLauncher(rc, game, p, time);

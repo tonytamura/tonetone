@@ -19,7 +19,7 @@ import { BLACK_HEX, WHITE_HEX } from '../graphics/Palette';
 import { PhysicsConfig } from '../physics/Config';
 import { BallOnDeck, SpecialBallType } from '../physics/Types';
 import { rebuildGroups } from '../physics/RigidBody';
-import { boomsOnImpact } from '../physics/LauncherBays';
+import { aimMaxReach, bayInset, boomsOnImpact, launchPointOf } from '../physics/LauncherBays';
 import { ConfigSnapshot, KNOBS, KnobContext, applyKnob, restoreConfig, snapshotConfig } from '../sim/Knobs';
 
 export type TutorialStep = 'aim' | 'lock' | 'boom' | 'black' | 'white';
@@ -84,6 +84,41 @@ const NO_RAIN = 1e9;
 
 /** A group moving slower than this, in px/s, has not been hit. */
 const STRUCK_SPEED = 5;
+
+/**
+ * Throws in a step that got nowhere before the hint shows how to make the next
+ * one. A throw that locks in step 2 is progress and starts the count again.
+ */
+export const HINT_AFTER = 3;
+
+/**
+ * Below this speed, in px/s at the reference scale, a ball has as good as
+ * stopped. Drag keeps 59% of a ball's speed each second, so balls creep on for
+ * a long time — a soft throw is still at 5 px/s nine seconds later — and a true
+ * standstill would come too late to be useful. At 50 a soft throw that missed
+ * is taken off about five seconds after it left.
+ */
+const SLOW = 50;
+
+/** Seconds a target group has to sit slow before its spot is judged. */
+const SETTLE = 0.5;
+
+/** Seconds a target group takes to glide back from a spot it cannot be played in. */
+const HOME_TIME = 0.9;
+
+/**
+ * Balls the player threw that are not part of the target — misses, and balls a
+ * boom or a peel left behind — allowed on the field at once. Past this the
+ * oldest go, still moving or not.
+ */
+export const STRAY_CAP = 3;
+
+/**
+ * How much of the top of the field the banner covers, in px, until the page
+ * says otherwise. Measured on 2026-09-28: the banner's bottom edge sits 104px
+ * below the top of the field on every screen from 320x568 to 1280x720.
+ */
+export const BANNER_INSET = 104;
 
 interface LayoutBall {
   dx: number;
@@ -174,6 +209,7 @@ export type TutorialEvent =
   | { type: 'peel' }
   | { type: 'again'; step: TutorialStep }
   | { type: 'respawn'; step: TutorialStep }
+  | { type: 'hint'; step: TutorialStep }
   | { type: 'stepDone'; step: TutorialStep; lockPts: number; boomPts: number }
   | { type: 'finished' };
 
@@ -202,6 +238,22 @@ export interface Tutorial {
   targetIds: number[];
   /** Throws since the current step began. */
   throws: number;
+  /** Throws since the step last moved forward: the count the hint waits on. */
+  misses: number;
+  /** The size of the target group when last looked at, so growth reads as progress. */
+  lastSize: number;
+  /**
+   * The hint is showing: a loop from the launcher to where a winning drag ends.
+   * Where that is comes from `tutorialHint`, fresh each frame, so it follows the
+   * target if it moves. It goes when the player next touches.
+   */
+  hint: boolean;
+  /** Seconds the target group has been slow, for judging where it has stopped. */
+  restFor: number;
+  /** Seconds left of a glide back from a spot the target cannot be played in; 0 when not. */
+  homing: number;
+  /** How much of the top of the field the page's banner covers, in px. */
+  topInset: number;
   /** Counts down once a step is met; the next step starts at zero. */
   beat: number;
   /** Seconds since the last throw, while it is still waiting to show an effect; -1 when not. */
@@ -259,17 +311,22 @@ function emit(tut: Tutorial, e: TutorialEvent) {
   tut.events.push(e);
 }
 
-/** Remove every ball not in `keep`, and any bond reaching one that is removed. */
-function clearExcept(game: Game, keep: Set<number>) {
-  const gone = game.balls.filter(b => !keep.has(b.id));
-  if (!gone.length) return;
-  for (const b of gone) {
+/** Take the balls in `gone` off the field, each with a puff, and any bond reaching one. */
+function removeBalls(game: Game, gone: Set<number>) {
+  if (!gone.size) return;
+  for (const b of game.balls) {
+    if (!gone.has(b.id)) continue;
     game.byId.delete(b.id);
     game.flashes.push({ x: b.x, y: b.y, t: 0, kind: 'spawn' });
   }
-  game.balls = game.balls.filter(b => keep.has(b.id));
-  for (const b of game.balls) for (const id of [...b.bonds]) if (!keep.has(id)) b.bonds.delete(id);
+  game.balls = game.balls.filter(b => !gone.has(b.id));
+  for (const b of game.balls) for (const id of [...b.bonds]) if (gone.has(id)) b.bonds.delete(id);
   game.groups = rebuildGroups(game.balls, game.byId);
+}
+
+/** Remove every ball not in `keep`. */
+function clearExcept(game: Game, keep: Set<number>) {
+  removeBalls(game, new Set(game.balls.filter(b => !keep.has(b.id)).map(b => b.id)));
 }
 
 /**
@@ -299,13 +356,97 @@ function layOut(game: Game, layout: Layout, width: number, height: number): numb
   return ids.filter(id => id >= 0);
 }
 
-/** The group the step is about, found through its first surviving target. */
-function targetGroup(tut: Tutorial, game: Game) {
+/**
+ * The group the step is about: the biggest one any of its targets is still in.
+ *
+ * Not the group of the first target that survives. A soft mismatched hit that
+ * peeled exactly that ball off used to leave the step following a group of one,
+ * and it laid the board out again under a player who still had three balls of
+ * it on the table (Bug 14 in `tests/game/BugDetections.test.ts`).
+ */
+export function targetGroupOf(tut: Tutorial, game: Game) {
+  let best: Game['groups'][number] | null = null, bestSize = 0;
   for (const id of tut.targetIds) {
     const b = game.byId.get(id);
-    if (b && !b.ghost) return b.group;
+    if (!b || b.ghost) continue;
+    const size = b.group.members.filter(m => !m.ghost).length;
+    if (size > bestSize) { best = b.group; bestSize = size; }
   }
-  return null;
+  return best;
+}
+
+function liveSize(g: Game['groups'][number] | null): number {
+  return g ? g.members.filter(m => !m.ghost).length : 0;
+}
+
+/**
+ * Take off the balls the player threw that are not part of the target, once
+ * they have as good as stopped, and the oldest of them whenever there are more
+ * than `STRAY_CAP`.
+ *
+ * A miss otherwise rolls on for nine seconds and stays where it stops. A few of
+ * those clutter the board, stand in the way of the next throw, and one that
+ * stops in the launcher's mouth blocks it for good: the bay refuses to throw
+ * into a ball, and nothing on a tutorial board would ever move it. Ghosts are
+ * left alone; they go by themselves.
+ */
+function tidyStrays(game: Game, target: Game['groups'][number] | null) {
+  const mine = new Set(target ? target.members.map(m => m.id) : []);
+  const slow = SLOW * PhysicsConfig.SC;
+  const gone = new Set<number>();
+  const moving: number[] = [];
+  for (const g of game.groups) {
+    const live = g.members.filter(m => !m.ghost && !mine.has(m.id));
+    if (!live.length) continue;
+    if (Math.hypot(g.vx, g.vy) < slow) for (const m of live) gone.add(m.id);
+    else for (const m of live) moving.push(m.id);
+  }
+  moving.sort((a, b) => a - b);
+  while (moving.length > STRAY_CAP) gone.add(moving.shift()!);
+  removeBalls(game, gone);
+}
+
+/** Live balls on the field that are not part of the target. */
+function strayCount(game: Game, target: Game['groups'][number] | null): number {
+  const mine = new Set(target ? target.members.map(m => m.id) : []);
+  return game.balls.filter(b => !b.ghost && !mine.has(b.id)).length;
+}
+
+/**
+ * Whether the target has stopped somewhere it cannot be played: any part of it
+ * under the banner, where the player cannot see it, or up against the
+ * launcher's mouth, where a throw has no room to leave. Measured on the real
+ * loop across the whole field on three screens, a throw straight at a group
+ * wins everywhere else, walls and corners included.
+ */
+function misplaced(tut: Tutorial, game: Game, g: Game['groups'][number], width: number, height: number): boolean {
+  const R = PhysicsConfig.R;
+  let reach = 0;
+  for (const m of g.members) reach = Math.max(reach, Math.hypot(m.x - g.com.x, m.y - g.com.y));
+  reach += R;
+  if (g.com.y - reach < tut.topInset) return true;
+  const mouth = launchPointOf(game.players[0], width, height);
+  return Math.hypot(g.com.x - mouth.x, g.com.y - mouth.y) < reach + bayInset() + 3 * R;
+}
+
+/**
+ * Where the hint loops: from the launcher's mouth to where a drag that wins the
+ * step ends — straight at the target, as far as the step's strength. Null when
+ * there is no hint to show.
+ *
+ * A drag aims from the mouth to the touch and sets strength from its distance
+ * (`aimAt`), so this point *is* the throw. `tests/game/Tutorial.test.ts` checks
+ * that a player who drags there wins, on every step and screen.
+ */
+export function tutorialHint(tut: Tutorial, game: Game, width: number, height: number) {
+  if (!tut.hint || tut.step === 'done' || tut.beat > 0 || tut.homing > 0) return null;
+  const g = targetGroupOf(tut, game);
+  if (!g) return null;
+  const from = launchPointOf(game.players[0], width, height);
+  const dx = g.com.x - from.x, dy = g.com.y - from.y;
+  const d = Math.hypot(dx, dy) || 1;
+  const reach = TEACH_STRENGTH[tut.step] * aimMaxReach(width, height, false);
+  return { from, to: { x: from.x + (dx / d) * reach, y: from.y + (dy / d) * reach } };
 }
 
 /**
@@ -315,6 +456,10 @@ function targetGroup(tut: Tutorial, game: Game) {
 export function beginStep(tut: Tutorial, game: Game, step: TutorialStep, width: number, height: number, keep: number[] = []) {
   tut.step = step;
   tut.throws = 0;
+  tut.misses = 0;
+  tut.hint = false;
+  tut.restFor = 0;
+  tut.homing = 0;
   tut.beat = 0;
   tut.sinceThrow = -1;
   tut.firstLockSeen = false;
@@ -328,6 +473,7 @@ export function beginStep(tut: Tutorial, game: Game, step: TutorialStep, width: 
     if (g) { g.vx = 0; g.vy = 0; g.av = 0; }
   }
   tut.base = counters(game);
+  tut.lastSize = liveSize(targetGroupOf(tut, game));
   enforceDeck(tut, game);
   emit(tut, { type: 'step', step });
 }
@@ -349,6 +495,12 @@ export function startTutorial(game: Game, width: number, height: number, first: 
     armed: false,
     targetIds: [],
     throws: 0,
+    misses: 0,
+    lastSize: 0,
+    hint: false,
+    restFor: 0,
+    homing: 0,
+    topInset: BANNER_INSET,
     beat: 0,
     sinceThrow: -1,
     lockPtsEarned: 0,
@@ -403,6 +555,8 @@ export function endTutorial(tut: Tutorial, game: Game) {
 export function noteTouch(tut: Tutorial) {
   if (tut.step === 'done' || tut.beat > 0) return;
   tut.armed = true;
+  // The hand has done its job once the player's own finger is down.
+  tut.hint = false;
   if (tut.touched) return;
   tut.touched = true;
   emit(tut, { type: 'touched' });
@@ -419,7 +573,7 @@ export function tutorialBeforeFrame(tut: Tutorial, game: Game) {
   // Finished: the closing card is up, and a ball flying behind it every three
   // seconds would only pull the eye away from it.
   if (tut.step === 'done') { p.reload = game.reloadTime; return; }
-  if (!tut.armed || tut.beat > 0) p.reload = game.reloadTime;
+  if (!tut.armed || tut.beat > 0 || tut.homing > 0) p.reload = game.reloadTime;
   enforceDeck(tut, game);
 }
 
@@ -433,12 +587,10 @@ export function tutorialBeforeFrame(tut: Tutorial, game: Game) {
  * layout's anchor. The steps themselves are left to the physics; only the
  * pause between them is scripted, which is the controller's job.
  */
-function glideHome(tut: Tutorial, game: Game, home: Layout, width: number, height: number) {
-  const g = targetGroup(tut, game);
+function glideHome(g: Game['groups'][number] | null, home: Layout, width: number, height: number, t: number) {
   if (!g) return;
   const dx = home.fx * width - g.com.x, dy = home.fy * height - g.com.y;
-  // Arrive a little before the beat ends, and settle the spin on the way.
-  const t = Math.max(0.12, tut.beat - 0.25);
+  // Arrive in `t` seconds, and settle the spin on the way.
   g.vx = dx / t;
   g.vy = dy / t;
   g.av *= 0.85;
@@ -460,20 +612,32 @@ export function tutorialAfterFrame(tut: Tutorial, game: Game, width: number, hei
   if (tut.beat > 0) {
     tut.beat -= dt;
     const next = NEXT[step];
-    if (next.keep && next.step !== 'done') glideHome(tut, game, TUTORIAL_LAYOUTS[next.step], width, height);
+    // Arrive a little before the beat ends.
+    if (next.keep && next.step !== 'done') glideHome(targetGroupOf(tut, game), TUTORIAL_LAYOUTS[next.step], width, height, Math.max(0.12, tut.beat - 0.25));
     if (tut.beat > 0) return;
     if (next.step === 'done') { tut.step = 'done'; emit(tut, { type: 'finished' }); return; }
     // Read the group again now rather than at the moment the step was met: a
     // ball still in flight during the beat may have locked on since, and it
     // belongs to what the player built. An empty list lays the next board out
     // fresh instead.
-    const built = next.keep ? targetGroup(tut, game) : null;
+    const built = next.keep ? targetGroupOf(tut, game) : null;
     beginStep(tut, game, next.step, width, height, built ? built.members.map(m => m.id) : []);
+    return;
+  }
+
+  if (tut.homing > 0) {
+    // Gliding back from a spot it could not be played in: the launcher is
+    // held, and nothing the glide does counts for or against the step.
+    tut.homing = Math.max(0, tut.homing - dt);
+    const g = targetGroupOf(tut, game);
+    if (g && tut.homing > 0) glideHome(g, TUTORIAL_LAYOUTS[step], width, height, Math.max(dt, tut.homing));
+    else if (g) { g.vx = 0; g.vy = 0; g.av = 0; }
     return;
   }
 
   if (threw > 0) {
     tut.throws += threw;
+    tut.misses += threw;
     // The throw has flown, so the next one waits for the player again.
     tut.armed = false;
     tut.sinceThrow = 0;
@@ -482,12 +646,17 @@ export function tutorialAfterFrame(tut: Tutorial, game: Game, width: number, hei
     tut.sinceThrow += dt;
     if (tut.sinceThrow >= AGAIN_AFTER) {
       tut.sinceThrow = -1;
-      // Only if they have not already started the next try.
-      if (!tut.armed) emit(tut, { type: 'again', step });
+      // Only if they have not already started the next try. After a few, the
+      // step stops saying "try again" and shows how.
+      if (!tut.armed) {
+        if (tut.misses >= HINT_AFTER) { tut.hint = true; emit(tut, { type: 'hint', step }); }
+        else emit(tut, { type: 'again', step });
+      }
     }
   }
 
-  const g = targetGroup(tut, game);
+  const g = targetGroupOf(tut, game);
+  tidyStrays(game, g);
 
   if (step === 'aim') {
     if (!g) { respawn(tut, game, width, height); return; }
@@ -496,27 +665,42 @@ export function tutorialAfterFrame(tut: Tutorial, game: Game, width: number, hei
   }
 
   if (step === 'lock') {
-    const size = g ? g.members.length : 0;
+    const size = liveSize(g);
     if (size < 2) { respawn(tut, game, width, height); return; }
+    if (size > tut.lastSize) tut.misses = 0;
+    tut.lastSize = size;
     if (size > 2 && !tut.firstLockSeen) { tut.firstLockSeen = true; emit(tut, { type: 'firstLock' }); }
     if (size >= LOCK_GOAL) {
       tut.lockPtsEarned = now.lockPts - tut.base.lockPts;
       succeed(tut, now);
+      return;
     }
-    return;
-  }
-
-  if (step === 'black') {
+  } else if (step === 'black') {
     if (!g) { respawn(tut, game, width, height); return; }
-    if (g.members.some(m => m.special === 'black' && !m.ghost)) succeed(tut, now);
-    return;
+    if (g.members.some(m => m.special === 'black' && !m.ghost)) { succeed(tut, now); return; }
+  } else {
+    // boom and white: the group has to go.
+    if (now.booms > tut.base.booms) { succeed(tut, now); return; }
+    if (now.peels > tut.base.peels) {
+      tut.base.peels = now.peels;
+      emit(tut, { type: 'peel' });
+      // The peel line already says what to change; the hand shows how far.
+      if (tut.misses >= HINT_AFTER) tut.hint = true;
+    }
+    if (liveSize(g) < 2) { respawn(tut, game, width, height); return; }
   }
 
-  // boom and white: the group has to go.
-  if (now.booms > tut.base.booms) { succeed(tut, now); return; }
-  if (now.peels > tut.base.peels) { tut.base.peels = now.peels; emit(tut, { type: 'peel' }); }
-  const size = g ? g.members.filter(m => !m.ghost).length : 0;
-  if (size < 2) respawn(tut, game, width, height);
+  // Where has the target stopped? Somewhere it cannot be played, it glides
+  // back to where the step laid it out — the same balls, so nothing the player
+  // built is lost. It waits for any ball still rolling to be tidied away, so
+  // the glide cannot run into one.
+  if (!g) return;
+  if (Math.hypot(g.vx, g.vy) >= SLOW * PhysicsConfig.SC) { tut.restFor = 0; return; }
+  tut.restFor += dt;
+  if (tut.restFor >= SETTLE && strayCount(game, g) === 0 && misplaced(tut, game, g, width, height)) {
+    tut.restFor = 0;
+    tut.homing = HOME_TIME;
+  }
 }
 
 /** Lay the current step out again, and say so. */

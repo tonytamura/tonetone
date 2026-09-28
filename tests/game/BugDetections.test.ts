@@ -18,6 +18,9 @@ import { makeBall, weld, loose, withSandbox } from '../../src/sim/Scenarios';
 import { makeGroup } from '../../src/physics/RigidBody';
 import { playNote, playSwoosh } from '../../src/audio/Voices';
 import { AudioStore } from '../../src/audio/SynthEngine';
+import { startTutorial, endTutorial, tutorialAfterFrame, drainTutorialEvents } from '../../src/game/Tutorial';
+import { rebuildGroups } from '../../src/physics/RigidBody';
+import { snapshotConfig, restoreConfig } from '../../src/sim/Knobs';
 
 describe('Bug Detection Test Suite', () => {
   describe('Bug 1: drawFor with unlisted player', () => {
@@ -458,6 +461,38 @@ describe('Bug Detection Test Suite', () => {
       for (const [twoPlayer, aiOn] of [[false, false], [true, true], [true, false]]) {
         expect(strengthFromDrag(twoPlayer, aiOn, 0, 900)).toBe(1);
         expect(strengthFromDrag(twoPlayer, aiOn, 412, 900)).toBe(1);
+      }
+    });
+  });
+
+  describe('Bug 14: the tutorial lost its group when the first target ball was knocked loose', () => {
+    // The step found "its" group through the first target id that survived. A
+    // soft mismatched hit that peeled exactly that ball off left the step
+    // following a group of one, so it laid the board out again under a player
+    // who still had three balls of it on the table.
+    it('follows the biggest group the targets are in, not the first target', () => {
+      const snap = snapshotConfig();
+      try {
+        withSeed(1, () => {
+          const W = 380, H = 620;
+          recalcThresholds(H);
+          const game = createGame();
+          const tut = startTutorial(game, W, H, 'boom');
+          drainTutorialEvents(tut);
+          const ids = [...tut.targetIds];
+          expect(ids.length).toBe(4);
+          const first = game.byId.get(ids[0])!;
+          for (const o of first.bonds) game.byId.get(o)!.bonds.delete(first.id);
+          first.bonds.clear();
+          game.groups = rebuildGroups(game.balls, game.byId);
+          tutorialAfterFrame(tut, game, W, H, 1 / 60, 0);
+          const events = drainTutorialEvents(tut).map(e => e.type);
+          expect(events).not.toContain('respawn');
+          expect(tut.targetIds).toEqual(ids);
+          endTutorial(tut, game);
+        });
+      } finally {
+        restoreConfig(snap);
       }
     });
   });

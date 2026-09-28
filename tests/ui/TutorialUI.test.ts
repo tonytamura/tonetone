@@ -14,6 +14,7 @@ const EVENTS: TutorialEvent[] = [
   { type: 'tooHard' },
   { type: 'peel' },
   ...TUTORIAL_STEPS.map(step => ({ type: 'again', step }) as TutorialEvent),
+  ...TUTORIAL_STEPS.map(step => ({ type: 'hint', step }) as TutorialEvent),
   ...TUTORIAL_STEPS.map(step => ({ type: 'stepDone', step, lockPts: 11, boomPts: 27 }) as TutorialEvent),
 ];
 
@@ -74,6 +75,14 @@ describe('tutorial copy', () => {
     const b = tutorialLine({ type: 'stepDone', step: 'boom', lockPts: 9, boomPts: 41 })!;
     expect(b.line).toContain('+41');
     expect(b.sub).toContain('+9');
+  });
+
+  it('points at the hint when it shows, without naming a colour', () => {
+    for (const step of TUTORIAL_STEPS) {
+      const b = tutorialLine({ type: 'hint', step })!;
+      expect(b.line).toBeTruthy();
+      expect(b.sub).toMatch(/circle/);
+    }
   });
 
   it('says a missed throw can simply be tried again', () => {

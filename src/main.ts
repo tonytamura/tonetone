@@ -1,6 +1,6 @@
 import { PlayMode, createGame, resetField, startMatch } from './game/GameState';
 import { advanceFrame } from './sim/Frame';
-import { createRenderContext, resizeRenderer, drawGame, drawResultsCanvas, drawTutorialRing } from './graphics/Renderer';
+import { createRenderContext, resizeRenderer, drawGame, drawResultsCanvas, drawTutorialRing, drawTutorialHint } from './graphics/Renderer';
 import { clearSpriteCache } from './graphics/Sprites';
 import { createStrip } from './ui/ControlStrips';
 import { setupTouchControls } from './ui/TouchControls';
@@ -289,7 +289,10 @@ function frame(ts: number) {
   }
 
   drawGame(renderCtx, game, clock);
-  if (tutorial.isActive()) drawTutorialRing(renderCtx, tutorial.ringBalls(), clock);
+  if (tutorial.isActive()) {
+    drawTutorialRing(renderCtx, tutorial.ringBalls(), clock);
+    drawTutorialHint(renderCtx, tutorial.hint(), clock);
+  }
   drawResultsCanvas(renderCtx, game);
   updateHUD(game, tutorial.isActive() ? TUTORIAL_CLOCK : undefined);
   refreshAllStrips();

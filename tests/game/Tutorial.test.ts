@@ -6,10 +6,14 @@ import { withSeed } from '../../src/sim/Rng';
 import { snapshotConfig, restoreConfig, applyKnobs } from '../../src/sim/Knobs';
 import { AudioStore } from '../../src/audio/SynthEngine';
 import { SPECIALS } from '../../src/game/Rules';
-import { aimAt, boomHeatOf, boomsOnImpact } from '../../src/physics/LauncherBays';
+import { aimAt, boomHeatOf, boomsOnImpact, launchPointOf } from '../../src/physics/LauncherBays';
+import { spawn } from '../../src/game/GameState';
+import { shiftGroup } from '../../src/physics/RigidBody';
 import {
   Tutorial, TutorialEvent, TutorialStep, LOCK_GOAL, TEACH_STRENGTH, TUTORIAL_LAYOUTS, TUTORIAL_STEPS, AGAIN_AFTER,
+  HINT_AFTER, STRAY_CAP, BANNER_INSET,
   startTutorial, endTutorial, noteTouch, tutorialBeforeFrame, tutorialAfterFrame, drainTutorialEvents,
+  targetGroupOf, tutorialHint,
 } from '../../src/game/Tutorial';
 
 /**
@@ -292,5 +296,173 @@ describe('the tutorial runs beside the game without changing it', () => {
     } finally {
       restoreConfig(snap);
     }
+  });
+});
+
+/** Run `frames` frames, collecting events; `each` runs before every frame. */
+function run(tut: Tutorial, game: Game, W: number, H: number, frames: number, events: TutorialEvent[], each?: () => void) {
+  let threw = 0;
+  for (let f = 0; f < frames; f++) {
+    each?.();
+    const r = step(tut, game, W, H, f / 60);
+    threw += r.threw;
+    events.push(...drainTutorialEvents(tut));
+  }
+  return threw;
+}
+
+/**
+ * One throw that cannot reach the target: as soft as the bay throws, almost
+ * sideways, on the side away from it. Then hands off until the step answers.
+ */
+function miss(tut: Tutorial, game: Game, W: number, H: number, events: TutorialEvent[]) {
+  const p = game.players[0];
+  const g = targetGroupOf(tut, game)!;
+  const away = g.com.x > W / 2 ? -85 : 85;
+  p.aimDeg = away; p.strength = 0;
+  noteTouch(tut);
+  // The ring takes a reload to fill once the player has acted.
+  let threw = 0;
+  for (let f = 0; f < 60 * 4 && !threw; f++) threw = run(tut, game, W, H, 1, events, () => { p.aimDeg = away; p.strength = 0; });
+  expect(threw, 'the miss was thrown').toBe(1);
+  run(tut, game, W, H, Math.ceil(AGAIN_AFTER * 60) + 10, events);
+}
+
+describe('after a few throws that get nowhere, a hint shows the throw that wins', () => {
+  for (const [W, H] of SCREENS) {
+    for (const s of TUTORIAL_STEPS) {
+      it(`${s} at ${W}x${H}`, () => {
+        withTutorial(W, H, s, (tut, game) => {
+          const events: TutorialEvent[] = [];
+          for (let i = 0; i < HINT_AFTER; i++) miss(tut, game, W, H, events);
+          const said = events.filter(e => e.type === 'again' || e.type === 'hint').map(e => e.type);
+          // "Not quite" for the first misses, then the hint instead.
+          expect(said).toEqual([...Array(HINT_AFTER - 1).fill('again'), 'hint']);
+          const hint = tutorialHint(tut, game, W, H);
+          expect(hint).not.toBeNull();
+          // It starts at the launcher.
+          const mouth = launchPointOf(game.players[0], W, H);
+          expect(hint!.from).toEqual(mouth);
+
+          // Dragging to where it ends is the throw that wins, and touching
+          // takes the hand away.
+          const p = game.players[0];
+          aimAt(p, hint!.to.x, hint!.to.y, W, H, false);
+          expect(p.strength).toBeCloseTo(TEACH_STRENGTH[s], 6);
+          noteTouch(tut);
+          expect(tutorialHint(tut, game, W, H)).toBeNull();
+          const aim = p.aimDeg, strength = p.strength;
+          const after: TutorialEvent[] = [];
+          run(tut, game, W, H, 60 * 7, after, () => { p.aimDeg = aim; p.strength = strength; });
+          const won = after.some(e => (e.type === 'stepDone' && e.step === s) || (s === 'lock' && e.type === 'firstLock'));
+          expect(won, `following the hint wins ${s}`).toBe(true);
+        });
+      });
+    }
+  }
+
+  it('a throw that locks in step 2 starts the count again', () => {
+    withTutorial(380, 620, 'lock', (tut, game) => {
+      const events: TutorialEvent[] = [];
+      miss(tut, game, 380, 620, events);
+      miss(tut, game, 380, 620, events);
+      expect(tut.misses).toBe(2);
+      const g = targetGroupOf(tut, game)!;
+      const p = game.players[0];
+      aimAt(p, g.com.x, g.com.y, 380, 620, false);
+      p.strength = TEACH_STRENGTH.lock;
+      const aim = p.aimDeg;
+      noteTouch(tut);
+      run(tut, game, 380, 620, 60 * 6, events, () => { p.aimDeg = aim; p.strength = TEACH_STRENGTH.lock; });
+      expect(events.some(e => e.type === 'firstLock')).toBe(true);
+      expect(tut.misses).toBe(0);
+    });
+  });
+});
+
+describe('the board is kept playable', () => {
+  it('takes a missed ball off once it has as good as stopped', () => {
+    for (const [W, H] of SCREENS) {
+      withTutorial(W, H, 'lock', (tut, game) => {
+        const events: TutorialEvent[] = [];
+        miss(tut, game, W, H, events);
+        run(tut, game, W, H, 60 * 8, events);
+        const ids = new Set(targetGroupOf(tut, game)!.members.map(m => m.id));
+        expect(game.balls.filter(b => !ids.has(b.id)).length, `${W}x${H}`).toBe(0);
+      });
+    }
+  });
+
+  it(`keeps no more than ${STRAY_CAP} strays, even moving ones, and takes the oldest first`, () => {
+    withTutorial(380, 620, 'aim', (tut, game) => {
+      const made: number[] = [];
+      for (let i = 0; i < STRAY_CAP + 2; i++) {
+        const id = game.nextId;
+        spawn(game, 60 + i * 50, 200, 0, 0, { dir: 0.3, speed: 400, kind: 0, color: '#fff', special: null }, 380, 620);
+        made.push(id);
+      }
+      run(tut, game, 380, 620, 1, []);
+      const left = made.filter(id => game.byId.has(id));
+      expect(left).toEqual(made.slice(-STRAY_CAP));
+    });
+  });
+
+  it('clears a ball stopped in the launcher mouth, so the next throw can leave', () => {
+    withTutorial(380, 620, 'aim', (tut, game) => {
+      const p = game.players[0];
+      const m = launchPointOf(p, 380, 620);
+      const R = PhysicsConfig.R;
+      // Park a ball right where a throw straight up would appear.
+      spawn(game, m.x, m.y - R * 1.2, 0, 0, null, 380, 620);
+      for (const b of game.balls) b.group.vx = b.group.vy = 0;
+      const events: TutorialEvent[] = [];
+      p.aimDeg = 0; p.strength = 0.3;
+      noteTouch(tut);
+      const threw = run(tut, game, 380, 620, 60 * 4, events, () => { p.aimDeg = 0; p.strength = 0.3; });
+      expect(threw).toBe(1);
+    });
+  });
+
+  const spots: [string, (W: number, H: number) => { x: number; y: number }][] = [
+    ['under the banner', (W) => ({ x: W * 0.3, y: BANNER_INSET * 0.6 })],
+    ['against the launcher', (W, H) => ({ x: W / 2 + PhysicsConfig.R * 3, y: H - PhysicsConfig.R * 6 })],
+  ];
+  for (const [where, at] of spots) {
+    for (const [W, H] of SCREENS) {
+      it(`a group stopped ${where} glides back, whole, at ${W}x${H}`, () => {
+        withTutorial(W, H, 'lock', (tut, game) => {
+          // One untouched frame first, as on the page, so the ring starts full.
+          run(tut, game, W, H, 1, []);
+          const g = targetGroupOf(tut, game)!;
+          const ids = g.members.map(m => m.id).sort();
+          const to = at(W, H);
+          shiftGroup(g, to.x - g.com.x, to.y - g.com.y);
+          g.vx = g.vy = g.av = 0;
+          // The player is dragging all through the glide: nothing may fly.
+          const p = game.players[0];
+          const threw = run(tut, game, W, H, 60 * 2, [], () => { noteTouch(tut); p.aimDeg = 60; p.strength = 0.3; });
+          expect(threw, 'launcher held during the glide').toBe(0);
+          const back = targetGroupOf(tut, game)!;
+          expect(back.members.map(m => m.id).sort()).toEqual(ids);
+          const home = TUTORIAL_LAYOUTS.lock;
+          const R = PhysicsConfig.R;
+          expect(Math.abs(back.com.x - home.fx * W), 'x').toBeLessThan(R * 1.5);
+          expect(Math.abs(back.com.y - home.fy * H), 'y').toBeLessThan(R * 1.5);
+        });
+      });
+    }
+  }
+
+  it('leaves a group alone where it can be played', () => {
+    withTutorial(380, 620, 'lock', (tut, game) => {
+      const g = targetGroupOf(tut, game)!;
+      shiftGroup(g, 380 * 0.85 - g.com.x, 620 * 0.3 - g.com.y);
+      g.vx = g.vy = g.av = 0;
+      const x = g.com.x, y = g.com.y;
+      run(tut, game, 380, 620, 60 * 2, []);
+      expect(tut.homing).toBe(0);
+      expect(targetGroupOf(tut, game)!.com.x).toBeCloseTo(x, 6);
+      expect(targetGroupOf(tut, game)!.com.y).toBeCloseTo(y, 6);
+    });
   });
 });
