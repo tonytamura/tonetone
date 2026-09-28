@@ -14,8 +14,20 @@
 <div id="menu-screen">
   <canvas id="gameMenu"></canvas>
   <div class="menu-bottom-controls">
+    <button id="helpBtn" class="menu-control-btn">Help</button>
     <button id="fsToggle" class="menu-control-btn">Full screen</button>
     <button id="audioToggle" class="menu-control-btn audio-toggle-btn">Audio on</button>
+  </div>
+</div>
+
+<div id="help-overlay" hidden>
+  <div class="confirm-card help-card">
+    <div class="confirm-title">How to play</div>
+    <button id="help-replay" class="confirm-btn primary help-replay">Replay tutorial</button>
+    <dl class="help-rules" id="help-rules"></dl>
+    <div class="confirm-actions">
+      <button id="help-close" class="confirm-btn secondary">Close</button>
+    </div>
   </div>
 </div>
 
@@ -69,6 +81,23 @@
     </div>
     <div class="tut-line" id="tut-line"></div>
     <div class="tut-sub" id="tut-sub" hidden></div>
+  </div>
+
+  <div id="offer-overlay" hidden>
+    <div class="confirm-card">
+      <div class="confirm-title">New to Tone Boom?</div>
+      <div class="confirm-sub">A one-minute lesson on the five things to know.</div>
+      <div class="confirm-actions">
+        <button id="offer-show" class="confirm-btn primary">Show me</button>
+        <button id="offer-skip" class="confirm-btn secondary">Skip</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="seat-card" hidden>
+    <div class="seat-half seat-top" id="seat-top"></div>
+    <div class="seat-divider"></div>
+    <div class="seat-half seat-bottom" id="seat-bottom"></div>
   </div>
 
   <div id="tut-card-overlay" hidden>

@@ -1,0 +1,98 @@
+/**
+ * The first-play offer, and the help screen that replays the tutorial.
+ *
+ * The tutorial is offered once, at the moment of intent: the first time any
+ * mode is chosen on a device that has neither finished nor skipped it. The menu
+ * stays the first impression. After that it is never offered again, and the
+ * help button on the main screen is how to see it once more.
+ *
+ * Design: the Tutorial: Design page in Notion, §4, as amended by the help
+ * button decision (2026-09-19) and the offer decision (2026-09-27).
+ */
+import { PlayMode } from '../game/GameState';
+import { uiClick } from '../audio/UiSounds';
+import { RULE_ROWS } from './RulesText';
+import { setHidden } from './Dom';
+
+/** Offer the tutorial exactly when it has not been seen, whichever mode was chosen. */
+export function shouldOfferTutorial(seen: boolean, _mode: PlayMode): boolean {
+  return !seen;
+}
+
+function el(id: string) {
+  return document.getElementById(id);
+}
+
+export interface FirstPlayOffer {
+  show(mode: PlayMode): void;
+  isOpen(): boolean;
+  /** Close it unanswered, as leaving for the menu does. It will be offered again. */
+  dismiss(): void;
+}
+
+/** "New to Tone Boom? Show me / Skip", over the field of the mode just chosen. */
+export function createFirstPlayOffer(handlers: {
+  showMe: (mode: PlayMode) => void;
+  skip: (mode: PlayMode) => void;
+}): FirstPlayOffer {
+  let pending: PlayMode | null = null;
+
+  function answer(fn: (mode: PlayMode) => void) {
+    if (!pending) return;
+    const mode = pending;
+    pending = null;
+    setHidden(el('offer-overlay'), true);
+    fn(mode);
+  }
+
+  el('offer-show')?.addEventListener('click', e => { e.stopPropagation(); uiClick('confirm'); answer(handlers.showMe); });
+  el('offer-skip')?.addEventListener('click', e => { e.stopPropagation(); uiClick('cancel'); answer(handlers.skip); });
+
+  return {
+    show(mode) {
+      pending = mode;
+      setHidden(el('offer-overlay'), false);
+    },
+    isOpen: () => pending !== null,
+    dismiss() {
+      pending = null;
+      setHidden(el('offer-overlay'), true);
+    },
+  };
+}
+
+/**
+ * The help screen over the main menu: replay the tutorial, and the rules card.
+ * Replaying never resets the "seen" flag; it only shows the lesson again.
+ */
+export function setupHelpScreen(onReplay: () => void) {
+  const rules = el('help-rules');
+  if (rules) {
+    rules.innerHTML = '';
+    for (const r of RULE_ROWS) {
+      const dt = document.createElement('dt');
+      dt.textContent = r.label;
+      const dd = document.createElement('dd');
+      dd.textContent = r.text;
+      rules.append(dt, dd);
+    }
+  }
+  const close = () => setHidden(el('help-overlay'), true);
+  el('helpBtn')?.addEventListener('click', e => {
+    e.stopPropagation();
+    uiClick('confirm');
+    setHidden(el('help-overlay'), false);
+  });
+  el('help-close')?.addEventListener('click', e => { e.stopPropagation(); uiClick('cancel'); close(); });
+  el('help-replay')?.addEventListener('click', e => {
+    e.stopPropagation();
+    uiClick('confirm');
+    close();
+    onReplay();
+  });
+  // The menu listens on the window for its own taps; nothing on this screen
+  // should reach it and choose a mode underneath.
+  for (const type of ['pointerdown', 'pointerup'] as const) {
+    el('help-overlay')?.addEventListener(type, e => e.stopPropagation());
+  }
+}

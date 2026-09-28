@@ -14,6 +14,7 @@ import {
   drainTutorialEvents, endTutorial, noteTouch, startTutorial, tutorialAfterFrame, tutorialBeforeFrame,
 } from '../game/Tutorial';
 import { uiClick } from '../audio/UiSounds';
+import { CORE_RULES } from './RulesText';
 import { setHidden } from './Dom';
 
 /** The clock has nothing to count in the tutorial, and says so. */
@@ -81,13 +82,7 @@ export interface CardCopy {
 export function closingCard(matchLen: number): CardCopy {
   return {
     title: "You're ready",
-    lines: [
-      'Aim — it fires by itself.',
-      'Same colours lock.',
-      'A different colour, thrown hard, booms.',
-      'Black sticks to anything.',
-      'White booms anything.',
-    ],
+    lines: [...CORE_RULES],
     small: matchLen > 0 ? `Most points in ${formatClock(matchLen)} wins.` : 'Most points wins.',
   };
 }
@@ -110,6 +105,8 @@ export interface TutorialSessionDeps {
   play: (mode: PlayMode) => void;
   /** Leave for the main menu. */
   toMenu: () => void;
+  /** The player finished the tutorial or skipped it: it need not be offered again. */
+  onDone: () => void;
 }
 
 export interface TutorialStartOptions {
@@ -201,7 +198,7 @@ export function createTutorialSession(deps: TutorialSessionDeps): TutorialSessio
   function handle(e: TutorialEvent) {
     if (e.type === 'step') setDots(TUTORIAL_STEPS.indexOf(e.step));
     if (e.type === 'stepDone') setDots(TUTORIAL_STEPS.indexOf(e.step) + 1);
-    if (e.type === 'finished') { showClosing(); return; }
+    if (e.type === 'finished') { deps.onDone(); showClosing(); return; }
     const b = tutorialLine(e);
     if (b) setBanner(b);
   }
@@ -227,6 +224,7 @@ export function createTutorialSession(deps: TutorialSessionDeps): TutorialSessio
   el('tut-skip')?.addEventListener('click', e => {
     e.stopPropagation();
     uiClick('cancel');
+    deps.onDone();
     const goTo = then;
     stop();
     // Skipping is not refusing to play: someone on their way into a mode goes on.

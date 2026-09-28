@@ -140,6 +140,13 @@
   box-shadow: 0 0 14px rgba(255, 0, 127, 0.85);
 }
 
+/* Help, Full screen and Audio on fit one row on a 320px phone only this tight. */
+@media (max-width: 360px) {
+  .menu-bottom-controls { gap: 8px; }
+  .menu-control-btn,
+  .audio-toggle-btn { padding: 10px 13px; }
+}
+
 html, body {
   height: 100%;
   height: 100dvh;
@@ -1132,7 +1139,8 @@ select option {
   color: var(--ink-soft);
 }
 
-#tut-card-overlay {
+#tut-card-overlay,
+#offer-overlay {
   position: absolute;
   inset: 0;
   display: flex;
@@ -1172,4 +1180,155 @@ select option {
 
 .tut-card-actions .tut-primary {
   flex-basis: 100%;
+}
+
+
+/* ── Two-player seat card ──
+   One half per player, each facing its own: the top half is turned the way
+   #cue2 is. The whole half is the tap target. The line between them is drawn
+   because it is real: a touch belongs to the half it starts in. */
+#seat-card {
+  position: absolute;
+  inset: 0;
+  z-index: 27;
+  display: flex;
+  flex-direction: column;
+  background: rgba(6, 2, 16, 0.62);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  animation: pause-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.seat-half {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 16px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  --seat: var(--cyan);
+}
+
+.seat-top {
+  transform: rotate(180deg);
+  --seat: var(--pink);
+}
+
+.seat-divider {
+  flex: none;
+  border-top: 1px dashed rgba(255, 255, 255, 0.4);
+}
+
+.seat-title {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-title);
+  color: #ffffff;
+}
+
+.seat-line {
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-meta);
+  color: var(--ink-soft);
+}
+
+.seat-rules {
+  margin: 8px 0 4px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-meta);
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.seat-tap {
+  margin-top: 6px;
+  padding: 6px 18px;
+  border: 1px solid var(--seat);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-strong);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: #ffffff;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--seat) 45%, transparent);
+}
+
+.seat-half.ready .seat-tap {
+  background: var(--seat);
+  color: var(--void);
+}
+
+.seat-half.ready > :not(.seat-tap) {
+  opacity: 0.55;
+}
+
+/* A short phone gives each half little more than 160px: tighten, and keep
+   every rule, since the rules are why the card exists. */
+@media (max-height: 700px) {
+  .seat-half { gap: 1px; padding: 6px 12px; }
+  .seat-title { font-size: var(--fs-lg); }
+  .seat-line, .seat-rules { font-size: var(--fs-xs); }
+  .seat-rules { margin: 4px 0 2px; line-height: 1.3; }
+  .seat-tap { margin-top: 3px; padding: 4px 14px; }
+}
+
+/* ── Help screen, over the main menu ── */
+#help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(3, 2, 9, 0.84);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  animation: pause-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.help-card {
+  max-width: 440px;
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 24px 22px;
+}
+
+.help-replay {
+  width: 100%;
+  flex: none;
+  margin: 6px 0 16px;
+}
+
+.help-rules {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 12px;
+  margin-bottom: 18px;
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+}
+
+.help-rules dt {
+  font-weight: var(--fw-strong);
+  color: var(--menu-cyan);
+  white-space: nowrap;
+}
+
+.help-rules dd {
+  margin: 0;
+  font-weight: var(--fw-meta);
+  color: var(--ink);
 }

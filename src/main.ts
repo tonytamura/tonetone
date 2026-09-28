@@ -11,6 +11,9 @@ import { resetStartCountdown, updateCountdown } from './ui/Countdown';
 import { updateResultsEffects } from './ui/ResultsCelebration';
 import { exitToMenu, onExitToMenu, setPaused, setupMatchControls } from './ui/MatchControls';
 import { TUTORIAL_CLOCK, createTutorialSession } from './ui/TutorialUI';
+import { createSeatCard, needsSeatCard } from './ui/SeatCard';
+import { createFirstPlayOffer, setupHelpScreen, shouldOfferTutorial } from './ui/FirstPlay';
+import { hasSeenTutorial, markTutorialSeen } from './ui/Progress';
 import { settingsLine } from './game/Settings';
 import { initAudio, wakeAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
 import { uiClick } from './audio/UiSounds';
@@ -115,8 +118,9 @@ const tutorial = createTutorialSession({
     fadeDroneForResults(false);
     handleResize();
   },
-  play: mode => setPlayers(mode),
+  play: mode => startMode(mode),
   toMenu: () => exitToMenu(game),
+  onDone: () => markTutorialSeen(),
 });
 // However the player leaves for the menu, the tutorial hands its settings back.
 onExitToMenu(() => tutorial.stop());
@@ -133,6 +137,38 @@ function newMatch() {
 
 
 setupSettingsKnobs(() => game, () => renderCtx.H || window.innerHeight);
+
+/**
+ * The two-player seat card. While it is up the field waits: nothing moves and
+ * the start countdown does not run until both halves are ready.
+ */
+const seatCard = createSeatCard(() => { /* the frame loop resumes by itself */ });
+
+/**
+ * Start a match in `mode` from the menu or the tutorial: a two-player match
+ * opens with the seat card. "Play again" calls `newMatch` directly and so skips
+ * it, since it is the same pair in the same seats.
+ */
+function startMode(mode: PlayMode) {
+  setPlayers(mode);
+  if (needsSeatCard(mode)) seatCard.show();
+}
+
+const firstPlay = createFirstPlayOffer({
+  showMe: mode => tutorial.start({ then: mode }),
+  // Skipping is an answer too: the offer is not made again on this device.
+  skip: mode => { markTutorialSeen(); if (needsSeatCard(mode)) seatCard.show(); },
+});
+
+setupHelpScreen(() => tutorial.start({ then: null }));
+
+// Leaving for the menu takes down whatever the field was waiting behind.
+onExitToMenu(() => { firstPlay.dismiss(); seatCard.dismiss(); });
+
+/** Something is up in front of the field that it has to wait for. */
+function fieldHeld(): boolean {
+  return firstPlay.isOpen() || seatCard.isActive();
+}
 
 function setPlayers(mode: PlayMode) {
   // The menu owns the audio toggle while it is up, and it writes straight to
@@ -236,12 +272,17 @@ function frame(ts: number) {
   const W = renderCtx.W || window.innerWidth;
   const H = renderCtx.H || window.innerHeight;
 
-  tutorial.before();
-  const fr = advanceFrame(game, rawDt, W, H, clock, {
-    onMatchOver: g => { setPaused(g, false); endMatchUI(g, newMatch); },
-  });
-  clock = fr.clock;
-  tutorial.after(fr.dt, fr.threw);
+  // Held behind the first-play offer or the seat card, the field is drawn but
+  // does not move, and the start countdown does not run.
+  const held = fieldHeld();
+  if (!held) {
+    tutorial.before();
+    const fr = advanceFrame(game, rawDt, W, H, clock, {
+      onMatchOver: g => { setPaused(g, false); endMatchUI(g, newMatch); },
+    });
+    clock = fr.clock;
+    tutorial.after(fr.dt, fr.threw);
+  }
 
   if (game.matchOver && !game.paused) {
     updateResultsEffects(game, rawDt, W, H);
@@ -252,7 +293,7 @@ function frame(ts: number) {
   drawResultsCanvas(renderCtx, game);
   updateHUD(game, tutorial.isActive() ? TUTORIAL_CLOCK : undefined);
   refreshAllStrips();
-  updateCountdown(game, rawDt);
+  if (!held) updateCountdown(game, rawDt);
 
   requestAnimationFrame(frame);
 }
@@ -261,7 +302,14 @@ initMenuScreen(
   (selectedMode: PlayMode) => {
     initAudio();
     tutorial.stop();
-    setPlayers(selectedMode);
+    if (shouldOfferTutorial(hasSeenTutorial(), selectedMode)) {
+      // The chosen mode's field is set up and held behind the offer, so Skip
+      // goes straight into it.
+      setPlayers(selectedMode);
+      firstPlay.show(selectedMode);
+    } else {
+      startMode(selectedMode);
+    }
   },
   () => {
     initAudio();
@@ -279,10 +327,11 @@ setTimeout(handleResize, 60);
 setTimeout(handleResize, 300);
 requestAnimationFrame(frame);
 // `?tutorial` opens straight into the tutorial, ending on "Back to menu";
-// `?tutorial=solo` (or `ai`, `duel`) ends on "Start game" into that mode, the
-// way the first-play offer will. Temporary: it is how the tutorial can be tried
-// before Phase 3 gives it a real way in. Started after the resize passes above
-// settle, since the board is laid out in fractions of the field.
+// `?tutorial=solo` (or `ai`, `duel`) ends on "Start game" into that mode, as the
+// first-play offer does. Kept as a way to reach it directly for testing, since
+// the real ways in — the offer and the help button — each need a menu tap.
+// Started after the resize passes above settle, since the board is laid out in
+// fractions of the field.
 const tutorialParam = new URLSearchParams(window.location.search).get('tutorial');
 if (tutorialParam !== null) {
   const then = (['solo', 'ai', 'duel'] as PlayMode[]).find(m => m === tutorialParam) ?? null;
