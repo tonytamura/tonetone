@@ -3,6 +3,7 @@ import { P_COLOR } from '../graphics/Renderer';
 import { initAudio, fadeDroneForResults } from '../audio/SynthEngine';
 import { formatClock } from '../game/Clock';
 import { setHidden } from './Dom';
+import { ResultNotes } from './Records';
 
 /**
  * `updateHUD` runs inside the rAF callback on every frame, but almost nothing it
@@ -79,7 +80,16 @@ export function updateHUD(game: Game, clockText?: string) {
   write(el('time2'), 'textContent', timeStr);
 }
 
-export function endMatchUI(game: Game, onRestart: () => void) {
+/**
+ * `notes` lets the caller add what only it knows — a record set, where the AI
+ * ladder goes next — to player 1's card: a headline in place of the card's own,
+ * and lines under the breakdown. Escaped here, so callers pass plain text.
+ */
+function escapeHtml(t: string): string {
+  return t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+}
+
+export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNotes) {
   game.matchOver = true;
   game.matchRunning = false;
   game.flashes = [];
@@ -132,9 +142,14 @@ export function endMatchUI(game: Game, onRestart: () => void) {
       }
     }
 
+    const mine = pIndex === 0 && notes;
+    if (mine && notes!.title) titleText = notes!.title;
+    const extra = mine ? notes!.lines.map(l => '<p class="result-note">' + escapeHtml(l) + '</p>').join('') : '';
+
     return (
-      '<h2 style="color:' + titleColor + '">' + titleText + '</h2>' +
+      '<h2 style="color:' + titleColor + '">' + escapeHtml(titleText) + '</h2>' +
       '<table>' + head + body + '</table>' +
+      extra +
       '<button class="again">Play again</button>'
     );
   }

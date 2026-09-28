@@ -17,7 +17,8 @@ export interface KeyValueStore {
   setItem(key: string, value: string): void;
 }
 
-function deviceStore(): KeyValueStore | null {
+/** The device's `localStorage`, or null where it cannot be reached. */
+export function deviceStore(): KeyValueStore | null {
   try {
     return typeof window !== 'undefined' && window.localStorage ? window.localStorage : null;
   } catch {

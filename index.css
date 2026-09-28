@@ -1447,3 +1447,39 @@ select option {
   font-size: 12px;
   opacity: 0.8;
 }
+
+/* Records, behind the Help screen's button: a section per table. */
+.records-body {
+  width: 100%;
+  margin: 8px 0 18px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+
+.records-section-title {
+  margin: 14px 0 6px;
+  font-weight: var(--fw-strong);
+  color: var(--menu-cyan);
+}
+
+.records-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 2px;
+  border-bottom: 1px solid rgba(172, 145, 208, 0.15);
+  color: var(--ink);
+}
+
+.records-row b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The results card's own lines under the breakdown: the record, the ladder. */
+.result-note {
+  margin: 10px 0 0;
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  text-align: center;
+}

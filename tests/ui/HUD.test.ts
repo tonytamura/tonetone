@@ -161,4 +161,18 @@ describe('endMatchUI', () => {
     expect(elements.overcard1.innerHTML).toContain(`<h2 style="color:${P_COLOR[0]}">You Lost</h2>`);
     expect(elements.overcard2.hasAttribute('hidden')).toBe(true);
   });
+
+  it('takes a headline and lines from the caller, on player 1\'s card only', () => {
+    const game = createGame();
+    game.twoPlayer = false;
+    game.aiOn = false;
+    game.players[0].score = 500;
+
+    endMatchUI(game, () => {}, { title: 'New highest score', lines: ['Normal · previous <420>'] });
+
+    expect(elements.overcard1.innerHTML).toContain('>New highest score</h2>');
+    expect(elements.overcard1.innerHTML).not.toContain('>Score</h2>');
+    // Plain text in, escaped out.
+    expect(elements.overcard1.innerHTML).toContain('<p class="result-note">Normal · previous &lt;420&gt;</p>');
+  });
 });

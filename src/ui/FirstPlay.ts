@@ -13,6 +13,7 @@ import { PlayMode } from '../game/GameState';
 import { uiClick } from '../audio/UiSounds';
 import { RULE_ROWS } from './RulesText';
 import { fillCredits } from './Credits';
+import { RecordSection } from './Records';
 import { setHidden } from './Dom';
 
 /** Offer the tutorial exactly when it has not been seen, whichever mode was chosen. */
@@ -67,7 +68,7 @@ export function createFirstPlayOffer(handlers: {
  * the credits.
  * Replaying never resets the "seen" flag; it only shows the lesson again.
  */
-export function setupHelpScreen(onReplay: () => void) {
+export function setupHelpScreen(onReplay: () => void, recordsContent: () => RecordSection[] = () => []) {
   const rules = el('help-rules');
   if (rules) {
     rules.innerHTML = '';
@@ -80,7 +81,18 @@ export function setupHelpScreen(onReplay: () => void) {
     }
   }
   fillCredits(el('help-credits'));
-  const close = () => setHidden(el('help-overlay'), true);
+  const showCard = (records: boolean) => {
+    setHidden(document.querySelector('#help-overlay > .help-card:not(#records-card)') as HTMLElement | null, records);
+    setHidden(el('records-card'), !records);
+  };
+  const close = () => { setHidden(el('help-overlay'), true); showCard(false); };
+  el('help-records')?.addEventListener('click', e => {
+    e.stopPropagation();
+    uiClick('confirm');
+    fillRecords(el('records-body'), recordsContent());
+    showCard(true);
+  });
+  el('records-back')?.addEventListener('click', e => { e.stopPropagation(); uiClick('cancel'); showCard(false); });
   el('helpBtn')?.addEventListener('click', e => {
     e.stopPropagation();
     uiClick('confirm');
@@ -97,5 +109,27 @@ export function setupHelpScreen(onReplay: () => void) {
   // should reach it and choose a mode underneath.
   for (const type of ['pointerdown', 'pointerup'] as const) {
     el('help-overlay')?.addEventListener(type, e => e.stopPropagation());
+  }
+}
+
+/** Fill the Records card from `recordSections`. Read fresh each time it opens. */
+function fillRecords(root: HTMLElement | null, sections: RecordSection[]) {
+  if (!root) return;
+  root.innerHTML = '';
+  for (const sec of sections) {
+    const t = document.createElement('div');
+    t.className = 'records-section-title';
+    t.textContent = sec.title;
+    root.appendChild(t);
+    for (const r of sec.rows) {
+      const row = document.createElement('div');
+      row.className = 'records-row';
+      const label = document.createElement('span');
+      label.textContent = r.label;
+      const value = document.createElement('b');
+      value.textContent = r.value;
+      row.append(label, value);
+      root.appendChild(row);
+    }
   }
 }

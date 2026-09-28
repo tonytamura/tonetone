@@ -13,10 +13,15 @@ import { initAudio } from '../audio/SynthEngine';
  */
 import { renderSoundTester, updateSoundTesterReadouts } from './SoundTester';
 
+export interface SettingsHandle {
+  /** The preset the knobs currently add up to, or null when they match none. */
+  activePreset(): string | null;
+}
+
 export function setupSettingsKnobs(
   getGame: () => Game,
   getHeight: () => number = () => window.innerHeight
-) {
+): SettingsHandle {
   // Render Sound FX Tester list in the options panel container if present
   const soundTesterContainer = document.getElementById('sound-tester-container');
   if (soundTesterContainer) {
@@ -113,4 +118,5 @@ export function setupSettingsKnobs(
   }
 
   reportPresetState();
+  return { activePreset: () => presetMatching(liveValues) };
 }

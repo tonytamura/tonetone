@@ -14,6 +14,8 @@ import { TUTORIAL_CLOCK, createTutorialSession } from './ui/TutorialUI';
 import { createSeatCard, needsSeatCard } from './ui/SeatCard';
 import { createFirstPlayOffer, setupHelpScreen, shouldOfferTutorial } from './ui/FirstPlay';
 import { hasSeenTutorial, markTutorialSeen } from './ui/Progress';
+import { ResultNotes, loadRecords, recordSections, soloRecordNotes, submitScore } from './ui/Records';
+import { PRESETS, presetIds } from './sim/Knobs';
 import { settingsLine } from './game/Settings';
 import { initAudio, wakeAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
 import { uiClick } from './audio/UiSounds';
@@ -136,7 +138,7 @@ function newMatch() {
 }
 
 
-setupSettingsKnobs(() => game, () => renderCtx.H || window.innerHeight);
+const settings = setupSettingsKnobs(() => game, () => renderCtx.H || window.innerHeight);
 
 /**
  * The two-player seat card. While it is up the field waits: nothing moves and
@@ -160,7 +162,22 @@ const firstPlay = createFirstPlayOffer({
   skip: mode => { markTutorialSeen(); if (needsSeatCard(mode)) seatCard.show(); },
 });
 
-setupHelpScreen(() => tutorial.start({ then: null }));
+setupHelpScreen(
+  () => tutorial.start({ then: null }),
+  () => recordSections(loadRecords(), presetIds().map(id => ({ id, label: PRESETS[id].label }))),
+);
+
+/**
+ * What the results card says about records: a solo match on a preset puts its
+ * score against that preset's best. Only here, where a real match ends, so the
+ * harness and the tutorial never touch the records.
+ */
+function resultNotes(g: typeof game): ResultNotes | undefined {
+  if (g.twoPlayer) return undefined;
+  const preset = settings.activePreset();
+  if (!preset) return soloRecordNotes(null, null);
+  return soloRecordNotes(submitScore('solo', preset, g.players[0].score), PRESETS[preset].label);
+}
 
 // Leaving for the menu takes down whatever the field was waiting behind.
 onExitToMenu(() => { firstPlay.dismiss(); seatCard.dismiss(); });
@@ -282,7 +299,7 @@ function frame(ts: number) {
   if (!held) {
     tutorial.before();
     const fr = advanceFrame(game, rawDt, W, H, clock, {
-      onMatchOver: g => { setPaused(g, false); endMatchUI(g, newMatch); },
+      onMatchOver: g => { setPaused(g, false); endMatchUI(g, newMatch, resultNotes(g)); },
     });
     clock = fr.clock;
     tutorial.after(fr.dt, fr.threw);
