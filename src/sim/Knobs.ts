@@ -18,6 +18,9 @@ import { COLORS, MAX_COLORS, MIN_COLORS, SHOT_DECAY, SPECIALS, WHITE_ODDS, color
 import { AudioStore, applyDrone, applyGain, setLatencyHint } from '../audio/SynthEngine';
 import { formatClock } from '../game/Clock';
 
+import { AI_LEVELS } from '../game/AI';
+import { FORCED_AI_LEVEL, setForcedAiLevel } from '../game/AIChoice';
+
 export type KnobValue = number | string;
 
 export interface KnobContext {
@@ -107,6 +110,14 @@ const KNOB_SPECS = {
     apply: v => setWhiteOdds(v),
     format: v => pct(v / (COLORS + 1)),
     read: () => WHITE_ODDS,
+  },
+
+  ailevel: {
+    // 0 is the ladder; 1..N forces that rung, for feeling one level at a time.
+    group: 'game', kind: 'range', min: 0, max: AI_LEVELS.length, step: 1, default: 0,
+    apply: v => setForcedAiLevel(v),
+    format: v => (v === 0 ? 'ladder' : AI_LEVELS[v - 1]?.label ?? String(v)),
+    read: () => FORCED_AI_LEVEL,
   },
 
   colours: {
@@ -631,6 +642,7 @@ export interface ConfigSnapshot {
   colors: number;
   specials: boolean;
   whiteOdds: number;
+  forcedAi: number;
   shotDecay: number;
   audio: { volume: number; lockVol: number; breakVol: number; boomVol: number; clickVol: number; drone: number; haptics: number; latency: number; boomCut: number; lockTone: number };
 }
@@ -641,6 +653,7 @@ export function snapshotConfig(): ConfigSnapshot {
     colors: COLORS,
     specials: SPECIALS,
     whiteOdds: WHITE_ODDS,
+    forcedAi: FORCED_AI_LEVEL,
     shotDecay: SHOT_DECAY,
     audio: {
       volume: AudioStore.volume, lockVol: AudioStore.lockVol, breakVol: AudioStore.breakVol,
@@ -656,6 +669,7 @@ export function restoreConfig(snap: ConfigSnapshot): void {
   setColorsCount(snap.colors);
   setSpecialsToggle(snap.specials);
   setWhiteOdds(snap.whiteOdds);
+  setForcedAiLevel(snap.forcedAi);
   setShotDecay(snap.shotDecay);
   Object.assign(AudioStore, snap.audio);
 }

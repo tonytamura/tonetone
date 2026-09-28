@@ -79,8 +79,11 @@ export interface AiProfile {
    * scenarios run this rung, so the ladder cannot move them.
    */
   classic?: boolean;
-  /** `biggest`: the largest group, any colour. `value`: what the loaded ball would score on it. */
-  target: 'biggest' | 'value';
+  /**
+   * `biggest`: the largest group, any colour. `nearest`: the closest group of
+   * two or more. `value`: what the loaded ball would score on it.
+   */
+  target: 'biggest' | 'nearest' | 'value';
   /**
    * `random`: 0.35-1.0 per target. `intent`: soft to lock, hard enough to
    * arrive booming. `max`: as hard as the bay throws, every time.
@@ -259,11 +262,14 @@ function chooseTarget(p: LauncherPlayer, game: Game, width: number, height: numb
   for (const g of game.groups) {
     const live = g.members.filter(m => !m.ghost);
     if (!live.length) continue;
-    if (prof.target === 'biggest') {
+    if (prof.target === 'biggest' || prof.target === 'nearest') {
       if (live.length < 2) continue;
       const d = Math.hypot(g.com.x - mouth.x, g.com.y - mouth.y);
       const v = valueOn(p.loaded, g, live[0], d, prof, height);
-      const c: Choice = { key: Math.min(...live.map(m => m.id)), x: g.com.x, y: g.com.y, strength: v.strength, value: live.length };
+      const c: Choice = {
+        key: Math.min(...live.map(m => m.id)), x: g.com.x, y: g.com.y, strength: v.strength,
+        value: prof.target === 'nearest' ? -d : live.length,
+      };
       if (!best || c.value > best.value) best = c;
       continue;
     }
@@ -280,7 +286,7 @@ function chooseTarget(p: LauncherPlayer, game: Game, width: number, height: numb
     const c: Choice = { key: Math.min(...live.map(m => m.id)), x: point.x, y: point.y, strength: v.strength, value: v.value };
     if (!best || c.value > best.value) best = c;
   }
-  if (best || prof.target === 'biggest') return best;
+  if (best || prof.target !== 'value') return best;
   return null;
 }
 

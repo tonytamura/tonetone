@@ -19,6 +19,7 @@ import {
 } from './ui/Records';
 import { AI_LEVELS, ladderStep } from './game/AI';
 import { setPlannerBudget } from './game/AIPlanner';
+import { FORCED_AI_LEVEL } from './game/AIChoice';
 import { PRESETS, presetIds } from './sim/Knobs';
 import { settingsLine } from './game/Settings';
 import { initAudio, wakeAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
@@ -135,7 +136,8 @@ function newMatch() {
   // Against the AI, the rung the last result moved the ladder to (Play again
   // included). Read here, not when the result is decided, so the results card
   // still names the AI that was just played.
-  if (game.aiOn) game.aiLevel = loadLadderLevel(AI_LEVELS.length);
+  // A level forced in Options (Custom) wins over the ladder's.
+  if (game.aiOn) game.aiLevel = FORCED_AI_LEVEL > 0 ? FORCED_AI_LEVEL - 1 : loadLadderLevel(AI_LEVELS.length);
   resetField(game, renderCtx.W, renderCtx.H);
   setPaused(game, false);
   // Hold fire for one reload so no ball leaves a launcher until the start countdown ends.
@@ -210,6 +212,8 @@ function resultNotes(g: typeof game): ResultNotes | undefined {
  */
 function ladderResult(g: typeof game, preset: string | null): ResultNotes {
   const played = AI_LEVELS[g.aiLevel];
+  // Forced in Options, to feel one level: the ladder stays where it was.
+  if (FORCED_AI_LEVEL > 0) return { lines: [`${played.label}, set in Options. The ladder does not move.`] };
   const mine = g.players[0].score, theirs = g.players[1].score;
   const next = ladderStep(g.aiLevel, mine, theirs);
   const direction = next > g.aiLevel ? 'up' : next < g.aiLevel ? 'down' : 'stay';
