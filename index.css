@@ -355,6 +355,13 @@ input[type=range] {
   border-top: 1px solid rgba(79, 240, 255, 0.32);
   z-index: 10;
 }
+/* Against the AI the top strip shows only the AI's chips (topStripFor in
+   src/ui/ControlStrips.ts): its score and the clock are in the player's strip. */
+#cue2.deck-only .score-p1,
+#cue2.deck-only .score-p2,
+#cue2.deck-only .bar-time {
+  display: none;
+}
 /* A 320px phone needs the room: at the full 20px gap and 16px padding, vs AI's
    "YOU 9999 · chips · AI 9999 20:00" ran a pixel off the right edge. */
 @media (max-width: 360px) {

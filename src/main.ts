@@ -2,7 +2,7 @@ import { PlayMode, createGame, resetField, startMatch } from './game/GameState';
 import { advanceFrame } from './sim/Frame';
 import { createRenderContext, resizeRenderer, drawGame, drawResultsCanvas, drawTutorialRing, drawTutorialHint } from './graphics/Renderer';
 import { clearSpriteCache } from './graphics/Sprites';
-import { createStrip } from './ui/ControlStrips';
+import { createStrip, topStripFor } from './ui/ControlStrips';
 import { setupTouchControls } from './ui/TouchControls';
 import { updateHUD, endMatchUI } from './ui/HUD';
 import { setupSettingsKnobs } from './ui/SettingsModal';
@@ -177,7 +177,11 @@ function setPlayers(mode: PlayMode) {
   setSound(AudioStore.soundOn);
   game.twoPlayer = mode !== 'solo';
   game.aiOn = mode === 'ai';
-  setHidden(document.getElementById('cue2'), !(game.twoPlayer && !game.aiOn));
+  const top = topStripFor(mode);
+  const cue2 = document.getElementById('cue2');
+  setHidden(cue2, top === 'none');
+  cue2?.classList.toggle('deck-only', top === 'deck');
+  cue2?.classList.toggle('flip', top === 'full');
   newMatch();
   handleResize();
 }

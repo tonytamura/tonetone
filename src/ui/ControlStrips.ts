@@ -4,6 +4,22 @@ import { PhysicsConfig } from '../physics/Config';
 import { uiFont } from '../graphics/Fonts';
 import { ballSprite, getSpriteEpoch, inkOn } from '../graphics/Sprites';
 import { kindLabel } from '../game/Rules';
+import { PlayMode } from '../game/GameState';
+
+/**
+ * What the top strip shows in each mode.
+ *
+ * - `none` in Solo, which has one seat.
+ * - `deck` against the AI: the AI's loaded ball and the one after it, so the
+ *   player can see what is coming at them, and nothing else. Its score is
+ *   already in the player's own strip, next to theirs, and a second
+ *   scoreboard at the top would only repeat it. It is not rotated: nobody sits
+ *   at the top, and the chips read in order from the player's side.
+ * - `full` for two players: the top player's own strip, rotated to face them.
+ */
+export function topStripFor(mode: PlayMode): 'none' | 'deck' | 'full' {
+  return mode === 'solo' ? 'none' : mode === 'ai' ? 'deck' : 'full';
+}
 
 export interface StripIds {
   chipNow: string;
