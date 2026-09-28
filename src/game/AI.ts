@@ -152,6 +152,9 @@ export const AI_STRATEGIES: Record<string, AiProfile> = {
  *   AI3 hard: the biggest group, full power      beats AI2 68% ±7
  *   AGI simulates 15 throws x 3 tries, then aims beats AI3 66% ±7
  *
+ * Confirmed on the final table with `npm run sim -- ladder --runs 20`: AI2 v
+ * AI1 75% ±7, AI3 v AI2 68% ±7, AGI v AI3 66% ±7, each clearing 2 SE.
+ *
  * Longer ladders were tried and did not hold: aim precision and rule-of-thumb
  * shot choice barely move a result in this game, and the planners short of AGI
  * could not be told apart from it (55% ±8). The pre-ladder AI (`current`) plays

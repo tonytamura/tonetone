@@ -133,8 +133,9 @@ simulation that no longer exists.
 - **Name the proxy's limits.** `--policy engine-ai` is the pre-ladder AI (rung
   AI5): it aims at the biggest group and never checks whether the line is clear.
   It cannot represent shot selection. If that is the skill in question, say so
-  instead of reporting its number. The planning rungs (`--policy ai6` … `agi`)
+  instead of reporting its number. `--policy agi` (and the `planner` strategy)
   do select shots, by simulating candidates, but they are slow to run.
+  `npm run sim -- tournament` compares AI strategies head to head.
 - Watch `mean boom size` next to `booms per minute`. A high rate of 2-ball
   booms is not the same game as occasional 9-ball booms, and the rate alone
   cannot tell them apart.
