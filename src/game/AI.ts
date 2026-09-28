@@ -3,7 +3,7 @@ import { aimAt, launchPointOf, launchSpeedOf } from '../physics/LauncherBays';
 import { PhysicsConfig } from '../physics/Config';
 import { boomPay, lockPay, peelPay } from './Rules';
 import type { Game } from './GameState';
-import { Candidate, bestThrow } from './AIPlanner';
+import { Candidate, PlanJob } from './AIPlanner';
 
 export function aiAim(p: LauncherPlayer, groups: Group[], balls: Ball[], width: number, height: number, twoPlayer: boolean) {
   let best: Group | null = null, most = 0;
@@ -98,32 +98,51 @@ export interface AiProfile {
   powerError: number;
   /** Share of the way to the wanted aim turned each frame: how fast it settles. */
   turn: number;
+  /** Chance, per target, of a careless throw: any angle, any strength. */
+  wild?: number;
   /** How much above the boom speed an intended boom should arrive. */
   boomMargin: number;
   /**
-   * Think before throwing: shortly before the ring fills, try candidate throws
-   * on a copy of the table (`AIPlanner`) and aim the best. `lead` is how long
-   * before the throw it decides, `seconds` how far ahead each try looks.
+   * Think before throwing: once the ring is `window` seconds from full, take
+   * the table as it will be at the throw and try candidate throws on copies of
+   * it (`AIPlanner`), each followed `seconds` ahead; aim the best found by the
+   * time it throws.
    */
-  plan?: { lead: number; seconds: number; strengths: number[]; grid: number; targets: number };
+  plan?: { window: number; seconds: number; strengths: number[]; grid: number; targets: number };
 }
 
 const CLASSIC: Omit<AiProfile, 'id' | 'label'> = {
   target: 'biggest', power: 'random', clearLine: false, aimErrorDeg: 0, powerError: 0, turn: 0.15, boomMargin: 1,
 };
 
-/** The ladder, weakest first. The tenth rung is AGI. */
+/**
+ * The ladder, weakest first. The tenth rung is AGI.
+ *
+ * Measured before this table was written (Notion, AI ladder task): in this
+ * game aim precision and rule-of-thumb shot choice hardly move a result. An AI
+ * with 14 degrees of aim error played the pre-ladder AI to 53% ±8, and ones that
+ * chose targets by the pay table and threw softly to lock lost to it (25-31%).
+ * What does move it is how many throws are careless, at the bottom, and
+ * simulating throws before choosing one, at the top. So the rungs below the
+ * classic AI throw some of their balls wild, and the rungs above it plan, each
+ * trying more candidate throws and looking further ahead.
+ */
+const WILD: Omit<AiProfile, 'id' | 'label' | 'wild'> = { ...CLASSIC };
+const PLAN = (targets: number, grid: number, strengths: number[], seconds: number): Omit<AiProfile, 'id' | 'label'> => ({
+  ...CLASSIC, turn: 0.35, plan: { window: 2, seconds, strengths, grid, targets },
+});
+
 export const AI_LEVELS: AiProfile[] = [
-  { id: 'ai1', label: 'AI1', ...CLASSIC, aimErrorDeg: 14, turn: 0.05 },
-  { id: 'ai2', label: 'AI2', ...CLASSIC, aimErrorDeg: 7, turn: 0.08 },
-  { id: 'ai3', label: 'AI3', ...CLASSIC, classic: true },
-  { id: 'ai4', label: 'AI4', ...CLASSIC, power: 'intent', aimErrorDeg: 3, powerError: 0.05, boomMargin: 1.15 },
-  { id: 'ai5', label: 'AI5', ...CLASSIC, target: 'value', power: 'intent', aimErrorDeg: 3, powerError: 0.05, boomMargin: 1.15 },
-  { id: 'ai6', label: 'AI6', ...CLASSIC, target: 'value', power: 'intent', clearLine: true, aimErrorDeg: 3, powerError: 0.05, boomMargin: 1.15 },
-  { id: 'ai7', label: 'AI7', ...CLASSIC, target: 'value', power: 'intent', clearLine: true, aimErrorDeg: 2, powerError: 0.03, turn: 0.25, boomMargin: 1.15 },
-  { id: 'ai8', label: 'AI8', ...CLASSIC, target: 'value', power: 'intent', clearLine: true, aimErrorDeg: 1, powerError: 0.02, turn: 0.35, boomMargin: 1.12 },
-  { id: 'ai9', label: 'AI9', ...CLASSIC, target: 'value', power: 'intent', clearLine: true, aimErrorDeg: 0.5, powerError: 0.01, turn: 0.5, boomMargin: 1.1 },
-  { id: 'agi', label: 'AGI', ...CLASSIC, target: 'value', power: 'intent', clearLine: true, aimErrorDeg: 0, powerError: 0, turn: 1, boomMargin: 1.1 },
+  { id: 'ai1', label: 'AI1', ...WILD, wild: 1 },
+  { id: 'ai2', label: 'AI2', ...WILD, wild: 0.7 },
+  { id: 'ai3', label: 'AI3', ...WILD, wild: 0.4 },
+  { id: 'ai4', label: 'AI4', ...CLASSIC, classic: true },
+  { id: 'ai5', label: 'AI5', ...PLAN(2, 0, [1], 1) },
+  { id: 'ai6', label: 'AI6', ...PLAN(4, 0, [1], 1.2) },
+  { id: 'ai7', label: 'AI7', ...PLAN(6, 5, [1], 1.2) },
+  { id: 'ai8', label: 'AI8', ...PLAN(6, 9, [1], 1.5) },
+  { id: 'ai9', label: 'AI9', ...PLAN(5, 7, [0.5, 1], 2) },
+  { id: 'agi', label: 'AGI', ...PLAN(6, 9, [0.5, 1], 2) },
 ];
 
 /** The rung that plays as the pre-ladder AI did. */
@@ -146,8 +165,11 @@ interface AiState {
   errDeg: number;
   errPow: number;
   idleDeg?: number;
-  /** A planning AI's decision for the coming throw. */
+  /** A planning AI's decision for the coming throw, and the job making it. */
   planned?: Candidate;
+  job?: PlanJob;
+  /** This target's careless angle, when the throw is a wild one. */
+  wildDeg?: number;
 }
 
 function stateOf(p: LauncherPlayer): AiState {
@@ -289,12 +311,17 @@ export function aiAimLevel(p: LauncherPlayer, game: Game, width: number, height:
   const st = stateOf(p);
   const want = { ...p };
   if (prof.plan) {
-    // Decide once per reload, `lead` seconds before the throw, and hold it.
-    if (p.reload > prof.plan.lead) st.planned = undefined;
-    else if (!st.planned) {
-      const who = game.players.indexOf(p);
-      const best = bestThrow(game, who, planCandidates(p, game, width, height, prof.plan), prof.plan.seconds, width, height, game.nextId * 7919);
-      st.planned = best ?? undefined;
+    // One job per reload: started when the ring is `window` from full, worked
+    // on each frame, and its best so far aimed at the moment of the throw.
+    if (p.reload > prof.plan.window) { st.job = undefined; st.planned = undefined; }
+    else {
+      if (!st.job) {
+        const who = game.players.indexOf(p);
+        st.job = new PlanJob(game, who, planCandidates(p, game, width, height, prof.plan), prof.plan.seconds,
+          p.reload, width, height, game.nextId * 7919);
+      }
+      if (!st.job.done) st.job.run();
+      if (st.job.best) st.planned = st.job.best;
     }
     if (st.planned) {
       p.aimDeg += (st.planned.aimDeg - p.aimDeg) * prof.turn;
@@ -309,11 +336,13 @@ export function aiAimLevel(p: LauncherPlayer, game: Game, width: number, height:
       st.errDeg = gauss() * prof.aimErrorDeg;
       st.errPow = gauss() * prof.powerError;
       if (prof.power === 'random') st.errPow += 0.35 + Math.random() * 0.65;
+      st.wildDeg = prof.wild && Math.random() < prof.wild ? Math.random() * 170 - 85 : undefined;
+      if (st.wildDeg !== undefined) st.errPow = Math.random();
     }
     aimAt(want, choice.x, choice.y, width, height, game.twoPlayer);
-    want.aimDeg = Math.max(-90, Math.min(90, want.aimDeg + st.errDeg));
+    want.aimDeg = st.wildDeg ?? Math.max(-90, Math.min(90, want.aimDeg + st.errDeg));
     const base = prof.power === 'max' ? 1 : prof.power === 'random' ? 0 : choice.strength;
-    want.strength = Math.max(0, Math.min(1, base + st.errPow));
+    want.strength = st.wildDeg !== undefined ? st.errPow : Math.max(0, Math.min(1, base + st.errPow));
     st.idleDeg = undefined;
   } else {
     // Nothing worth a throw: settle on one idle angle rather than wander.

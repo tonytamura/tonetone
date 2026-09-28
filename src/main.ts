@@ -18,6 +18,7 @@ import {
   ResultNotes, ladderNotes, loadLadderLevel, loadRecords, recordSections, saveLadderLevel, soloRecordNotes, submitScore,
 } from './ui/Records';
 import { AI_LEVELS, ladderStep } from './game/AI';
+import { setPlannerBudget } from './game/AIPlanner';
 import { PRESETS, presetIds } from './sim/Knobs';
 import { settingsLine } from './game/Settings';
 import { initAudio, wakeAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
@@ -144,6 +145,10 @@ function newMatch() {
   resetStartCountdown();
 }
 
+
+// The planning AIs spread their thinking over the frames before a throw, at
+// most this long per frame, so a slow device thinks less rather than stutters.
+setPlannerBudget(4);
 
 const settings = setupSettingsKnobs(() => game, () => renderCtx.H || window.innerHeight);
 
