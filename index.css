@@ -1340,6 +1340,11 @@ select option {
   max-height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+  /* .confirm-card centres its column. Once the credits made this card taller
+     than a small screen, centring pushed the title above the top edge, where
+     no scroll could reach it. Start from the top; a card that fits is the
+     height of its content either way. */
+  justify-content: flex-start;
   padding: 24px 22px;
 }
 
