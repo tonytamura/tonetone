@@ -9,6 +9,7 @@ import { panOf } from '../audio/SoundEvents';
 import { CollisionState, RAIN_BLINK, RAIN_GRACE } from '../physics/CollisionSolver';
 import { stopAllVoices } from '../audio/SynthEngine';
 import { TAU } from '../math';
+import { CLASSIC_LEVEL } from './AI';
 
 /**
  * How the seats are filled for a match.
@@ -53,6 +54,8 @@ export interface Game {
   nextId: number;
   twoPlayer: boolean;
   aiOn: boolean;
+  /** Which rung of the AI ladder plays player 2 when `aiOn`; see `AI_LEVELS`. */
+  aiLevel: number;
   showLabels: boolean;
   showStats: boolean;
   matchLen: number;
@@ -91,6 +94,7 @@ export function createGame(): Game {
     nextId: 1,
     twoPlayer: false,
     aiOn: false,
+    aiLevel: CLASSIC_LEVEL,
     showLabels: false,
     showStats: false,
     matchLen: 120,

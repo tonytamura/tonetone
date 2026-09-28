@@ -4,6 +4,7 @@ import { initAudio, fadeDroneForResults } from '../audio/SynthEngine';
 import { formatClock } from '../game/Clock';
 import { setHidden } from './Dom';
 import { ResultNotes } from './Records';
+import { AI_LEVELS } from '../game/AI';
 
 /**
  * `updateHUD` runs inside the rAF callback on every frame, but almost nothing it
@@ -49,7 +50,8 @@ export function updateHUD(game: Game, clockText?: string) {
 
   // Score display
   const p1Label = game.aiOn ? 'YOU' : (game.twoPlayer ? 'P1' : 'SCORE');
-  const p2Label = game.aiOn ? 'AI' : 'P2';
+  // Against the AI, its rung's own name: AI1 … AI9, AGI.
+  const p2Label = game.aiOn ? (AI_LEVELS[game.aiLevel]?.label ?? 'AI') : 'P2';
 
   const formatScore = (label: string, pts: number) =>
     `<span class="score-lbl">${label}</span><span class="score-num">${pts}</span>`;
@@ -108,7 +110,7 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
     ['knocked loose', (p: any) => cell(p.peelPts || 0, p.peels)],
   ];
 
-  const them = game.aiOn ? 'AI' : 'P2';
+  const them = game.aiOn ? (AI_LEVELS[game.aiLevel]?.label ?? 'AI') : 'P2';
   const me = game.aiOn ? 'YOU' : 'P1';
   const head = solo ? '<tr><th></th><th class="p1">YOU</th></tr>'
                     : '<tr><th></th><th class="p1">' + me + '</th><th class="p2">' + them + '</th></tr>';

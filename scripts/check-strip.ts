@@ -64,8 +64,12 @@ async function main() {
     for (const [w, h] of SCREENS) {
       for (const [mode, label] of MODES) {
         const ctx = await browser.newContext({ viewport: { width: w, height: h } });
-        // Straight into the mode: no first-play offer.
-        await ctx.addInitScript(() => localStorage.setItem('toneboom.tutorial', 'done'));
+        // Straight into the mode, and against the AI with the widest name on
+        // the ladder, AGI.
+        await ctx.addInitScript(() => {
+          localStorage.setItem('toneboom.tutorial', 'done');
+          localStorage.setItem('toneboom.ladder', JSON.stringify({ v: 1, level: 9 }));
+        });
         const page = await ctx.newPage();
         await page.goto(url);
         await page.waitForTimeout(1200);

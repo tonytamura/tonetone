@@ -83,3 +83,33 @@ describe('the Records screen', () => {
     expect(solo.rows).toEqual([{ label: 'Normal', value: '–' }, { label: 'Chaos', value: '90' }]);
   });
 });
+
+import { LADDER_KEY, ladderNotes, loadLadderLevel, saveLadderLevel } from '../../src/ui/Records';
+
+describe('the AI ladder on this device', () => {
+  it('starts on the first rung and keeps where it got to', () => {
+    const s = memoryStore();
+    expect(loadLadderLevel(10, s)).toBe(0);
+    saveLadderLevel(4, s);
+    expect(loadLadderLevel(10, s)).toBe(4);
+  });
+
+  it('reads a stored rung the ladder no longer has as the first', () => {
+    const s = memoryStore();
+    for (const raw of ['{"v":1,"level":12}', '{"v":1,"level":-1}', '{"v":1,"level":2.5}', 'x', '{"v":9,"level":3}']) {
+      s.data.set(LADDER_KEY, raw);
+      expect(loadLadderLevel(10, s), raw).toBe(0);
+    }
+  });
+
+  it('says where the next match goes, and the best against this AI', () => {
+    const none = { isNew: false, best: 0, previous: null };
+    expect(ladderNotes('AI3', 'AI4', 'up', false, none).lines).toEqual(['Next: AI4']);
+    expect(ladderNotes('AI3', 'AI2', 'down', false, none).lines).toEqual(['Back to AI2']);
+    expect(ladderNotes('AI3', 'AI3', 'stay', false, none).lines).toEqual(['Again: AI3']);
+    expect(ladderNotes('AI4', 'AI4', 'stay', false, { isNew: true, best: 700, previous: 650 }).lines)
+      .toEqual(['Again: AI4', 'New best against AI4: 700']);
+    expect(ladderNotes('AI4', 'AI5', 'up', false, { isNew: false, best: 900, previous: 900 }).lines)
+      .toEqual(['Next: AI5', 'Best against AI4: 900']);
+  });
+});

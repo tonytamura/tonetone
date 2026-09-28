@@ -17,7 +17,7 @@ import {
   throwBall,
   toCollisionState,
 } from '../game/GameState';
-import { aiAim } from '../game/AI';
+import { aiAimLevel } from '../game/AI';
 import { playSoundEvents } from '../audio/SoundEvents';
 
 /** Frames longer than this are treated as a hitch and replaced by FALLBACK_DT. */
@@ -124,7 +124,7 @@ export function advanceFrame(
   for (const p of game.players) if (p.reload > 0) p.reload = Math.max(0, p.reload - dt);
 
   if (game.aiOn && !game.matchOver) {
-    aiAim(game.players[1], game.groups, game.balls, width, height, game.twoPlayer);
+    aiAimLevel(game.players[1], game, width, height, game.aiLevel);
   }
 
   let fired = 0;

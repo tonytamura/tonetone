@@ -68,3 +68,35 @@ describe('AI module', () => {
     expect((aiPlayer as any)._targetStrength).toBeLessThanOrEqual(1.0);
   });
 });
+
+import { AI_LEVELS, CLASSIC_LEVEL, ladderStep, launchSpeedToArrive, strengthForSpeed } from '../../src/game/AI';
+import { launchSpeedOf } from '../../src/physics/LauncherBays';
+import { PhysicsConfig } from '../../src/physics/Config';
+
+describe('the AI ladder', () => {
+  it('has ten rungs, AI1 to AI9 then AGI, with the pre-ladder AI among them', () => {
+    expect(AI_LEVELS.map(l => l.label)).toEqual(['AI1', 'AI2', 'AI3', 'AI4', 'AI5', 'AI6', 'AI7', 'AI8', 'AI9', 'AGI']);
+    expect(AI_LEVELS.filter(l => l.classic).length).toBe(1);
+    expect(AI_LEVELS[CLASSIC_LEVEL].classic).toBe(true);
+  });
+
+  it('moves up on a win, down on a loss, nowhere on a draw, and holds at both ends', () => {
+    const top = AI_LEVELS.length - 1;
+    expect(ladderStep(3, 500, 400)).toBe(4);
+    expect(ladderStep(3, 400, 500)).toBe(2);
+    expect(ladderStep(3, 450, 450)).toBe(3);
+    expect(ladderStep(0, 100, 900)).toBe(0);
+    expect(ladderStep(top, 900, 100)).toBe(top);
+  });
+
+  it('throws exactly as hard as it means to', () => {
+    recalcThresholds(620);
+    for (const s of [0.2, 0.5, 0.85, 1]) {
+      const speed = launchSpeedOf({ strength: s } as any);
+      expect(strengthForSpeed(speed)).toBeCloseTo(s, 6);
+    }
+    // Rolling costs speed in proportion to distance: 0 px costs nothing.
+    expect(launchSpeedToArrive(PhysicsConfig.BOOM_SPEED, 0)).toBe(PhysicsConfig.BOOM_SPEED);
+    expect(launchSpeedToArrive(PhysicsConfig.BOOM_SPEED, 300)).toBeGreaterThan(PhysicsConfig.BOOM_SPEED);
+  });
+});

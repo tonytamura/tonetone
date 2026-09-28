@@ -11,7 +11,7 @@ import {
 } from '../game/GameState';
 import { LauncherPlayer, Shot } from '../physics/Types';
 import { recalcThresholds } from '../physics/Config';
-import { aiAim } from '../game/AI';
+import { CLASSIC_LEVEL, aiAim, aiAimLevel, levelIndex } from '../game/AI';
 import { AudioStore } from '../audio/SynthEngine';
 import { FALLBACK_DT, advanceFrame } from './Frame';
 import { installSeededRandom, restoreRandom } from './Rng';
@@ -52,7 +52,15 @@ export const LONG_CHAIN = 8;
  * selection, no policy here represents it — say so instead of reporting the
  * number as a finding.
  */
-export type PolicyName = 'engine-ai' | 'fixed' | 'random' | 'sweep';
+export type PolicyName = 'engine-ai' | 'fixed' | 'random' | 'sweep' | string;
+
+/**
+ * A policy name that seats a rung of the AI ladder (`ai1` … `ai9`, `agi`), or -1.
+ * `engine-ai` is the classic rung, the AI as it shipped before the ladder.
+ */
+export function policyLevel(policy: PolicyName): number {
+  return policy === 'engine-ai' ? CLASSIC_LEVEL : levelIndex(policy);
+}
 
 export type Mode = PlayMode | 'idle';
 
@@ -72,6 +80,8 @@ export interface SimOptions {
   knobs?: Record<string, KnobValue>;
   /** Per-player aim policy. Player 2 is ignored in `ai` mode. */
   policies?: [PolicyName, PolicyName];
+  /** The AI ladder rung that plays player 2 in `ai` mode. Defaults to the classic rung. */
+  aiLevel?: number;
   /** Fixed frame delta. Defaults to 1/60s. */
   dt?: number;
   /** Frames between field samples. Invariants are always checked every frame. */
@@ -201,7 +211,9 @@ function applyPolicy(
       p.strength = 0.75;
       return;
     case 'fixed':
+      return;
     default:
+      if (policyLevel(policy) >= 0) aiAimLevel(p, game, width, height, policyLevel(policy));
       return;
   }
 }
@@ -237,6 +249,7 @@ export function runSim(opts: SimOptions = {}): RunResult {
     const game = createGame();
     game.twoPlayer = mode === 'duel' || mode === 'ai';
     game.aiOn = mode === 'ai';
+    if (opts.aiLevel !== undefined) game.aiLevel = opts.aiLevel;
 
     const ctx: KnobContext = { game, height };
     applyKnobDefaults(ctx);

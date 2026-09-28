@@ -14,7 +14,10 @@ import { TUTORIAL_CLOCK, createTutorialSession } from './ui/TutorialUI';
 import { createSeatCard, needsSeatCard } from './ui/SeatCard';
 import { createFirstPlayOffer, setupHelpScreen, shouldOfferTutorial } from './ui/FirstPlay';
 import { hasSeenTutorial, markTutorialSeen } from './ui/Progress';
-import { ResultNotes, loadRecords, recordSections, soloRecordNotes, submitScore } from './ui/Records';
+import {
+  ResultNotes, ladderNotes, loadLadderLevel, loadRecords, recordSections, saveLadderLevel, soloRecordNotes, submitScore,
+} from './ui/Records';
+import { AI_LEVELS, ladderStep } from './game/AI';
 import { PRESETS, presetIds } from './sim/Knobs';
 import { settingsLine } from './game/Settings';
 import { initAudio, wakeAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
@@ -128,6 +131,10 @@ const tutorial = createTutorialSession({
 onExitToMenu(() => tutorial.stop());
 
 function newMatch() {
+  // Against the AI, the rung the last result moved the ladder to (Play again
+  // included). Read here, not when the result is decided, so the results card
+  // still names the AI that was just played.
+  if (game.aiOn) game.aiLevel = loadLadderLevel(AI_LEVELS.length);
   resetField(game, renderCtx.W, renderCtx.H);
   setPaused(game, false);
   // Hold fire for one reload so no ball leaves a launcher until the start countdown ends.
@@ -164,7 +171,18 @@ const firstPlay = createFirstPlayOffer({
 
 setupHelpScreen(
   () => tutorial.start({ then: null }),
-  () => recordSections(loadRecords(), presetIds().map(id => ({ id, label: PRESETS[id].label }))),
+  () => {
+    const records = loadRecords();
+    const current = loadLadderLevel(AI_LEVELS.length);
+    const ladder = {
+      title: 'vs AI — best score',
+      rows: AI_LEVELS.map((l, i) => ({
+        label: i === current ? `${l.label} · next` : l.label,
+        value: l.id in records.ai ? String(records.ai[l.id]) : '\u2013',
+      })),
+    };
+    return recordSections(records, presetIds().map(id => ({ id, label: PRESETS[id].label })), [ladder]);
+  },
 );
 
 /**
@@ -173,10 +191,27 @@ setupHelpScreen(
  * harness and the tutorial never touch the records.
  */
 function resultNotes(g: typeof game): ResultNotes | undefined {
-  if (g.twoPlayer) return undefined;
   const preset = settings.activePreset();
+  if (g.aiOn) return ladderResult(g, preset);
+  if (g.twoPlayer) return undefined;
   if (!preset) return soloRecordNotes(null, null);
   return soloRecordNotes(submitScore('solo', preset, g.players[0].score), PRESETS[preset].label);
+}
+
+/**
+ * A vs AI match moves the ladder: a win one rung up, a loss one down, a draw
+ * nowhere. The next match, Play again included, is against the new rung. The
+ * best score against each AI counts on a named preset only, as solo records do.
+ */
+function ladderResult(g: typeof game, preset: string | null): ResultNotes {
+  const played = AI_LEVELS[g.aiLevel];
+  const mine = g.players[0].score, theirs = g.players[1].score;
+  const next = ladderStep(g.aiLevel, mine, theirs);
+  const direction = next > g.aiLevel ? 'up' : next < g.aiLevel ? 'down' : 'stay';
+  const atTop = mine > theirs && g.aiLevel === AI_LEVELS.length - 1;
+  const record = preset ? submitScore('ai', played.id, mine) : { isNew: false, best: 0, previous: null };
+  saveLadderLevel(next);
+  return ladderNotes(played.label, AI_LEVELS[next].label, direction, atTop, record);
 }
 
 // Leaving for the menu takes down whatever the field was waiting behind.

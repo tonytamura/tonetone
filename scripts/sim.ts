@@ -12,6 +12,7 @@ import { dirname, resolve } from 'node:path';
 import {
   EXTRACTORS, LONG_CHAIN, Mode, PolicyName, RunResult, SimOptions,
   extract, extractorNames, runMany, runSim,
+  policyLevel,
 } from '../src/sim/Harness';
 import {
   KNOBS,
@@ -24,6 +25,7 @@ import {
 } from '../src/sim/Knobs';
 import { TOLERANCE, violations } from '../src/sim/Metrics';
 import { catchUp, compare, estimate } from '../src/sim/Stats';
+import { AI_LEVELS } from '../src/game/AI';
 import { runPhysicsChecks } from '../src/sim/PhysicsChecks';
 import {
   BASELINE_VERSION, BaselineFile, INVARIANT_SCENARIOS,
@@ -52,7 +54,7 @@ const BOOLEAN_FLAGS = new Set(['json']);
 
 /** The options every command that runs a simulation shares. */
 const RUN_FLAGS = [
-  'mode', 'policy', 'seed', 'seconds', 'width', 'height', 'preset', 'set', 'invariants',
+  'mode', 'policy', 'seed', 'seconds', 'width', 'height', 'preset', 'set', 'invariants', 'ai',
 ] as const;
 
 /**
@@ -65,6 +67,7 @@ const COMMAND_FLAGS: Record<string, readonly string[]> = {
   run: [...RUN_FLAGS, 'runs', 'json'],
   sweep: [...RUN_FLAGS, 'runs', 'metrics', 'json'],
   compare: [...RUN_FLAGS, 'runs', 'metrics', 'a', 'b', 'json'],
+  ladder: [...RUN_FLAGS, 'runs', 'levels', 'reference', 'json'],
   invariants: ['seconds', 'json'],
   physics: ['json'],
   baseline: ['tolerance', 'json'],
@@ -162,9 +165,12 @@ function simOptionsFrom(args: Args): SimOptions {
   const mode = String(args.flags.mode ?? 'solo') as Mode;
   if (!['solo', 'duel', 'ai', 'idle'].includes(mode)) fail(`--mode must be solo, duel, ai or idle`);
   const policy = String(args.flags.policy ?? 'engine-ai') as PolicyName;
-  if (!['engine-ai', 'fixed', 'random', 'sweep'].includes(policy)) {
-    fail('--policy must be engine-ai, fixed, random or sweep');
+  if (!['engine-ai', 'fixed', 'random', 'sweep'].includes(policy) && policyLevel(policy) < 0) {
+    fail(`--policy must be engine-ai, fixed, random, sweep or an AI level (${AI_LEVELS.map(l => l.id).join(', ')})`);
   }
+  const aiFlag = args.flags.ai;
+  const aiLevel = aiFlag === undefined ? undefined : policyLevel(String(aiFlag));
+  if (aiLevel !== undefined && aiLevel < 0) fail(`--ai must be one of ${AI_LEVELS.map(l => l.id).join(', ')}`);
   return {
     mode,
     seed: num(args.flags, 'seed', 1),
@@ -176,6 +182,7 @@ function simOptionsFrom(args: Args): SimOptions {
     // is what makes "this preset, but with one knob moved" expressible.
     knobs: { ...parsePreset(args.flags.preset), ...parseSet(args.flags.set) },
     policies: [policy, policy],
+    aiLevel,
     invariants: args.flags.invariants !== 'false',
   };
 }
@@ -404,6 +411,73 @@ function cmdCompare(args: Args): number {
   return 0;
 }
 
+/**
+ * Seat each rung of the AI ladder against the one below it, in both seats, and
+ * say whether the higher one wins more than the noise allows.
+ *
+ * A match is a real one: the preset's clock (2:00 unless --set match= says
+ * otherwise) with specials on, as players get them. A win counts 1, a draw 0.5.
+ * The verdict is on the win rate minus 50%, and needs 2x its standard error.
+ * `--reference engine-ai` adds each rung's win rate against that fixed opponent,
+ * the one curve the whole ladder can be read from.
+ */
+function cmdLadder(args: Args): number {
+  const runs = Math.max(2, num(args.flags, 'runs', 20));
+  const base = simOptionsFrom(args);
+  const match = Number((base.knobs && base.knobs.match) ?? presetKnobs(String(args.flags.preset ?? 'normal')).match ?? 120);
+  const common: SimOptions = {
+    ...base, mode: 'duel', seconds: match + 1, invariants: false,
+    knobs: { ...(base.knobs || {}), match },
+  };
+  const ids = args.flags.levels ? String(args.flags.levels).split(',') : AI_LEVELS.map(l => l.id);
+  for (const id of ids) if (policyLevel(id) < 0) fail(`unknown level "${id}"`);
+  const reference = args.flags.reference ? String(args.flags.reference) : null;
+  if (reference && policyLevel(reference) < 0) fail(`unknown reference "${reference}"`);
+
+  /** hi against lo, `runs` seeds in each seat: hi's results. */
+  function seat(hi: string, lo: string) {
+    const outcome: number[] = [], margin: number[] = [];
+    for (let i = 0; i < runs; i++) {
+      for (const hiFirst of [true, false]) {
+        const r = runSim({ ...common, seed: base.seed! + i, policies: hiFirst ? [hi, lo] : [lo, hi] });
+        const mine = r.finalScores[hiFirst ? 0 : 1], theirs = r.finalScores[hiFirst ? 1 : 0];
+        outcome.push(mine > theirs ? 1 : mine < theirs ? 0 : 0.5);
+        margin.push(mine - theirs);
+      }
+    }
+    const w = estimate(outcome.map(x => x - 0.5));
+    return {
+      winRate: w.mean + 0.5, stderr: w.stderr, verdict: w.verdict === 'higher' ? 'beats' : w.verdict === 'lower' ? 'LOSES' : 'inside the noise',
+      draws: outcome.filter(x => x === 0.5).length, margin: estimate(margin),
+    };
+  }
+
+  const rows: (string | number)[][] = [];
+  const json: any = { runs, match, preset: args.flags.preset ?? 'normal', steps: [], reference: {} };
+  for (let i = 1; i < ids.length; i++) {
+    const st = seat(ids[i], ids[i - 1]);
+    json.steps.push({ hi: ids[i], lo: ids[i - 1], ...st });
+    rows.push([`${ids[i]} v ${ids[i - 1]}`, `${fixed(st.winRate * 100, 0)}% \u00b1${fixed(st.stderr * 100, 0)}`, st.draws,
+      `${st.margin.mean >= 0 ? '+' : ''}${fixed(st.margin.mean, 0)} \u00b1${fixed(st.margin.stderr, 0)}`, st.verdict]);
+  }
+  const refRows: (string | number)[][] = [];
+  if (reference) {
+    for (const id of ids) {
+      if (id === reference) continue;
+      const st = seat(id, reference);
+      json.reference[id] = st;
+      refRows.push([`${id} v ${reference}`, `${fixed(st.winRate * 100, 0)}% \u00b1${fixed(st.stderr * 100, 0)}`, st.draws,
+        `${st.margin.mean >= 0 ? '+' : ''}${fixed(st.margin.mean, 0)} \u00b1${fixed(st.margin.stderr, 0)}`, st.verdict]);
+    }
+  }
+  if (args.flags.json) { console.log(JSON.stringify(json, null, 2)); return 0; }
+  console.log(`\nladder \u2014 ${runs} seeds x 2 seats per pairing, ${match}s matches, preset ${json.preset}`);
+  console.log('A step counts only when the win rate clears 50% by 2x its standard error.\n');
+  table(['pairing', 'win rate', 'draws', 'score margin', 'verdict'], rows);
+  if (refRows.length) { console.log(''); table(['against the reference', 'win rate', 'draws', 'score margin', 'verdict'], refRows); }
+  return 0;
+}
+
 function cmdInvariants(args: Args): number {
   const seconds = num(args.flags, 'seconds', 60);
   const rows: (string | number)[][] = [];
@@ -561,6 +635,7 @@ Commands
   run                      Run one configuration and report on it
   sweep <knob>=<v,v,v>     Run a knob across values, with error bars
   compare --a <k=v> --b    Compare two configurations on paired statistics
+  ladder                   Seat each AI level against the one below it
   invariants               Assert the geometric invariants on every frame
   physics                  Assert textbook results for the collision solver
   baseline save|check      Record or verify exact simulation behaviour
@@ -577,7 +652,10 @@ Common options
   --set a=1,b=2              Knob overrides, applied on top of --preset
   --runs <n>                 Repeats, for sweep and compare
   --metrics a,b,c            Which metrics to report
-  --policy engine-ai|fixed|random|sweep
+  --policy engine-ai|fixed|random|sweep|ai1..ai9|agi
+  --ai ai1..ai9|agi          ai mode: which AI level plays player 2
+  --levels a,b,c             ladder: which levels, in order (default all)
+  --reference <level>        ladder: also seat every level against this one
   --json                     Machine-readable output
   --tolerance <pct>          baseline check: allowed drift (default 0, exact)
 
@@ -600,6 +678,7 @@ const commands: Record<string, (a: Args) => number> = {
   run: cmdRun,
   sweep: cmdSweep,
   compare: cmdCompare,
+  ladder: cmdLadder,
   invariants: cmdInvariants,
   physics: cmdPhysics,
   baseline: cmdBaseline,

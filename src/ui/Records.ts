@@ -126,3 +126,44 @@ export function recordSections(
     ...extra,
   ];
 }
+
+// --------------------------------------------------------------- the AI ladder
+
+export const LADDER_KEY = 'toneboom.ladder';
+
+/** The rung the next vs AI match is played against, as an index; the first rung when none is stored. */
+export function loadLadderLevel(levels: number, store: KeyValueStore | null = deviceStore()): number {
+  try {
+    const raw = store?.getItem(LADDER_KEY);
+    if (!raw) return 0;
+    const p = JSON.parse(raw);
+    const n = p && p.v === VERSION ? p.level : NaN;
+    return Number.isInteger(n) && n >= 0 && n < levels ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function saveLadderLevel(level: number, store: KeyValueStore | null = deviceStore()): void {
+  try {
+    store?.setItem(LADDER_KEY, JSON.stringify({ v: VERSION, level }));
+  } catch {
+    // The next match starts from the first rung instead.
+  }
+}
+
+/**
+ * What the vs AI results card says: where the ladder goes next, and the best
+ * score against this AI. The card's own "You Won" / "You Lost" / "Draw" stays.
+ */
+export function ladderNotes(
+  played: string, next: string, direction: 'up' | 'down' | 'stay', atTop: boolean, record: RecordResult
+): ResultNotes {
+  const lines: string[] = [];
+  if (direction === 'up') lines.push(`Next: ${next}`);
+  else if (direction === 'down') lines.push(`Back to ${next}`);
+  else lines.push(atTop ? `You beat ${played}. It stays the one to beat.` : `Again: ${next}`);
+  if (record.isNew) lines.push(`New best against ${played}: ${record.best}`);
+  else if (record.best > 0) lines.push(`Best against ${played}: ${record.best}`);
+  return { lines };
+}
