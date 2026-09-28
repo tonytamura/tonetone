@@ -1,8 +1,9 @@
 import { Game } from '../game/GameState';
+import { DEFAULT_PRESET, KNOBS, KnobContext, KnobId, KnobValue, applyKnob, formatKnob } from '../sim/Knobs';
 import {
-  DEFAULT_PRESET, KNOBS, KnobContext, KnobValue, PRESETS, PRESET_SPAN, applyKnob, formatKnob,
-  presetIds, presetKnobs, presetMatching,
-} from '../sim/Knobs';
+  CUSTOM_ID, EVERYDAY_KNOBS, SavedSettings, advancedKnobs, loadSettings, namedPresetValues, presetChoices, saveSettings,
+} from './PlayerSettings';
+import { setHidden } from './Dom';
 import { initAudio } from '../audio/SynthEngine';
 
 /**
@@ -14,7 +15,7 @@ import { initAudio } from '../audio/SynthEngine';
 import { renderSoundTester, updateSoundTesterReadouts } from './SoundTester';
 
 export interface SettingsHandle {
-  /** The preset the knobs currently add up to, or null when they match none. */
+  /** The named preset being played, or null on Custom, which sets no records. */
   activePreset(): string | null;
 }
 
@@ -46,6 +47,9 @@ export function setupSettingsKnobs(
   // a drag does instead of a second one that could diverge from it.
   const runners: Record<string, () => void> = {};
   const liveValues: Record<string, KnobValue> = {};
+  // The picker's state: which choice is live, and what Custom holds.
+  let selected: string = DEFAULT_PRESET;
+  let custom: Record<string, KnobValue> = {};
 
   for (const def of Object.values(KNOBS)) {
     const el = document.getElementById(def.id) as HTMLInputElement | HTMLSelectElement | null;
@@ -69,54 +73,80 @@ export function setupSettingsKnobs(
     el.addEventListener(pickEvent, () => {
       if (def.wakesAudio) initAudio();
       run();
-      reportPresetState();
+      knobChanged(def.id as KnobId);
     });
     run();
   }
 
   // --- Preset picker -------------------------------------------------------
+  // Everyone sees the picker and the everyday settings. The rest of the panel is
+  // Custom's: shown only there, and remembered between visits.
   const presetEl = document.getElementById('preset') as HTMLSelectElement | null;
-  const presetOut = document.getElementById('presetv');
-  const idOfLabel = (label: string): string | undefined =>
-    presetIds().find(id => PRESETS[id].label === label);
+  const advancedEl = document.getElementById('advanced');
+  const choices = presetChoices();
+
+  /** Move a knob the way a hand-drag would: the control, its readout, the config. */
+  function setKnob(id: string, value: KnobValue) {
+    const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+    if (!el) return;
+    el.value = String(value);
+    runners[id]?.();
+  }
+
+  function advancedNow(): Record<string, KnobValue> {
+    const out: Record<string, KnobValue> = {};
+    for (const id of advancedKnobs()) if (id in liveValues) out[id] = liveValues[id];
+    return out;
+  }
+
+  function persist() {
+    const player: Record<string, KnobValue> = {};
+    for (const id of EVERYDAY_KNOBS) if (id in liveValues) player[id] = liveValues[id];
+    const saved: SavedSettings = { preset: selected, custom, player };
+    saveSettings(saved);
+  }
 
   /**
-   * Say what the knobs currently add up to.
-   *
-   * A player who picks Chaos and then nudges one slider is no longer playing
-   * Chaos, and a picker that kept claiming they were would be lying about the
-   * game they are in. The select keeps its position — it is still the preset they
-   * came from — and the readout says so.
+   * Switch to a choice. A named preset sets every advanced knob, its own values
+   * and the defaults for the rest, so nothing tuned in Custom follows the player
+   * into it unseen. Custom brings back what it held, or, the first time, starts
+   * from the game the player was just in.
    */
-  function reportPresetState(): void {
-    if (!presetOut) return;
-    const match = presetMatching(liveValues);
-    presetOut.textContent = match ? '' : 'modified';
+  function choose(id: string) {
+    selected = id;
+    if (id === CUSTOM_ID) {
+      for (const [k, v] of Object.entries(custom)) setKnob(k, v);
+      custom = advancedNow();
+    } else {
+      for (const [k, v] of Object.entries(namedPresetValues(id))) setKnob(k, v);
+    }
+    const label = choices.find(c => c.id === id)?.label;
+    if (presetEl && label) presetEl.value = label;
+    setHidden(advancedEl, id !== CUSTOM_ID);
+    persist();
   }
 
-  if (presetEl) {
-    const applySelected = () => {
-      const id = idOfLabel(presetEl.value) ?? DEFAULT_PRESET;
-      const values = presetKnobs(id);
-      // Write the DOM first, then run each knob's own applier, so every slider,
-      // readout and config field ends up where a hand-drag would have put them.
-      for (const knobId of PRESET_SPAN) {
-        const el = document.getElementById(knobId) as HTMLInputElement | HTMLSelectElement | null;
-        if (!el) continue;
-        el.value = String(values[knobId]);
-        runners[knobId]?.();
-      }
-      reportPresetState();
-    };
-
-    presetEl.addEventListener('change', applySelected);
-    // Do not apply on load: the markup already carries the default preset's
-    // values, and applying here would overwrite a knob a test or a deep link had
-    // set before the panel was wired.
-    const current = presetMatching(liveValues) ?? DEFAULT_PRESET;
-    presetEl.value = PRESETS[current].label;
+  function knobChanged(id: KnobId) {
+    if (selected === CUSTOM_ID && !EVERYDAY_KNOBS.includes(id)) custom[id] = liveValues[id];
+    persist();
   }
 
-  reportPresetState();
-  return { activePreset: () => presetMatching(liveValues) };
+  presetEl?.addEventListener('change', () => {
+    choose(choices.find(c => c.label === presetEl.value)?.id ?? DEFAULT_PRESET);
+  });
+
+  // What this device kept from last time, if anything. The markup's values stand
+  // until then, which are the default preset's.
+  const saved = loadSettings();
+  if (saved) {
+    for (const [k, v] of Object.entries(saved.player)) setKnob(k, v);
+    custom = saved.custom;
+    choose(saved.preset);
+  } else {
+    const label = choices.find(c => c.id === DEFAULT_PRESET)?.label;
+    if (presetEl && label) presetEl.value = label;
+    setHidden(advancedEl, true);
+  }
+
+  return { activePreset: () => (selected === CUSTOM_ID ? null : selected) };
 }

@@ -22,6 +22,9 @@ interface FakeEl {
   type: string;
   value: string;
   textContent: string;
+  attrs: Record<string, string>;
+  setAttribute(name: string, value: string): void;
+  removeAttribute(name: string): void;
   addEventListener(event: string, fn: () => void): void;
   fire(event: string): void;
 }
@@ -29,7 +32,9 @@ interface FakeEl {
 function fakeEl(id: string, type: string, value = ''): FakeEl {
   const listeners: Record<string, (() => void)[]> = {};
   return {
-    id, type, value, textContent: '',
+    id, type, value, textContent: '', attrs: {},
+    setAttribute(name, v) { this.attrs[name] = v; },
+    removeAttribute(name) { delete this.attrs[name]; },
     addEventListener(event, fn) { (listeners[event] ||= []).push(fn); },
     fire(event) { for (const fn of listeners[event] ?? []) fn(); },
   };
@@ -51,15 +56,15 @@ function mountPanel() {
     els.set(id + 'v', fakeEl(id + 'v', 'output'));
   }
   els.set('preset', fakeEl('preset', 'select', PRESETS.normal.label));
-  els.set('presetv', fakeEl('presetv', 'output'));
+  els.set('advanced', fakeEl('advanced', 'div'));
 
   (global as any).document = {
     getElementById: (id: string) => els.get(id) ?? null,
   };
 
   const game = createGame();
-  setupSettingsKnobs(() => game, () => 620);
-  return { els, game, pick: (label: string) => { els.get('preset')!.value = label; els.get('preset')!.fire('change'); } };
+  const handle = setupSettingsKnobs(() => game, () => 620);
+  return { els, game, handle, pick: (label: string) => { els.get('preset')!.value = label; els.get('preset')!.fire('change'); } };
 }
 
 describe('tuning panel preset picker', () => {
@@ -112,29 +117,49 @@ describe('tuning panel preset picker', () => {
     expect(PhysicsConfig.THROW_MAX).toBe(KNOBS.maxpower.default);
   });
 
-  it('leaves knobs outside every preset alone', () => {
+  it('sets every advanced knob on a named preset, the ones it does not declare to their defaults', () => {
+    // A named preset is a whole game. Anything tuned in Custom is hidden outside
+    // it, so it must not follow the player into Normal unseen.
     const { els, pick } = mountPanel();
+    pick('Custom');
     const el = els.get(OUTSIDE_EVERY_PRESET)!;
-    el.value = '5';
+    el.value = '0';
     el.fire('input');
     pick(PRESETS.chaos.label);
-    expect(el.value).toBe('5');
+    expect(el.value).toBe(String(KNOBS[OUTSIDE_EVERY_PRESET].default));
   });
 
-  it('says "modified" once a knob no longer matches the picked preset', () => {
+  it('shows the advanced knobs on Custom only', () => {
     const { els, pick } = mountPanel();
-    expect(els.get('presetv')!.textContent).toBe('');
+    const hidden = () => 'hidden' in els.get('advanced')!.attrs;
+    pick(PRESETS.relax.label);
+    expect(hidden()).toBe(true);
+    pick('Custom');
+    expect(hidden()).toBe(false);
+    pick(PRESETS.normal.label);
+    expect(hidden()).toBe(true);
+  });
 
-    pick(PRESETS.chaos.label);
-    expect(els.get('presetv')!.textContent).toBe('');
+  it('starts Custom from the game the player was in, and remembers what it was given', () => {
+    const { els, pick } = mountPanel();
+    pick(PRESETS.relax.label);
+    pick('Custom');
+    expect(els.get('reload')!.value).toBe('4.5'); // Relax's, carried over
 
-    els.get('roll')!.value = '0.5';
-    els.get('roll')!.fire('input');
-    expect(els.get('presetv')!.textContent).toBe('modified');
+    els.get('reload')!.value = '6';
+    els.get('reload')!.fire('input');
+    pick(PRESETS.normal.label);
+    expect(els.get('reload')!.value).toBe(String(KNOBS.reload.default));
+    pick('Custom');
+    expect(els.get('reload')!.value).toBe('6');
+  });
 
-    // Back onto the preset's own value, and the readout stops complaining.
-    els.get('roll')!.value = String(presetKnobs('chaos').roll);
-    els.get('roll')!.fire('input');
-    expect(els.get('presetv')!.textContent).toBe('');
+  it('reports the named preset for records, and none on Custom', () => {
+    const { handle, pick } = mountPanel();
+    expect(handle.activePreset()).toBe('normal');
+    pick(PRESETS.drift.label);
+    expect(handle.activePreset()).toBe('drift');
+    pick('Custom');
+    expect(handle.activePreset()).toBeNull();
   });
 });

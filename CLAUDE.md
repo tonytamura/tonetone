@@ -103,7 +103,8 @@ registry and `index.html`; `tests/sim/Knobs.test.ts` fails if they disagree.
 
 The same file declares the presets — Normal, Relax, Chaos, Cascade, Drift and
 Rally. A preset is a set of differences from the registry defaults, and adding
-one means adding its `<option>` to `index.html` too. Anything a preset touches
+one means adding its `<option>` to `index.html` too, before the panel's own last
+option, **Custom**, which is not a registry preset. Anything a preset touches
 joins `PRESET_SPAN` and is therefore reset when a player picks a different
 preset, so putting a knob in a preset changes what switching presets does to it.
 
@@ -211,4 +212,6 @@ normally `main`. When asked to submit, commit and push there directly.
   `restoreConfig` from `src/sim/Knobs.ts`.
 - For any field a slider controls, the `index.html` value wins at page load, so
   editing the literal in `physics/Config.ts` has no effect. Change the knob
-  default instead.
+  default instead. A player's saved options (`toneboom.settings`, see
+  `src/ui/PlayerSettings.ts`) are applied after that, in the browser only; the
+  harness never reads them.

@@ -681,6 +681,10 @@ input[type=range] {
 #panel h2:first-child {
   margin-top: 0;
 }
+/* Custom's first section follows Basics, so it keeps the usual gap. */
+#panel #advanced > h2:first-child {
+  margin-top: 17px;
+}
 .knob {
   display: grid;
   grid-template-columns: 74px 1fr 64px;
@@ -1482,4 +1486,12 @@ select option {
   font-size: var(--fs-sm);
   color: var(--ink-soft);
   text-align: center;
+}
+
+/* Under the preset picker: where the rest of the panel went. */
+.preset-hint {
+  margin: 4px 0 10px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
 }

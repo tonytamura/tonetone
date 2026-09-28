@@ -539,8 +539,9 @@ export function applyPreset(presetId: string, ctx: KnobContext): void {
 /**
  * Which preset the live values match, or null if the player has moved something.
  *
- * The panel uses this to say "modified" rather than keep claiming a preset the
- * knobs no longer add up to.
+ * The panel used this to say "modified"; since 2026-09-28 it has a Custom
+ * choice instead (src/ui/PlayerSettings.ts), and this answers the same question
+ * for the harness and the tests.
  */
 export function presetMatching(values: Record<string, KnobValue>): string | null {
   for (const id of presetIds()) {
