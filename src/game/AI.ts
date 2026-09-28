@@ -108,7 +108,7 @@ export interface AiProfile {
    * it (`AIPlanner`), each followed `seconds` ahead; aim the best found by the
    * time it throws.
    */
-  plan?: { window: number; seconds: number; strengths: number[]; grid: number; targets: number };
+  plan?: { window: number; seconds: number; strengths: number[]; grid: number; targets: number; rollouts?: number };
 }
 
 const CLASSIC: Omit<AiProfile, 'id' | 'label'> = {
@@ -318,7 +318,7 @@ export function aiAimLevel(p: LauncherPlayer, game: Game, width: number, height:
       if (!st.job) {
         const who = game.players.indexOf(p);
         st.job = new PlanJob(game, who, planCandidates(p, game, width, height, prof.plan), prof.plan.seconds,
-          p.reload, width, height, game.nextId * 7919);
+          p.reload, width, height, game.nextId * 7919, prof.plan.rollouts ?? 1);
       }
       if (!st.job.done) st.job.run();
       if (st.job.best) st.planned = st.job.best;

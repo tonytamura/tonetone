@@ -89,6 +89,8 @@ export class PlanJob {
   private simState: ColState | null = null;
   private simFrames = 0;
   private simBefore = 0;
+  private roll = 0;
+  private total = 0;
   private clock = 0;
   private rng: number;
   best: (Candidate & { score: number }) | null = null;
@@ -103,6 +105,11 @@ export class PlanJob {
     private readonly width: number,
     private readonly height: number,
     private readonly seed: number,
+    /**
+     * Tries per candidate, each with its own scatter of debris, averaged. One
+     * try reads a throw through a single roll of the dice; more read it better.
+     */
+    private readonly rollouts = 1,
   ) {
     this.base = cloneForPlanning(game);
     this.baseState = toCollisionState(this.base);
@@ -150,7 +157,7 @@ export class PlanJob {
       while (!this.done) {
         if (!this.sim) {
           const c = this.candidates[this.idx];
-          this.rng = this.seed >>> 0;
+          this.rng = (this.seed + this.roll * 0x9e3779b9) >>> 0;
           const sim = cloneForPlanning(this.base);
           const p = sim.players[this.who];
           p.aimDeg = c.aimDeg;
@@ -167,11 +174,15 @@ export class PlanJob {
           this.simFrames--;
           if (this.simFrames % 8 === 0 && spent()) return;
         }
-        const c = this.candidates[this.idx];
-        const score = this.sim.players[this.who].score - this.simBefore;
-        if (!this.best || score > this.best.score) this.best = { ...c, score };
+        this.total += this.sim.players[this.who].score - this.simBefore;
         this.sim = null;
         this.simState = null;
+        if (++this.roll < this.rollouts) continue;
+        const c = this.candidates[this.idx];
+        const score = this.total / this.rollouts;
+        if (!this.best || score > this.best.score) this.best = { ...c, score };
+        this.roll = 0;
+        this.total = 0;
         this.idx++;
         if (spent()) return;
       }
