@@ -68,6 +68,13 @@ export function setPlannerBudget(ms: number) {
   frameBudgetMs = ms;
 }
 
+/**
+ * How much planning got done: jobs started, and candidates tried out of those
+ * offered. Under a frame budget on a slow device the second falls short of the
+ * third; the page can read these to see how much an AI actually thought.
+ */
+export const plannerStats = { jobs: 0, tried: 0, offered: 0 };
+
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 type ColState = ReturnType<typeof toCollisionState>;
@@ -115,6 +122,8 @@ export class PlanJob {
     this.baseState = toCollisionState(this.base);
     this.advanceLeft = Math.max(0, Math.round(untilThrow / FALLBACK_DT));
     this.rng = seed >>> 0;
+    plannerStats.jobs++;
+    plannerStats.offered += candidates.length;
   }
 
   get done(): boolean {
@@ -181,6 +190,7 @@ export class PlanJob {
         const c = this.candidates[this.idx];
         const score = this.total / this.rollouts;
         if (!this.best || score > this.best.score) this.best = { ...c, score };
+        plannerStats.tried++;
         this.roll = 0;
         this.total = 0;
         this.idx++;

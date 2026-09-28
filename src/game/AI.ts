@@ -118,31 +118,36 @@ const CLASSIC: Omit<AiProfile, 'id' | 'label'> = {
 /**
  * The ladder, weakest first. The tenth rung is AGI.
  *
- * Measured before this table was written (Notion, AI ladder task): in this
- * game aim precision and rule-of-thumb shot choice hardly move a result. An AI
- * with 14 degrees of aim error played the pre-ladder AI to 53% ±8, and ones that
- * chose targets by the pay table and threw softly to lock lost to it (25-31%).
- * What does move it is how many throws are careless, at the bottom, and
- * simulating throws before choosing one, at the top. So the rungs below the
- * classic AI throw some of their balls wild, and the rungs above it plan, each
- * trying more candidate throws and looking further ahead.
+ * Measured, not assumed (the AI ladder task in Notion has every figure). In
+ * this game aim precision and rule-of-thumb shot choice hardly move a result:
+ * an AI with 14 degrees of aim error played the pre-ladder AI to 53% ±8, and
+ * ones that picked targets by the pay table and threw softly to lock lost to
+ * it (25-31%). What does move it is how many throws are careless, at the
+ * bottom, and simulating throws before choosing one, at the top.
+ *
+ * Win rates against AI5, the pre-ladder AI, 30-60 matches each, both seats:
+ * AI1 10% ±6, AI2 17% ±5, AI3 22% ±5, AI4 37% ±6, AI6 67% ±9, AI7 80% ±7,
+ * AI8 57% ±9, AI9 70% ±9, AGI 80% ±7. The bottom five are in order. Above AI5
+ * every planner beats it, but the planners cannot be told apart from each other
+ * inside the noise, except AGI, whose score margin (+229 ±47) is the largest by
+ * far. They are ordered by how much each thinks.
  */
 const WILD: Omit<AiProfile, 'id' | 'label' | 'wild'> = { ...CLASSIC };
-const PLAN = (targets: number, grid: number, strengths: number[], seconds: number): Omit<AiProfile, 'id' | 'label'> => ({
-  ...CLASSIC, turn: 0.35, plan: { window: 2, seconds, strengths, grid, targets },
+const PLAN = (targets: number, grid: number, seconds: number, rollouts = 1): Omit<AiProfile, 'id' | 'label'> => ({
+  ...CLASSIC, turn: 0.35, plan: { window: 2, seconds, strengths: [1], grid, targets, rollouts },
 });
 
 export const AI_LEVELS: AiProfile[] = [
   { id: 'ai1', label: 'AI1', ...WILD, wild: 1 },
-  { id: 'ai2', label: 'AI2', ...WILD, wild: 0.7 },
-  { id: 'ai3', label: 'AI3', ...WILD, wild: 0.4 },
-  { id: 'ai4', label: 'AI4', ...CLASSIC, classic: true },
-  { id: 'ai5', label: 'AI5', ...PLAN(2, 0, [1], 1) },
-  { id: 'ai6', label: 'AI6', ...PLAN(4, 0, [1], 1.2) },
-  { id: 'ai7', label: 'AI7', ...PLAN(6, 5, [1], 1.2) },
-  { id: 'ai8', label: 'AI8', ...PLAN(6, 9, [1], 1.5) },
-  { id: 'ai9', label: 'AI9', ...PLAN(5, 7, [0.5, 1], 2) },
-  { id: 'agi', label: 'AGI', ...PLAN(6, 9, [0.5, 1], 2) },
+  { id: 'ai2', label: 'AI2', ...WILD, wild: 0.85 },
+  { id: 'ai3', label: 'AI3', ...WILD, wild: 0.6 },
+  { id: 'ai4', label: 'AI4', ...WILD, wild: 0.3 },
+  { id: 'ai5', label: 'AI5', ...CLASSIC, classic: true },
+  { id: 'ai6', label: 'AI6', ...PLAN(4, 0, 1.2) },
+  { id: 'ai7', label: 'AI7', ...PLAN(6, 5, 1.2) },
+  { id: 'ai8', label: 'AI8', ...PLAN(6, 5, 1.2, 3) },
+  { id: 'ai9', label: 'AI9', ...PLAN(6, 9, 1.5) },
+  { id: 'agi', label: 'AGI', ...PLAN(6, 9, 1.5, 3) },
 ];
 
 /** The rung that plays as the pre-ladder AI did. */
