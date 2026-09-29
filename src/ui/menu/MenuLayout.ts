@@ -1,4 +1,5 @@
 import { logoFont } from '../../graphics/Fonts';
+import { MessageKey, t } from '../../i18n/I18n';
 
 /**
  * Where the logo and the buttons go, for a given canvas size.
@@ -9,15 +10,16 @@ import { logoFont } from '../../graphics/Fonts';
  */
 
 export interface MenuItem {
-  text: string;
+  /** The words on the button, looked up in the player's language each frame. */
+  key: MessageKey;
   action: string;
 }
 
 export const menuItems: MenuItem[] = [
-  { text: 'Solo', action: 'solo' },
-  { text: '1 player', action: 'one_player' },
-  { text: '2 players', action: 'two_player' },
-  { text: 'Options', action: 'options' }
+  { key: 'menu.solo', action: 'solo' },
+  { key: 'menu.onePlayer', action: 'one_player' },
+  { key: 'menu.twoPlayers', action: 'two_player' },
+  { key: 'menu.options', action: 'options' }
 ];
 
 export interface ButtonRect {
@@ -96,7 +98,7 @@ export function computeMenuLayout(w: number, h: number, c: CanvasRenderingContex
     const btnY = centeredStartY + index * itemSpacing;
     return {
       index,
-      text: item.text,
+      text: t(item.key),
       action: item.action,
       x: btnX,
       y: btnY,

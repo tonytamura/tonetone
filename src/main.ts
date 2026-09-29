@@ -1,11 +1,13 @@
 import { PlayMode, createGame, resetField, startMatch } from './game/GameState';
+import { isLangId, onLanguageChange, setLanguage, startingLanguage, t } from './i18n/I18n';
+import { setupLanguagePicker } from './ui/LanguagePicker';
 import { advanceFrame } from './sim/Frame';
 import { createRenderContext, resizeRenderer, drawGame, drawResultsCanvas, drawTutorialRing, drawTutorialHint } from './graphics/Renderer';
 import { clearSpriteCache } from './graphics/Sprites';
 import { createStrip, topStripFor } from './ui/ControlStrips';
 import { setupTouchControls } from './ui/TouchControls';
 import { updateHUD, endMatchUI } from './ui/HUD';
-import { presetChoices } from './ui/PlayerSettings';
+import { presetChoices, presetLabel } from './ui/PlayerSettings';
 import { setupSettingsKnobs } from './ui/SettingsModal';
 import { setHidden } from './ui/Dom';
 import { resetStartCountdown, updateCountdown } from './ui/Countdown';
@@ -21,7 +23,7 @@ import {
 import { AI_LEVELS, ladderStep } from './game/AI';
 import { setPlannerBudget } from './game/AIPlanner';
 import { FORCED_AI_LEVEL } from './game/AIChoice';
-import { PRESETS, presetIds } from './sim/Knobs';
+import { presetIds } from './sim/Knobs';
 import { settingsLine } from './game/Settings';
 import { initAudio, wakeAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
 import { uiClick } from './audio/UiSounds';
@@ -155,7 +157,8 @@ setPlannerBudget(4);
 
 const settings = setupSettingsKnobs(() => game, () => renderCtx.H || window.innerHeight);
 // A duel's winner picks the next match's mode on the results card.
-const duelModes = { choices: presetChoices(), current: settings.choice, pick: settings.choose };
+// Named when the match ends, so the names are in whatever language is in force then.
+const duelModes = () => ({ choices: presetChoices(), current: settings.choice, pick: settings.choose });
 
 /**
  * The two-player seat card. While it is up the field waits: nothing moves and
@@ -185,13 +188,13 @@ setupHelpScreen(
     const records = loadRecords();
     const current = loadLadderLevel(AI_LEVELS.length);
     const ladder = {
-      title: 'vs AI — best score',
+      title: t('records.ai'),
       rows: AI_LEVELS.map((l, i) => ({
-        label: i === current ? `${l.label} · next` : l.label,
+        label: i === current ? `${l.label} · ${t('records.next')}` : l.label,
         value: l.id in records.ai ? String(records.ai[l.id]) : '\u2013',
       })),
     };
-    return recordSections(records, presetIds().map(id => ({ id, label: PRESETS[id].label })), [ladder]);
+    return recordSections(records, presetIds().map(id => ({ id, label: presetLabel(id) })), [ladder]);
   },
 );
 
@@ -205,7 +208,7 @@ function resultNotes(g: typeof game): ResultNotes | undefined {
   if (g.aiOn) return ladderResult(g, preset);
   if (g.twoPlayer) return undefined;
   if (!preset) return soloRecordNotes(null, null);
-  return soloRecordNotes(submitScore('solo', preset, g.players[0].score), PRESETS[preset].label);
+  return soloRecordNotes(submitScore('solo', preset, g.players[0].score), presetLabel(preset));
 }
 
 /**
@@ -216,7 +219,7 @@ function resultNotes(g: typeof game): ResultNotes | undefined {
 function ladderResult(g: typeof game, preset: string | null): ResultNotes {
   const played = AI_LEVELS[g.aiLevel];
   // Forced in Options, to feel one level: the ladder stays where it was.
-  if (FORCED_AI_LEVEL > 0) return { lines: [`${played.label}, set in Options. The ladder does not move.`] };
+  if (FORCED_AI_LEVEL > 0) return { lines: [t('ladder.forced', { ai: played.label })] };
   const mine = g.players[0].score, theirs = g.players[1].score;
   const next = ladderStep(g.aiLevel, mine, theirs);
   const direction = next > g.aiLevel ? 'up' : next < g.aiLevel ? 'down' : 'stay';
@@ -254,11 +257,16 @@ const soundBtn = document.getElementById('sound');
 function setSound(on: boolean) {
   AudioStore.soundOn = on;
   if (soundBtn) {
-    soundBtn.textContent = on ? 'Audio on' : 'Audio off';
+    soundBtn.textContent = on ? t('menu.audioOn') : t('menu.audioOff');
     soundBtn.setAttribute('aria-pressed', String(on));
   }
   applyGain();
 }
+// The bar's labels are set in code, not markup, so a new language writes them again.
+onLanguageChange(() => {
+  if (soundBtn) soundBtn.textContent = AudioStore.soundOn ? t('menu.audioOn') : t('menu.audioOff');
+  fsLabel();
+});
 soundBtn?.addEventListener('click', () => { initAudio(); setSound(!AudioStore.soundOn); if (AudioStore.soundOn) uiClick('confirm'); });
 
 const panelEl = document.getElementById('panel');
@@ -292,8 +300,8 @@ copyBtn?.addEventListener('click', () => {
   }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(line).then(() => {
-      copyBtn.textContent = 'Copied';
-      setTimeout(() => { copyBtn.textContent = 'Copy these settings'; }, 2600);
+      copyBtn.textContent = t('panel.copied');
+      setTimeout(() => { copyBtn.textContent = t('panel.copy'); }, 2600);
     });
   }
 });
@@ -304,7 +312,7 @@ const docEl = document.documentElement as any;
 const fsRequest = docEl.requestFullscreen || docEl.webkitRequestFullscreen || null;
 const fsExit = document.exitFullscreen || (document as any).webkitExitFullscreen || null;
 function fsActive() { return document.fullscreenElement || (document as any).webkitFullscreenElement || null; }
-function fsLabel() { if (fsBtn) fsBtn.textContent = fsActive() ? 'Exit full screen' : 'Full screen'; }
+function fsLabel() { if (fsBtn) fsBtn.textContent = fsActive() ? t('menu.exitFullScreen') : t('menu.fullScreen'); }
 if (!fsRequest && fsBtn) {
   setHidden(fsBtn, true);
 } else if (fsBtn) {
@@ -346,7 +354,7 @@ function frame(ts: number) {
   if (!held) {
     tutorial.before();
     const fr = advanceFrame(game, rawDt, W, H, clock, {
-      onMatchOver: g => { setPaused(g, false); startResultsEffects(); endMatchUI(g, newMatch, resultNotes(g), duelModes); },
+      onMatchOver: g => { setPaused(g, false); startResultsEffects(); endMatchUI(g, newMatch, resultNotes(g), duelModes()); },
     });
     clock = fr.clock;
     tutorial.after(fr.dt, fr.threw);
@@ -389,6 +397,17 @@ initMenuScreen(
     slideOutRight();
   }
 );
+
+setupLanguagePicker();
+// Start in the language saved on the flag button, else the device's, else
+// English. `?lang=de` forces one for testing, without saving it. The page stays
+// hidden until the words have loaded, rather than flashing English first.
+{
+  const reveal = () => document.documentElement.classList.remove('i18n-loading');
+  setTimeout(reveal, 1500);
+  const forced = new URLSearchParams(window.location.search).get('lang');
+  void setLanguage(isLangId(forced) ? forced : startingLanguage()).finally(reveal);
+}
 
 setPlayers('solo');
 if (settingsBox) settingsBox.value = settingsLine();

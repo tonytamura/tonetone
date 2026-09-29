@@ -1,4 +1,5 @@
 import { BallOnDeck, Group, LauncherPlayer, SpecialBallType } from '../physics/Types';
+import { MessageKey, t } from '../i18n/I18n';
 import { PhysicsConfig } from '../physics/Config';
 import { BALL_COLORS, BLACK_HEX, WHITE_HEX } from '../graphics/Palette';
 
@@ -133,11 +134,11 @@ export function boomsOn(impact: number, group: Group): boolean {
  * matched. Moving a threshold in one and not the other would have put a MEGA
  * word on a SUPER sound.
  */
-export const BOOM_TIERS: readonly { readonly min: number; readonly word: string }[] = [
-  { min: 5, word: 'DOUBLE' },
-  { min: 10, word: 'SUPER' },
-  { min: 15, word: 'MEGA' },
-  { min: 20, word: 'GIGA' },
+export const BOOM_TIERS: readonly { readonly min: number; readonly word: MessageKey }[] = [
+  { min: 5, word: 'tier.double' },
+  { min: 10, word: 'tier.super' },
+  { min: 15, word: 'tier.mega' },
+  { min: 20, word: 'tier.giga' },
 ];
 
 /** Tier count including tier 0, the boom too small to earn a word. */
@@ -153,7 +154,7 @@ export function boomTierOf(count: number): number {
 /** The word a boom of `count` balls earns, or '' when it is below the first tier. */
 export function boomTierWord(count: number): string {
   const tier = boomTierOf(count);
-  return tier === 0 ? '' : BOOM_TIERS[tier - 1].word;
+  return tier === 0 ? '' : t(BOOM_TIERS[tier - 1].word);
 }
 
 export function setColorsCount(count: number) {

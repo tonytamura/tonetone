@@ -1,19 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { CREDITS, LICENSES } from '../../src/ui/Credits';
+import { credits, LICENSES } from '../../src/ui/Credits';
 
 const root = resolve(__dirname, '../..');
 const read = (p: string) => readFileSync(resolve(root, p), 'utf8');
 
 describe('credits', () => {
   it('credit the author as asked', () => {
-    expect(CREDITS.by).toContain('Tony M. T. L.');
+    expect(credits().by).toContain('Tony M. T. L.');
   });
 
   it('show the version package.json ships', () => {
     const { version } = JSON.parse(read('package.json'));
-    expect(CREDITS.footer).toContain(`v${version}`);
+    expect(credits().footer).toContain(`v${version}`);
   });
 });
 

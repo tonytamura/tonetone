@@ -79,6 +79,12 @@
   --ls-wide: 0.16em;
 }
 
+/* Vietnamese reads in the device's own face: Outfit has none of its stacked
+   accents. Mirrors SYSTEM_FONT_STACK in src/graphics/Fonts.ts. */
+:root:lang(vi) {
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -144,7 +150,7 @@
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   max-width: calc(100vw - 32px);
 }
 
@@ -156,7 +162,8 @@
   border: 1px solid transparent;
   color: #f0e6ff;
   border-radius: 10px;
-  padding: 10px 20px;
+  /* Four to a row since the flag joined them, so the padding is tighter than it was. */
+  padding: 10px 14px;
   font-family: var(--font-ui);
   font-size: var(--fs-sm);
   font-weight: var(--fw-title);
@@ -178,11 +185,32 @@
   box-shadow: 0 0 14px rgba(255, 0, 127, 0.85);
 }
 
-/* Help, Full screen and Audio on fit one row on a 320px phone only this tight. */
-@media (max-width: 360px) {
-  .menu-bottom-controls { gap: 8px; }
+/* The language button is its flag alone. */
+.lang-btn {
+  padding: 8px 11px;
+  line-height: 0;
+}
+.lang-btn .flag {
+  width: 27px;
+  height: 18px;
+  border-radius: 2px;
+  display: block;
+}
+
+/* Until the chosen language has loaded, show nothing rather than a flash of English. */
+html.i18n-loading body {
+  visibility: hidden;
+}
+
+/* Help, Full screen, Audio on and the flag fit one row on a 320px phone only
+   this tight, and only in the shorter languages; the longer ones wrap to a
+   second row, right-aligned. Up to 400px, which takes in the common 390px phones. */
+@media (max-width: 400px) {
+  .menu-bottom-controls { gap: 6px; }
   .menu-control-btn,
-  .audio-toggle-btn { padding: 10px 13px; }
+  .audio-toggle-btn { padding: 9px 10px; font-size: 12px; }
+  .lang-btn { padding: 8px 8px; }
+  .lang-btn .flag { width: 24px; height: 16px; }
 }
 
 html, body {
@@ -367,6 +395,10 @@ input[type=range] {
 @media (max-width: 360px) {
   #cue, #cue2 { gap: 12px; padding: 8px 10px; }
   .cue-right { gap: 8px; }
+  /* In some languages "YOU" is twice as long (VOCÊ, KAMU, あなた), which put the
+     clock up to 6px off a 320px screen at 9999 each. The label gives the room,
+     never the score. */
+  .score-lbl { font-size: 0.82em; letter-spacing: 0; margin-right: 3px; }
 }
 #cue2 {
   border-top: none;
@@ -1386,7 +1418,8 @@ select option {
 }
 
 /* ── Help screen, over the main menu ── */
-#help-overlay {
+#help-overlay,
+#lang-overlay {
   position: fixed;
   inset: 0;
   z-index: 1100;
@@ -1466,6 +1499,34 @@ select option {
   width: 100%;
   margin-top: 0;
   text-align: left;
+}
+
+/* The language screen: one button per language, its flag and its own name. */
+.lang-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.lang-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  text-transform: none;
+  letter-spacing: normal;
+  text-align: left;
+}
+.lang-choice .flag {
+  width: 30px;
+  height: 20px;
+  flex: none;
+  border-radius: 2px;
+}
+.lang-choice.current {
+  border-color: var(--menu-cyan);
+  color: var(--ink);
+  box-shadow: 0 0 12px rgba(0, 247, 255, 0.35);
 }
 
 /* The Help screen's last button, after the credits. */

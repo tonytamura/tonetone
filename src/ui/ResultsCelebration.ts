@@ -1,5 +1,6 @@
 import { Game } from '../game/GameState';
 import { againstAgi } from '../game/AI';
+import { MessageKey, tList } from '../i18n/I18n';
 import { ageEffects } from '../physics/CollisionSolver';
 import { PhysicsConfig } from '../physics/Config';
 import { panOf } from '../audio/SoundEvents';
@@ -30,7 +31,9 @@ let openingDue = false;
 /** How hard a celebration goes: the usual one, or the one for beating AGI. */
 interface Intensity {
   flashCap: number; flashGap: [number, number]; flashesPerBurst: number;
-  popCap: number; popGap: [number, number]; popScale: number; words: string[];
+  popCap: number; popGap: [number, number]; popScale: number;
+  /** The words it floats, a list in the player's language. */
+  words: MessageKey;
   boomGap: [number, number];
   /** Rising notes and the periodic big boom: only the AGI ending has them. */
   noteGap: [number, number] | null; bigBoomGap: [number, number] | null;
@@ -41,7 +44,7 @@ interface Intensity {
 const USUAL: Intensity = {
   flashCap: 5, flashGap: [850, 2150], flashesPerBurst: 1,
   popCap: 4, popGap: [1200, 2800], popScale: 1,
-  words: ['WINNER!', 'VICTORY!', 'PERFECT!', 'AMAZING!', 'SUPERB!', 'BRAVO!', 'CHAMP!'],
+  words: 'res.pops',
   boomGap: [500, 1400],
   noteGap: null, bigBoomGap: null,
 };
@@ -49,7 +52,7 @@ const USUAL: Intensity = {
 export const BEAT_AGI: Intensity = {
   flashCap: 18, flashGap: [120, 400], flashesPerBurst: 2,
   popCap: 9, popGap: [220, 500], popScale: 1.5,
-  words: ['BEAT AGI!', 'LEGEND!', 'GODLIKE!', 'UNREAL!', 'HUMANS 1', 'NO WAY!', 'HISTORIC!', 'TITAN!', 'MASTER!'],
+  words: 'res.agiPops',
   boomGap: [220, 520],
   noteGap: [110, 260], bigBoomGap: [2400, 4000],
 };
@@ -168,7 +171,8 @@ export function updateResultsEffects(game: Game, dt: number, W: number, H: numbe
     // (BOND, BOOM, LOCK, PEEL) and invented score pops (+1000, +5000), which
     // read as though something were still being scored on a board that has
     // stopped.
-    const txt = cfg.words[Math.floor(Math.random() * cfg.words.length)];
+    const words = tList(cfg.words);
+    const txt = words[Math.floor(Math.random() * words.length)];
     // Player 1's pop rises about 70px over its life; player 2's is drawn rotated,
     // so its own drift and its float offset cancel and it stays roughly put.
     const pad = 28;

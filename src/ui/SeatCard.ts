@@ -12,7 +12,8 @@
  * decision on its task (2026-09-28) that it carries the rules too.
  */
 import { PlayMode } from '../game/GameState';
-import { CORE_RULES } from './RulesText';
+import { coreRules } from './RulesText';
+import { t } from '../i18n/I18n';
 import { setHidden } from './Dom';
 
 /** Only two people at one device need to be told which half is theirs. */
@@ -46,11 +47,11 @@ export function bothReady(state: SeatState): boolean {
 /** The words on each half. */
 export function seatCopy() {
   return {
-    title: 'This half is yours.',
-    lines: ['Drag in it to aim.', 'Lay the device flat between you.'],
-    rules: CORE_RULES,
-    tap: 'Tap when ready',
-    ready: 'Ready',
+    title: t('seat.title'),
+    lines: [t('seat.aim'), t('seat.flat')],
+    rules: coreRules(),
+    tap: t('seat.tap'),
+    ready: t('seat.ready'),
   };
 }
 

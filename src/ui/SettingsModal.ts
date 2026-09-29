@@ -4,6 +4,7 @@ import {
   EVERYDAY_KNOBS, SavedSettings, advancedKnobs, isCustom, loadSettings, namedPresetValues, presetChoices, saveSettings,
 } from './PlayerSettings';
 import { setHidden } from './Dom';
+import { onLanguageChange } from '../i18n/I18n';
 import { initAudio } from '../audio/SynthEngine';
 
 /**
@@ -119,8 +120,8 @@ export function setupSettingsKnobs(
     const values = { ...namedPresetValues(id), ...(isCustom(id) ? customs[id] : {}) };
     for (const [k, v] of Object.entries(values)) setKnob(k, v);
     if (isCustom(id)) customs[id] = advancedNow();
-    const label = choices.find(c => c.id === id)?.label;
-    if (presetEl && label) presetEl.value = label;
+    // The options carry the ids as their values; their text is the translated name.
+    if (presetEl) presetEl.value = id;
     setHidden(advancedEl, !isCustom(id));
     persist();
   }
@@ -131,7 +132,7 @@ export function setupSettingsKnobs(
   }
 
   presetEl?.addEventListener('change', () => {
-    choose(choices.find(c => c.label === presetEl.value)?.id ?? DEFAULT_PRESET);
+    choose(choices.some(c => c.id === presetEl.value) ? presetEl.value : DEFAULT_PRESET);
   });
 
   // What this device kept from last time, if anything. The markup's values stand
@@ -142,10 +143,19 @@ export function setupSettingsKnobs(
     customs = saved.customs;
     choose(saved.preset);
   } else {
-    const label = choices.find(c => c.id === DEFAULT_PRESET)?.label;
-    if (presetEl && label) presetEl.value = label;
+    if (presetEl) presetEl.value = DEFAULT_PRESET;
     setHidden(advancedEl, true);
   }
+
+  // A readout such as "on" or "ladder" is words too: write every one again in
+  // the new language, without touching the value it reports.
+  onLanguageChange(() => {
+    for (const def of Object.values(KNOBS)) {
+      const out = document.getElementById(def.id + 'v');
+      if (out && def.id in liveValues) out.textContent = formatKnob(def, liveValues[def.id], ctx());
+    }
+    refreshChainReadout();
+  });
 
   return {
     activePreset: () => (isCustom(selected) ? null : selected),

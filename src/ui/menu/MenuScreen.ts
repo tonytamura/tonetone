@@ -1,4 +1,5 @@
 import { AudioStore, applyGain, isOptionsOpen } from '../../audio/SynthEngine';
+import { onLanguageChange, t } from '../../i18n/I18n';
 import { clickHz, initMenuAudio, lastSelectAt, playBinauralClick, playHoverClick } from '../../audio/UiSounds';
 import { PlayMode } from '../../game/GameState';
 import { clearSpriteCache } from '../../graphics/Sprites';
@@ -6,7 +7,7 @@ import { uiFont } from '../../graphics/Fonts';
 import { BLACK, MENU_CYAN, MENU_PINK_DEEP, PINK, WHITE, WHITE_HEX, hex, rgba } from '../../graphics/Palette';
 import { setHidden } from '../Dom';
 import { MenuLayout, buttonIndexAt, computeMenuLayout, menuItems } from './MenuLayout';
-import { drawBackground, drawMenuBalls, drawMenuFlashes, drawMenuPops, initAmbience } from './MenuAmbience';
+import { clearMenuPops, drawBackground, drawMenuBalls, drawMenuFlashes, drawMenuPops, initAmbience } from './MenuAmbience';
 import { drawLogo } from './LogoArt';
 
 /**
@@ -393,7 +394,7 @@ function fullscreenApi() {
 
 function updateAudioBtnLabel() {
   if (audioBtn) {
-    audioBtn.textContent = AudioStore.soundOn ? 'Audio on' : 'Audio off';
+    audioBtn.textContent = AudioStore.soundOn ? t('menu.audioOn') : t('menu.audioOff');
   }
 }
 
@@ -404,7 +405,7 @@ function updateFsBtnLabel() {
     setHidden(fsBtn, true);
     return;
   }
-  fsBtn.textContent = fs.isOn ? 'Exit full screen' : 'Full screen';
+  fsBtn.textContent = fs.isOn ? t('menu.exitFullScreen') : t('menu.fullScreen');
 }
 
 // ── The frame loop ─────────────────────────────────────────────────────
@@ -454,6 +455,7 @@ export function initMenuScreen(onSelectMode: (mode: PlayMode) => void, onOptions
   canvas = document.getElementById('gameMenu') as HTMLCanvasElement;
   audioBtn = document.getElementById('audioToggle') as HTMLButtonElement;
   fsBtn = document.getElementById('fsToggle') as HTMLButtonElement;
+  onLanguageChange(() => { updateAudioBtnLabel(); updateFsBtnLabel(); clearMenuPops(); });
 
   if (!canvas) return;
   ctx = canvas.getContext('2d');

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { bothReady, needsSeatCard, newSeatState, seatCopy, tapHalf } from '../../src/ui/SeatCard';
-import { CORE_RULES } from '../../src/ui/RulesText';
+import { coreRules } from '../../src/ui/RulesText';
 
 describe('the seat card', () => {
   it('appears only when two people share the device', () => {
@@ -30,6 +30,6 @@ describe('the seat card', () => {
     const c = seatCopy();
     expect(c.title).toMatch(/half is yours/);
     expect(c.lines.join(' ')).toMatch(/drag in it/i);
-    expect([...c.rules]).toEqual([...CORE_RULES]);
+    expect([...c.rules]).toEqual(coreRules());
   });
 });

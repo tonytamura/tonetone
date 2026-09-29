@@ -1,4 +1,5 @@
 import { Game } from '../game/GameState';
+import { t } from '../i18n/I18n';
 import { uiClick } from '../audio/UiSounds';
 import { fadeDroneForResults } from '../audio/SynthEngine';
 import { showMenu } from './menu/MenuScreen';
@@ -26,7 +27,7 @@ export function setPaused(game: Game, paused: boolean) {
   if (!paused) setHidden(el('menu-confirm-overlay'), true);
   const pauseBtn = el('pause-btn');
   if (pauseBtn) {
-    pauseBtn.textContent = paused ? 'Unpause' : 'Pause';
+    pauseBtn.textContent = paused ? t('bar.unpause') : t('bar.pause');
     pauseBtn.classList.toggle('is-paused', paused);
   }
 }

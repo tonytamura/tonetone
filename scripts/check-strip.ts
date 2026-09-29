@@ -17,21 +17,27 @@
  */
 import { createServer } from 'vite';
 import { chromium, Page } from 'playwright-core';
+import { LANGUAGES } from '../src/i18n/I18n';
 
 const SCREENS: [number, number][] = [[320, 568], [360, 740], [390, 844], [412, 915], [1280, 720]];
-const MODES: [string, string][] = [['solo', 'Solo'], ['ai', '1 player'], ['duel', '2 players']];
+// The menu action behind each mode's button: its words change with the language.
+const MODES: [string, string][] = [['solo', 'solo'], ['ai', 'one_player'], ['duel', 'two_player']];
+// Every language on the narrowest screen, where a longer "YOU" bites first;
+// English alone on the rest.
+const NARROWEST: [number, number] = SCREENS[0];
+const OTHER_LANGUAGES = LANGUAGES.map(l => l.id).filter(id => id !== 'en');
 const WIDEST_SCORE = '9999';
 const WIDEST_CLOCK = '20:00'; // the `match` knob's maximum
 
 interface Box { what: string; l: number; r: number; t: number; b: number; lines: number }
 
-async function tapMenu(page: Page, text: string) {
+async function tapMenu(page: Page, action: string) {
   // Ask the game's own layout where the button is. Sent as a string: vite-node
   // would otherwise rewrite the dynamic import for Node before it reached the page.
   const p = await page.evaluate(`(async () => {
     const { computeMenuLayout } = await import('/src/ui/menu/MenuLayout.ts');
     const l = computeMenuLayout(innerWidth, innerHeight, document.createElement('canvas').getContext('2d'));
-    const b = l.buttons.find(b => b.text === ${JSON.stringify(text)});
+    const b = l.buttons.find(b => b.action === ${JSON.stringify(action)});
     return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
   })()`) as { x: number; y: number };
   await page.mouse.click(p.x, p.y);
@@ -61,8 +67,12 @@ async function main() {
   const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
   let failures = 0;
   try {
+    const runs: [number, number, string][] = [];
     for (const [w, h] of SCREENS) {
-      for (const [mode, label] of MODES) {
+      for (const lang of w === NARROWEST[0] && h === NARROWEST[1] ? ['en', ...OTHER_LANGUAGES] : ['en']) runs.push([w, h, lang]);
+    }
+    for (const [w, h, lang] of runs) {
+      for (const [mode, action] of MODES) {
         const ctx = await browser.newContext({ viewport: { width: w, height: h } });
         // Straight into the mode, and against the AI with the widest name on
         // the ladder, AGI.
@@ -71,9 +81,9 @@ async function main() {
           localStorage.setItem('toneboom.ladder', JSON.stringify({ v: 1, level: 3 }));
         });
         const page = await ctx.newPage();
-        await page.goto(url);
+        await page.goto(`${url}?lang=${lang}`);
         await page.waitForTimeout(1200);
-        await tapMenu(page, label);
+        await tapMenu(page, action);
         await page.waitForTimeout(400);
         if (mode === 'duel') { await page.click('#seat-top'); await page.click('#seat-bottom'); }
         await page.waitForTimeout(4200); // past the 3, 2, 1 countdown
@@ -100,7 +110,7 @@ async function main() {
         for (const { cue, boxes } of strips) {
           const bad = stripProblems(boxes, w);
           if (bad.length) failures++;
-          console.log(`${`${w}x${h}`.padEnd(9)} ${mode.padEnd(4)} ${cue.padEnd(4)} ${bad.length ? 'FAIL ' + bad.join('; ') : 'ok'}`);
+          console.log(`${`${w}x${h}`.padEnd(9)} ${lang} ${mode.padEnd(4)} ${cue.padEnd(4)} ${bad.length ? 'FAIL ' + bad.join('; ') : 'ok'}`);
         }
         await ctx.close();
       }

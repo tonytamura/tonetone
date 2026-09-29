@@ -5,6 +5,7 @@ import { formatClock } from '../game/Clock';
 import { setHidden } from './Dom';
 import { ResultNotes } from './Records';
 import { AI_LEVELS, againstAgi } from '../game/AI';
+import { t } from '../i18n/I18n';
 
 /**
  * `updateHUD` runs inside the rAF callback on every frame, but almost nothing it
@@ -49,7 +50,7 @@ export function updateHUD(game: Game, clockText?: string) {
   write(el('hudBalls'), 'textContent', String(game.killBalls));
 
   // Score display
-  const p1Label = game.aiOn ? 'YOU' : (game.twoPlayer ? 'P1' : 'SCORE');
+  const p1Label = game.aiOn ? t('hud.you') : (game.twoPlayer ? 'P1' : t('hud.score'));
   // Against the AI, its rung's own name: AI1 … AI9, AGI.
   const p2Label = game.aiOn ? (AI_LEVELS[game.aiLevel]?.label ?? 'AI') : 'P2';
 
@@ -114,20 +115,20 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
   const cell = (pts: number, count: number) => (count ? String(pts) : '\u2013');
 
   const rows: [string, (p: any) => string][] = [
-    ['total', (p: any) => '<b>' + p.score + '</b>'],
-    ['connections', (p: any) => cell(p.lockPts || 0, p.locks)],
-    ['booms', (p: any) => cell(p.boomPts || 0, p.booms)],
-    ['knocked loose', (p: any) => cell(p.peelPts || 0, p.peels)],
+    [t('res.total'), (p: any) => '<b>' + p.score + '</b>'],
+    [t('res.connections'), (p: any) => cell(p.lockPts || 0, p.locks)],
+    [t('res.booms'), (p: any) => cell(p.boomPts || 0, p.booms)],
+    [t('res.knocked'), (p: any) => cell(p.peelPts || 0, p.peels)],
   ];
 
   const them = game.aiOn ? (AI_LEVELS[game.aiLevel]?.label ?? 'AI') : 'P2';
-  const me = game.aiOn ? 'YOU' : 'P1';
-  const head = solo ? '<tr><th></th><th class="p1">YOU</th></tr>'
+  const me = game.aiOn ? escapeHtml(t('hud.you')) : 'P1';
+  const head = solo ? '<tr><th></th><th class="p1">' + escapeHtml(t('hud.you')) + '</th></tr>'
                     : '<tr><th></th><th class="p1">' + me + '</th><th class="p2">' + them + '</th></tr>';
   const body = rows
     .map(
       ([label, get], i) =>
-        '<tr' + (i === 0 ? ' class="total"' : '') + '><td>' + label + '</td>' +
+        '<tr' + (i === 0 ? ' class="total"' : '') + '><td>' + escapeHtml(label) + '</td>' +
         '<td class="p1">' + get(a) + '</td>' +
         (solo ? '' : '<td class="p2">' + get(b) + '</td>') + '</tr>'
     )
@@ -143,20 +144,20 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
     let epic = false;
 
     if (solo) {
-      titleText = 'Score';
+      titleText = t('res.score');
       titleColor = P_COLOR[0];
     } else if (a.score === b.score) {
-      titleText = 'Draw';
+      titleText = t('res.draw');
       titleColor = P_COLOR[pIndex];
     } else {
       const winnerIndex = a.score > b.score ? 0 : 1;
       if (pIndex === winnerIndex) {
         // Beating the top of the ladder is the game's biggest ending.
-        titleText = agi ? 'You Beat AGI' : 'You Won';
+        titleText = agi ? t('res.beatAgi') : t('res.won');
         titleColor = P_COLOR[pIndex];
         epic = agi;
       } else {
-        titleText = agi ? 'Game Over' : 'You Lost';
+        titleText = agi ? t('res.gameOver') : t('res.lost');
         titleColor = P_COLOR[pIndex];
       }
     }
@@ -169,12 +170,12 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
     const decides = !duel || a.score === b.score || (a.score > b.score ? 0 : 1) === pIndex;
     // Mode and Play again share one row, so two cards still fit a short phone on a draw.
     const picker = duel && modes
-      ? '<div class="mode-pick" aria-label="Next match mode">' +
-        '<button class="mode-step" data-step="-1" aria-label="Previous mode">\u2039</button>' +
+      ? '<div class="mode-pick" aria-label="' + escapeHtml(t('res.modes')) + '">' +
+        '<button class="mode-step" data-step="-1" aria-label="' + escapeHtml(t('res.prevMode')) + '">\u2039</button>' +
         '<b class="mode-name">' + escapeHtml(modeLabel()) + '</b>' +
-        '<button class="mode-step" data-step="1" aria-label="Next mode">\u203a</button></div>'
+        '<button class="mode-step" data-step="1" aria-label="' + escapeHtml(t('res.nextMode')) + '">\u203a</button></div>'
       : '';
-    const again = '<button class="again">Play again</button>';
+    const again = '<button class="again">' + escapeHtml(t('res.again')) + '</button>';
 
     return (
       '<h2' + (epic ? ' class="epic"' : '') + ' style="color:' + titleColor + '">' + escapeHtml(titleText) + '</h2>' +

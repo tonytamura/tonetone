@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="i18n-loading">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -11,38 +11,50 @@
 <div id="menu-screen">
   <canvas id="gameMenu"></canvas>
   <div class="menu-bottom-controls">
-    <button id="helpBtn" class="menu-control-btn">Help</button>
+    <button id="helpBtn" class="menu-control-btn" data-i18n="menu.help">Help</button>
     <button id="fsToggle" class="menu-control-btn">Full screen</button>
     <button id="audioToggle" class="menu-control-btn audio-toggle-btn">Audio on</button>
+    <!-- The language's flag, and nothing else: it has to be found by someone who cannot read the rest. -->
+    <button id="langBtn" class="menu-control-btn lang-btn" aria-label="Language" data-i18n-aria="menu.language"></button>
+  </div>
+</div>
+
+<div id="lang-overlay" hidden>
+  <div class="confirm-card help-card lang-card">
+    <div class="confirm-title" data-i18n="menu.language">Language</div>
+    <div class="help-actions">
+      <button id="lang-close" class="confirm-btn secondary" data-i18n="common.close">Close</button>
+    </div>
+    <div class="lang-list" id="lang-list"></div>
   </div>
 </div>
 
 <div id="help-overlay" hidden>
   <div class="confirm-card help-card">
-    <div class="confirm-title">How to play</div>
+    <div class="confirm-title" data-i18n="help.title">How to play</div>
     <!-- All the buttons at the top: the rules and credits below may scroll, and
          a way out must never be hidden under that. -->
     <div class="help-actions">
-      <button id="help-replay" class="confirm-btn secondary">Replay tutorial</button>
-      <button id="help-records" class="confirm-btn secondary">Records</button>
-      <button id="help-close" class="confirm-btn secondary">Close</button>
+      <button id="help-replay" class="confirm-btn secondary" data-i18n="help.replay">Replay tutorial</button>
+      <button id="help-records" class="confirm-btn secondary" data-i18n="help.records">Records</button>
+      <button id="help-close" class="confirm-btn secondary" data-i18n="common.close">Close</button>
     </div>
     <dl class="help-rules" id="help-rules"></dl>
-    <section class="help-credits" id="help-credits" aria-label="Credits"></section>
+    <section class="help-credits" id="help-credits" aria-label="Credits" data-i18n-aria="credits.title"></section>
     <!-- Last of all, after the credits: every sound the game makes, to hear on its own. -->
-    <button id="help-sounds" class="confirm-btn secondary help-end-btn">Sound preview</button>
+    <button id="help-sounds" class="confirm-btn secondary help-end-btn" data-i18n="help.sounds">Sound preview</button>
   </div>
   <div class="confirm-card help-card" id="records-card" hidden>
-    <div class="confirm-title">Records</div>
+    <div class="confirm-title" data-i18n="records.title">Records</div>
     <div class="help-actions">
-      <button id="records-back" class="confirm-btn secondary">Back</button>
+      <button id="records-back" class="confirm-btn secondary" data-i18n="common.back">Back</button>
     </div>
     <div class="records-body" id="records-body"></div>
   </div>
   <div class="confirm-card help-card" id="sounds-card" hidden>
-    <div class="confirm-title">Sound preview</div>
+    <div class="confirm-title" data-i18n="sounds.title">Sound preview</div>
     <div class="help-actions">
-      <button id="sounds-back" class="confirm-btn secondary">Back</button>
+      <button id="sounds-back" class="confirm-btn secondary" data-i18n="common.back">Back</button>
     </div>
     <div id="sound-tester-container"></div>
   </div>
@@ -70,9 +82,9 @@
 <div id="stage">
   <canvas id="c"></canvas>
   <div id="hud" hidden>
-    <div><span>biggest boom</span><b id="hudBig">0</b></div>
-    <div><span>booms</span><b id="hudGroups">0</b></div>
-    <div><span>balls destroyed</span><b id="hudBalls">0</b></div>
+    <div><span data-i18n="hud.biggest">biggest boom</span><b id="hudBig">0</b></div>
+    <div><span data-i18n="hud.booms">booms</span><b id="hudGroups">0</b></div>
+    <div><span data-i18n="hud.destroyed">balls destroyed</span><b id="hudBalls">0</b></div>
   </div>
 
   <div id="pause-overlay" hidden>
@@ -81,16 +93,16 @@
         <span class="pause-bar"></span>
         <span class="pause-bar"></span>
       </div>
-      <div class="pause-title">PAUSED</div>
-      <div class="pause-hint">Tap anywhere to resume</div>
+      <div class="pause-title" data-i18n="pause.title">PAUSED</div>
+      <div class="pause-hint" data-i18n="pause.hint">Tap anywhere to resume</div>
     </div>
   </div>
 
   <div id="tut-banner" hidden>
     <div class="tut-head">
-      <span class="tut-title">How to play</span>
+      <span class="tut-title" data-i18n="tut.title">How to play</span>
       <span class="tut-dots" id="tut-dots"></span>
-      <button id="tut-skip" class="tut-skip">Skip</button>
+      <button id="tut-skip" class="tut-skip" data-i18n="common.skip">Skip</button>
     </div>
     <div class="tut-line" id="tut-line"></div>
     <div class="tut-sub" id="tut-sub" hidden></div>
@@ -98,11 +110,11 @@
 
   <div id="offer-overlay" hidden>
     <div class="confirm-card">
-      <div class="confirm-title">New to Tone Boom?</div>
-      <div class="confirm-sub">A one-minute lesson on the five things to know.</div>
+      <div class="confirm-title" data-i18n="offer.title">New to Tone Boom?</div>
+      <div class="confirm-sub" data-i18n="offer.sub">A one-minute lesson on the five things to know.</div>
       <div class="confirm-actions">
-        <button id="offer-show" class="confirm-btn primary">Show me</button>
-        <button id="offer-skip" class="confirm-btn secondary">Skip</button>
+        <button id="offer-show" class="confirm-btn primary" data-i18n="offer.show">Show me</button>
+        <button id="offer-skip" class="confirm-btn secondary" data-i18n="common.skip">Skip</button>
       </div>
     </div>
   </div>
@@ -124,11 +136,11 @@
 
   <div id="menu-confirm-overlay" hidden>
     <div class="confirm-card">
-      <div class="confirm-title">Exit to Main Menu?</div>
-      <div class="confirm-sub">Current game progress will be lost.</div>
+      <div class="confirm-title" data-i18n="exit.title">Exit to Main Menu?</div>
+      <div class="confirm-sub" data-i18n="exit.sub">Current game progress will be lost.</div>
       <div class="confirm-actions">
-        <button id="menu-confirm-exit" class="confirm-btn primary">Exit</button>
-        <button id="menu-confirm-cancel" class="confirm-btn secondary">Cancel</button>
+        <button id="menu-confirm-exit" class="confirm-btn primary" data-i18n="exit.exit">Exit</button>
+        <button id="menu-confirm-cancel" class="confirm-btn secondary" data-i18n="common.cancel">Cancel</button>
       </div>
     </div>
   </div>
@@ -141,131 +153,131 @@
 
   <div id="panel" hidden>
     <div class="panel-header">
-      <h2>Options &amp; Adjustments</h2>
-      <button id="panel-close" class="panel-close-btn">Back to Menu</button>
+      <h2 data-i18n="panel.title">Options &amp; Adjustments</h2>
+      <button id="panel-close" class="panel-close-btn" data-i18n="bar.menu">Back to Menu</button>
     </div>
-    <h2>Preset</h2>
-    <div class="knob"><label for="preset">preset</label>
+    <h2 data-i18n="panel.preset">Preset</h2>
+    <div class="knob"><label for="preset" data-i18n="panel.presetLabel">preset</label>
       <select id="preset" class="preset-select">
-        <option>Normal</option>
-        <option>Relax</option>
-        <option>Chaos</option>
-        <option>Cascade</option>
-        <option>Drift</option>
-        <option>Rally</option>
-        <option>Custom 1</option>
-        <option>Custom 2</option>
-        <option>Custom 3</option>
+        <option value="normal" data-i18n="preset.normal">Normal</option>
+        <option value="relax" data-i18n="preset.relax">Relax</option>
+        <option value="chaos" data-i18n="preset.chaos">Chaos</option>
+        <option value="cascade" data-i18n="preset.cascade">Cascade</option>
+        <option value="drift" data-i18n="preset.drift">Drift</option>
+        <option value="rally" data-i18n="preset.rally">Rally</option>
+        <option value="custom1" data-i18n="preset.custom" data-i18n-n="1">Custom 1</option>
+        <option value="custom2" data-i18n="preset.custom" data-i18n-n="2">Custom 2</option>
+        <option value="custom3" data-i18n="preset.custom" data-i18n-n="3">Custom 3</option>
       </select></div>
-    <p class="preset-hint">Pick <b>Custom 1</b>, <b>2</b> or <b>3</b> to change the rules, motion and sound yourself. Each keeps its own settings.</p>
+    <p class="preset-hint" data-i18n-html="panel.presetHint">Pick <b>Custom 1</b>, <b>2</b> or <b>3</b> to change the rules, motion and sound yourself. Each keeps its own settings.</p>
 
-    <h2>Basics</h2>
-    <div class="knob"><label for="labels">ball numbers</label>
+    <h2 data-i18n="panel.basics">Basics</h2>
+    <div class="knob"><label for="labels" data-i18n="knob.labels.label">ball numbers</label>
       <input id="labels" type="range" min="0" max="1" step="1" value="0"><output id="labelsv">off</output></div>
-    <p class="knob-hint">Prints a number on every ball, one per colour, so colours can be told apart without relying on their hue.</p>
-    <div class="knob"><label for="vol">volume</label>
+    <p class="knob-hint" data-i18n="knob.labels.hint">Prints a number on every ball, one per colour, so colours can be told apart without relying on their hue.</p>
+    <div class="knob"><label for="vol" data-i18n="knob.vol.label">volume</label>
       <input id="vol" type="range" min="0" max="2" step="0.05" value="0.9"><output id="volv">90%</output></div>
-    <p class="knob-hint">Loudness of the whole game. Above 100% boosts it, for a quiet phone speaker.</p>
-    <div class="knob"><label for="haptics">haptics</label>
+    <p class="knob-hint" data-i18n="knob.vol.hint">Loudness of the whole game. Above 100% boosts it, for a quiet phone speaker.</p>
+    <div class="knob"><label for="haptics" data-i18n="knob.haptics.label">haptics</label>
       <input id="haptics" type="range" min="0" max="1" step="1" value="1"><output id="hapticsv">on</output></div>
-    <p class="knob-hint">Short vibrations on booms and locks, on phones that have them.</p>
-    <div class="knob"><label for="ailevel">AI opponent</label>
+    <p class="knob-hint" data-i18n="knob.haptics.hint">Short vibrations on booms and locks, on phones that have them.</p>
+    <div class="knob"><label for="ailevel" data-i18n="knob.ailevel.label">AI opponent</label>
       <input id="ailevel" type="range" min="0" max="4" step="1" value="0"><output id="ailevelv">ladder</output></div>
-    <p class="knob-hint">Who you play in 1 player. Ladder: a win moves you up to a stronger AI, a loss down to a weaker one, and losing to AGI starts again from AI1. Pick one AI to play only that one; it moves no ladder and sets no record.</p>
+    <p class="knob-hint" data-i18n="knob.ailevel.hint">Who you play in 1 player. Ladder: a win moves you up to a stronger AI, a loss down to a weaker one, and losing to AGI starts again from AI1. Pick one AI to play only that one; it moves no ladder and sets no record.</p>
 
     <div id="advanced" hidden>
 
-    <h2>Rules</h2>
-    <div class="knob"><label for="specials">black &amp; white</label>
+    <h2 data-i18n="panel.rules">Rules</h2>
+    <div class="knob"><label for="specials" data-i18n="knob.specials.label">black &amp; white</label>
       <input id="specials" type="range" min="0" max="1" step="1" value="1"><output id="specialsv">on</output></div>
-    <p class="knob-hint">The two special balls. Black sticks to any colour and survives every boom but a white one. White booms whatever it touches, black included.</p>
-    <div class="knob"><label for="white">white chance</label>
+    <p class="knob-hint" data-i18n="knob.specials.hint">The two special balls. Black sticks to any colour and survives every boom but a white one. White booms whatever it touches, black included.</p>
+    <div class="knob"><label for="white" data-i18n="knob.white.label">white chance</label>
       <input id="white" type="range" min="0" max="1" step="0.05" value="0.75"><output id="whitev">19%</output></div>
-    <p class="knob-hint">How often the player who is behind gets a white ball. The readout is the chance for each new ball. 0 turns white off and leaves black.</p>
-    <div class="knob"><label for="colours">colours</label>
+    <p class="knob-hint" data-i18n="knob.white.hint">How often the player who is behind gets a white ball. The readout is the chance for each new ball. 0 turns white off and leaves black.</p>
+    <div class="knob"><label for="colours" data-i18n="knob.colours.label">colours</label>
       <input id="colours" type="range" min="3" max="6" step="1" value="3"><output id="coloursv">3</output></div>
-    <p class="knob-hint">How many ball colours are in play. More colours means fewer matches, so groups grow more slowly and booms are smaller.</p>
-    <div class="knob"><label for="stats">damage panel</label>
+    <p class="knob-hint" data-i18n="knob.colours.hint">How many ball colours are in play. More colours means fewer matches, so groups grow more slowly and booms are smaller.</p>
+    <div class="knob"><label for="stats" data-i18n="knob.stats.label">damage panel</label>
       <input id="stats" type="range" min="0" max="1" step="1" value="0"><output id="statsv">off</output></div>
-    <p class="knob-hint">A small panel during the match: the biggest boom, how many booms, and how many balls destroyed.</p>
-    <div class="knob"><label for="match">match length</label>
+    <p class="knob-hint" data-i18n="knob.stats.hint">A small panel during the match: the biggest boom, how many booms, and how many balls destroyed.</p>
+    <div class="knob"><label for="match" data-i18n="knob.match.label">match length</label>
       <input id="match" type="range" min="60" max="1200" step="30" value="120"><output id="matchv">2:00</output></div>
-    <p class="knob-hint">How long a match lasts.</p>
-    <div class="knob"><label for="size">ball size</label>
+    <p class="knob-hint" data-i18n="knob.match.hint">How long a match lasts.</p>
+    <div class="knob"><label for="size" data-i18n="knob.size.label">ball size</label>
       <input id="size" type="range" min="8" max="26" step="1" value="12"><output id="sizev">12</output></div>
-    <p class="knob-hint">The size of every ball. Bigger balls are easier to hit and fill the table sooner.</p>
-    <div class="knob"><label for="rain">rain interval</label>
+    <p class="knob-hint" data-i18n="knob.size.hint">The size of every ball. Bigger balls are easier to hit and fill the table sooner.</p>
+    <div class="knob"><label for="rain" data-i18n="knob.rain.label">rain interval</label>
       <input id="rain" type="range" min="0" max="10" step="0.5" value="0"><output id="rainv">off</output></div>
-    <p class="knob-hint">Balls that drop onto the table by themselves. Auto drops one only while the table is running low. A time drops one that often, however full the table is.</p>
-    <div class="knob"><label for="shotdecay">repeat hits pay</label>
+    <p class="knob-hint" data-i18n="knob.rain.hint">Balls that drop onto the table by themselves. Auto drops one only while the table is running low. A time drops one that often, however full the table is.</p>
+    <div class="knob"><label for="shotdecay" data-i18n="knob.shotdecay.label">repeat hits pay</label>
       <input id="shotdecay" type="range" min="0.3" max="1" step="0.05" value="0.5"><output id="shotdecayv">&times;0.50</output></div>
-    <p class="knob-hint">One throw can score several times as the balls keep hitting. Each further score from the same throw pays this much of the one before: ×0.50 halves it each time; no decay pays every one in full.</p>
+    <p class="knob-hint" data-i18n="knob.shotdecay.hint">One throw can score several times as the balls keep hitting. Each further score from the same throw pays this much of the one before: ×0.50 halves it each time; no decay pays every one in full.</p>
 
-    <h2>Motion</h2>
-    <div class="knob"><label for="roll">roll time</label>
+    <h2 data-i18n="panel.motion">Motion</h2>
+    <div class="knob"><label for="roll" data-i18n="knob.roll.label">roll time</label>
       <input id="roll" type="range" min="0.15" max="1" step="0.01" value="0.59"><output id="rollv">10s</output></div>
-    <p class="knob-hint">How long a ball keeps rolling before it stops. Longer means more collisions from every throw.</p>
-    <div class="knob"><label for="bounce">bounce</label>
+    <p class="knob-hint" data-i18n="knob.roll.hint">How long a ball keeps rolling before it stops. Longer means more collisions from every throw.</p>
+    <div class="knob"><label for="bounce" data-i18n="knob.bounce.label">bounce</label>
       <input id="bounce" type="range" min="0.5" max="1" step="0.01" value="1"><output id="bouncev">100%</output></div>
-    <p class="knob-hint">How much speed a ball keeps when it hits another ball; walls keep a little less. 100% is fully bouncy; lower is deader.</p>
-    <div class="knob"><label for="spin">spin</label>
+    <p class="knob-hint" data-i18n="knob.bounce.hint">How much speed a ball keeps when it hits another ball; walls keep a little less. 100% is fully bouncy; lower is deader.</p>
+    <div class="knob"><label for="spin" data-i18n="knob.spin.label">spin</label>
       <input id="spin" type="range" min="0" max="1" step="0.05" value="1"><output id="spinv">100%</output></div>
-    <p class="knob-hint">How much a hit off-centre turns a group round. At 0 groups slide without turning.</p>
-    <div class="knob"><label for="kick">throw speed</label>
+    <p class="knob-hint" data-i18n="knob.spin.hint">How much a hit off-centre turns a group round. At 0 groups slide without turning.</p>
+    <div class="knob"><label for="kick" data-i18n="knob.kick.label">throw speed</label>
       <input id="kick" type="range" min="0.2" max="2.5" step="0.05" value="1.2"><output id="kickv">1.2&times;</output></div>
-    <p class="knob-hint">Multiplies the speed of every throw. Higher sends balls farther and makes a boom easier to reach.</p>
-    <div class="knob"><label for="reload">shot every</label>
+    <p class="knob-hint" data-i18n="knob.kick.hint">Multiplies the speed of every throw. Higher sends balls farther and makes a boom easier to reach.</p>
+    <div class="knob"><label for="reload" data-i18n="knob.reload.label">shot every</label>
       <input id="reload" type="range" min="0" max="8" step="0.5" value="3"><output id="reloadv">3.0s</output></div>
-    <p class="knob-hint">Time between one launcher's throws: how long you have to aim each ball.</p>
+    <p class="knob-hint" data-i18n="knob.reload.hint">Time between one launcher's throws: how long you have to aim each ball.</p>
 
-    <h2>Breaking</h2>
-    <div class="knob"><label for="boom">boom at</label>
+    <h2 data-i18n="panel.breaking">Breaking</h2>
+    <div class="knob"><label for="boom" data-i18n="knob.boom.label">boom at</label>
       <input id="boom" type="range" min="0.2" max="1" step="0.05" value="0.4"><output id="boomv">40%</output></div>
-    <p class="knob-hint">How hard a throw must be to boom a group, as a share of the power bar. Softer hits stick or knock one ball loose. Lower makes booms easier; the aim arrow turns red from this point.</p>
-    <div class="knob"><label for="maxpower">max power</label>
+    <p class="knob-hint" data-i18n="knob.boom.hint">How hard a throw must be to boom a group, as a share of the power bar. Softer hits stick or knock one ball loose. Lower makes booms easier; the aim arrow turns red from this point.</p>
+    <div class="knob"><label for="maxpower" data-i18n="knob.maxpower.label">max power</label>
       <input id="maxpower" type="range" min="600" max="2000" step="50" value="1600"><output id="maxpowerv">1600</output></div>
-    <p class="knob-hint">The speed of a throw at full power.</p>
-    <div class="knob"><label for="kickout">knock-loose speed</label>
+    <p class="knob-hint" data-i18n="knob.maxpower.hint">The speed of a throw at full power.</p>
+    <div class="knob"><label for="kickout" data-i18n="knob.kickout.label">knock-loose speed</label>
       <input id="kickout" type="range" min="0.3" max="1.2" step="0.05" value="0.5"><output id="kickoutv">50% /13%</output></div>
-    <p class="knob-hint">How fast a ball knocked off a group flies, as a share of max power. The second figure is how much of that range is fast enough to boom another group: a chain.</p>
-    <div class="knob"><label for="spread">boom debris</label>
+    <p class="knob-hint" data-i18n="knob.kickout.hint">How fast a ball knocked off a group flies, as a share of max power. The second figure is how much of that range is fast enough to boom another group: a chain.</p>
+    <div class="knob"><label for="spread" data-i18n="knob.spread.label">boom debris</label>
       <input id="spread" type="range" min="0.5" max="2" step="0.05" value="2"><output id="spreadv">2.00&times;</output></div>
-    <p class="knob-hint">How fast the balls of a boomed group scatter, compared with the hit that boomed it. Higher throws debris farther, into other groups.</p>
-    <div class="knob"><label for="speedcap">speed cap</label>
+    <p class="knob-hint" data-i18n="knob.spread.hint">How fast the balls of a boomed group scatter, compared with the hit that boomed it. Higher throws debris farther, into other groups.</p>
+    <div class="knob"><label for="speedcap" data-i18n="knob.speedcap.label">speed cap</label>
       <input id="speedcap" type="range" min="600" max="3600" step="100" value="3200"><output id="speedcapv">3200 px/s</output></div>
-    <p class="knob-hint">The fastest any group can move, however hard it is hit. Lower keeps the table calmer.</p>
-    <div class="knob"><label for="minboom">smallest boom</label>
+    <p class="knob-hint" data-i18n="knob.speedcap.hint">The fastest any group can move, however hard it is hit. Lower keeps the table calmer.</p>
+    <div class="knob"><label for="minboom" data-i18n="knob.minboom.label">smallest boom</label>
       <input id="minboom" type="range" min="1" max="6" step="1" value="2"><output id="minboomv">2+</output></div>
-    <p class="knob-hint">The fewest balls a group needs before it can boom. A smaller group only loses a ball, however hard it is hit. Any lets even a single ball boom.</p>
+    <p class="knob-hint" data-i18n="knob.minboom.hint">The fewest balls a group needs before it can boom. A smaller group only loses a ball, however hard it is hit. Any lets even a single ball boom.</p>
 
-    <h2>Sound</h2>
-    <div class="knob"><label for="lock">lock sound</label>
+    <h2 data-i18n="panel.sound">Sound</h2>
+    <div class="knob"><label for="lock" data-i18n="knob.lock.label">lock sound</label>
       <input id="lock" type="range" min="0" max="2" step="0.05" value="1"><output id="lockv">100%</output></div>
-    <p class="knob-hint">Volume of the note when same colours stick together.</p>
-    <div class="knob"><label for="brk">break sound</label>
+    <p class="knob-hint" data-i18n="knob.lock.hint">Volume of the note when same colours stick together.</p>
+    <div class="knob"><label for="brk" data-i18n="knob.brk.label">break sound</label>
       <input id="brk" type="range" min="0" max="2" step="0.05" value="1.7"><output id="brkv">170%</output></div>
-    <p class="knob-hint">Volume of the sound when a bond between two balls breaks.</p>
-    <div class="knob"><label for="drone">drone</label>
+    <p class="knob-hint" data-i18n="knob.brk.hint">Volume of the sound when a bond between two balls breaks.</p>
+    <div class="knob"><label for="drone" data-i18n="knob.drone.label">drone</label>
       <input id="drone" type="range" min="0" max="1" step="0.05" value="0.25"><output id="dronev">25%</output></div>
-    <p class="knob-hint">Volume of the soft hum under a match. 0 turns it off.</p>
-    <div class="knob"><label for="clicks">knocks</label>
+    <p class="knob-hint" data-i18n="knob.drone.hint">Volume of the soft hum under a match. 0 turns it off.</p>
+    <div class="knob"><label for="clicks" data-i18n="knob.clicks.label">knocks</label>
       <input id="clicks" type="range" min="0" max="2" step="0.05" value="0.5"><output id="clicksv">50%</output></div>
-    <p class="knob-hint">Volume of the knock when balls hit each other or a wall, and of each throw.</p>
-    <div class="knob"><label for="boomvol">boom sound</label>
+    <p class="knob-hint" data-i18n="knob.clicks.hint">Volume of the knock when balls hit each other or a wall, and of each throw.</p>
+    <div class="knob"><label for="boomvol" data-i18n="knob.boomvol.label">boom sound</label>
       <input id="boomvol" type="range" min="0" max="2" step="0.05" value="1"><output id="boomvolv">100%</output></div>
-    <p class="knob-hint">Volume of booms, the loudest sound in the game.</p>
-    <div class="knob"><label for="boomcut">boom low cut</label>
+    <p class="knob-hint" data-i18n="knob.boomvol.hint">Volume of booms, the loudest sound in the game.</p>
+    <div class="knob"><label for="boomcut" data-i18n="knob.boomcut.label">boom low cut</label>
       <input id="boomcut" type="range" min="40" max="600" step="5" value="300"><output id="boomcutv">300Hz</output></div>
-    <p class="knob-hint">Cuts the deepest part of every boom, below this pitch. Raise it if booms crackle or rattle on a phone speaker; lower it on headphones for more rumble.</p>
-    <div class="knob"><label for="locktone">lock tone</label>
+    <p class="knob-hint" data-i18n="knob.boomcut.hint">Cuts the deepest part of every boom, below this pitch. Raise it if booms crackle or rattle on a phone speaker; lower it on headphones for more rumble.</p>
+    <div class="knob"><label for="locktone" data-i18n="knob.locktone.label">lock tone</label>
       <input id="locktone" type="range" min="0.15" max="1.5" step="0.05" value="0.3"><output id="locktonev">720Hz arc</output></div>
-    <p class="knob-hint">How bright the black ball's electric lock sounds. Lower is darker and softer, higher is sharper.</p>
-    <div class="knob"><label for="latency">audio buffer</label>
+    <p class="knob-hint" data-i18n="knob.locktone.hint">How bright the black ball's electric lock sounds. Lower is darker and softer, higher is sharper.</p>
+    <div class="knob"><label for="latency" data-i18n="knob.latency.label">audio buffer</label>
       <input id="latency" type="range" min="0" max="0.2" step="0.01" value="0.05"><output id="latencyv">50ms</output></div>
-    <p class="knob-hint">How far ahead sound is prepared. Raise it if sound crackles or drops out; lower it if sounds come late. Auto lets the device choose. Changing it restarts the sound.</p>
+    <p class="knob-hint" data-i18n="knob.latency.hint">How far ahead sound is prepared. Raise it if sound crackles or drops out; lower it if sounds come late. Auto lets the device choose. Changing it restarts the sound.</p>
 
-    <h2>Settings</h2>
-    <button id="copy">Copy these settings</button>
+    <h2 data-i18n="panel.settings">Settings</h2>
+    <button id="copy" data-i18n="panel.copy">Copy these settings</button>
     <textarea id="settings" readonly rows="3" spellcheck="false"></textarea>
     </div>
   </div>
@@ -292,11 +304,11 @@
 
 <div id="bar">
   <div class="row">
-    <button id="pause-btn" class="pause-btn">Pause</button>
+    <button id="pause-btn" class="pause-btn" data-i18n="bar.pause">Pause</button>
     <span class="spacer"></span>
     <button id="fs">Full screen</button>
     <button id="sound" aria-pressed="true">Audio on</button>
-    <button id="menu-btn">Back to Menu</button>
+    <button id="menu-btn" data-i18n="bar.menu">Back to Menu</button>
   </div>
 </div>
 

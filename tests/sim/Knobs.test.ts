@@ -1,3 +1,4 @@
+import { EN } from '../../src/i18n/en';
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -59,7 +60,7 @@ function markupPresetOptions(): string[] {
   const src = panelMarkup();
   const m = /<select\s+id="preset"[^>]*>([\s\S]*?)<\/select>/.exec(src);
   expect(m, 'index.html has no #preset select in the panel').not.toBeNull();
-  return [...m![1].matchAll(/<option>([^<]*)<\/option>/g)].map(o => o[1].trim());
+  return [...m![1].matchAll(/<option[^>]*>([^<]*)<\/option>/g)].map(o => o[1].trim());
 }
 
 describe('knob registry', () => {
@@ -160,12 +161,18 @@ describe('knob application', () => {
 });
 
 describe('knob descriptions', () => {
-  it('explain every knob in the panel, right under its slider', () => {
-    // A knob the player can move but not understand is a knob nobody moves.
+  it('explain every knob in the panel, right under its slider, in every language', () => {
+    // A knob the player can move but not understand is a knob nobody moves. The
+    // words live in the translations (`src/i18n/en.ts` is the source); the
+    // markup carries the English and the key that replaces it.
     const src = panelMarkup();
     for (const id of Object.keys(KNOBS)) {
-      const m = new RegExp('<input id="' + id + '"[^\\n]*</div>\\n\\s*<p class="knob-hint">([^<]{20,})</p>').exec(src);
-      expect(m, `${id} has no description under it`).not.toBeNull();
+      const hint = (EN as Record<string, string>)[`knob.${id}.hint`];
+      expect(hint?.length ?? 0, `${id} has no description`).toBeGreaterThanOrEqual(20);
+      expect((EN as Record<string, string>)[`knob.${id}.label`], `${id} has no label`).toBeTruthy();
+      const m = new RegExp('<input id="' + id + '"[^\\n]*</div>\\n\\s*<p class="knob-hint" data-i18n="knob\\.' + id + '\\.hint">').exec(src);
+      expect(m, `${id} has no description under its slider`).not.toBeNull();
+      expect(src, `${id}'s label is not translated`).toContain(`<label for="${id}" data-i18n="knob.${id}.label">`);
     }
   });
 });

@@ -15,7 +15,8 @@ import {
   tutorialHint,
 } from '../game/Tutorial';
 import { uiClick } from '../audio/UiSounds';
-import { CORE_RULES } from './RulesText';
+import { coreRules } from './RulesText';
+import { t } from '../i18n/I18n';
 import { setHidden } from './Dom';
 
 /** The clock has nothing to count in the tutorial, and says so. */
@@ -38,36 +39,36 @@ export function tutorialLine(event: TutorialEvent): BannerLine | null {
   switch (event.type) {
     case 'step':
       switch (event.step) {
-        case 'aim': return { line: 'Drag anywhere to aim.', sub: 'Farther means harder.' };
-        case 'lock': return { line: 'Same colours stick.', sub: 'Lock one onto the pair.' };
+        case 'aim': return { line: t('tut.aim.line'), sub: t('tut.aim.sub') };
+        case 'lock': return { line: t('tut.lock.line'), sub: t('tut.lock.sub') };
         // Deep red, not red: a throw at the red threshold never booms the
         // group, measured on the real loop. See TEACH_STRENGTH in game/Tutorial.ts.
-        case 'boom': return { line: 'A different colour, thrown hard, booms the whole group.', sub: 'Drag farther, until the arrow is deep red.' };
-        case 'black': return { line: 'The black ball sticks to any colour.', sub: 'Lock it onto the pair.' };
-        case 'white': return { line: 'The white ball booms whatever it touches.', sub: 'Even softly. Even the black.' };
+        case 'boom': return { line: t('tut.boom.line'), sub: t('tut.boom.sub') };
+        case 'black': return { line: t('tut.black.line'), sub: t('tut.black.sub') };
+        case 'white': return { line: t('tut.white.line'), sub: t('tut.white.sub') };
       }
       return null;
     case 'touched':
-      return { line: 'It fires by itself when the ring fills.', sub: 'Drag again to aim the next one.' };
+      return { line: t('tut.touched.line'), sub: t('tut.touched.sub') };
     case 'firstLock':
-      return { line: 'Keep building.', sub: 'Make it four.' };
+      return { line: t('tut.firstLock.line'), sub: t('tut.firstLock.sub') };
     case 'tooHard':
-      return { line: 'Gently — a soft throw sticks better.' };
+      return { line: t('tut.tooHard.line') };
     case 'peel':
-      return { line: 'Too soft — that only knocked one loose.', sub: 'Pull farther.' };
+      return { line: t('tut.peel.line'), sub: t('tut.peel.sub') };
     case 'again':
-      return { line: 'Not quite.', sub: 'Drag to aim, and try again.' };
+      return { line: t('tut.again.line'), sub: t('tut.again.sub') };
     case 'hint':
-      return { line: 'Try it like this.', sub: 'Drag to where the circle stops.' };
+      return { line: t('tut.hint.line'), sub: t('tut.hint.sub') };
     case 'stepDone':
       switch (event.step) {
-        case 'aim': return { line: 'Nice.' };
-        case 'lock': return { line: 'A group.' };
+        case 'aim': return { line: t('tut.done.aim') };
+        case 'lock': return { line: t('tut.done.lock') };
         // Quotes what this player's own boom and building paid, read from the
         // counters, so it stays true if the pay table changes.
-        case 'boom': return { line: `That boom paid +${event.boomPts}.`, sub: `Building it paid +${event.lockPts}. Bigger pays more.` };
-        case 'black': return { line: 'Black sticks to anything.', sub: 'Its locks pay double.' };
-        case 'white': return { line: 'White booms anything.', sub: "It's the only way to clear black." };
+        case 'boom': return { line: t('tut.done.boom.line', { boom: event.boomPts }), sub: t('tut.done.boom.sub', { lock: event.lockPts }) };
+        case 'black': return { line: t('tut.done.black.line'), sub: t('tut.done.black.sub') };
+        case 'white': return { line: t('tut.done.white.line'), sub: t('tut.done.white.sub') };
       }
       return null;
     default:
@@ -84,9 +85,9 @@ export interface CardCopy {
 /** The last card: the rules again, and how a match is won. */
 export function closingCard(matchLen: number): CardCopy {
   return {
-    title: "You're ready",
-    lines: [...CORE_RULES],
-    small: matchLen > 0 ? `Most points in ${formatClock(matchLen)} wins.` : 'Most points wins.',
+    title: t('tut.card.title'),
+    lines: coreRules(),
+    small: matchLen > 0 ? t('tut.card.small', { time: formatClock(matchLen) }) : t('tut.card.smallEndless'),
   };
 }
 
@@ -95,7 +96,7 @@ export function closingCard(matchLen: number): CardCopy {
  * goes on into it; anyone else goes back to the menu they came from.
  */
 export function closingButton(then: PlayMode | null): string {
-  return then ? 'Start game' : 'Back to menu';
+  return then ? t('tut.card.start') : t('tut.card.menu');
 }
 
 export interface TutorialSessionDeps {

@@ -1,4 +1,6 @@
 import { AudioStore, BEAT, initAudio, applyGain, inKey } from '../audio/SynthEngine';
+import { MessageKey, t } from '../i18n/I18n';
+import { EN } from '../i18n/en';
 import { BOND_VOICE, KNOCK_MODES, KNOCK_RING, TICK_LEVEL, TICK_GO_LEVEL, playNote, playSwoosh, playKnock, playCountdownTick, getBoomProps, boomPitches, getMagnetLockProps, lockArcGain, getWhiteBlackBoomVol, boomEchoSpec, playMagneticElectricSound, PAIR_LIFT, PAIR_SUB_LIFT, PAIR_DUR, PAIR_VOL } from '../audio/Voices';
 import { clickHz, playBinauralClick } from '../audio/UiSounds';
 import { pitchOf } from '../audio/SoundEvents';
@@ -30,13 +32,52 @@ export interface SoundDef {
  * The five boom-size tiers the boom voice and the magnet lock both scale on.
  * Each entry's `boomSize` is a representative size inside that tier.
  */
-const LEVEL_TIERS: { boomSize: number; label: string }[] = [
-  { boomSize: 3, label: 'Level 0-5 (0..4 balls)' },
-  { boomSize: 7, label: 'Level 5-10 (5..9 balls)' },
-  { boomSize: 12, label: 'Level 10-15 (10..14 balls)' },
-  { boomSize: 18, label: 'Level 15-20 (15..19 balls)' },
-  { boomSize: 25, label: 'Level 20+ (20+ balls)' },
+const LEVEL_TIERS: { boomSize: number; label: string; range: string; balls: string }[] = [
+  { boomSize: 3, label: 'Level 0-5 (0..4 balls)', range: '0-5', balls: '0..4' },
+  { boomSize: 7, label: 'Level 5-10 (5..9 balls)', range: '5-10', balls: '5..9' },
+  { boomSize: 12, label: 'Level 10-15 (10..14 balls)', range: '10-15', balls: '10..14' },
+  { boomSize: 18, label: 'Level 15-20 (15..19 balls)', range: '15-20', balls: '15..19' },
+  { boomSize: 25, label: 'Level 20+ (20+ balls)', range: '20+', balls: '20+' },
 ];
+
+/** A size band's name in the player's language. */
+function tierText(i: number): string {
+  const tier = LEVEL_TIERS[i];
+  return tier ? t('sound.tier', { range: tier.range, balls: tier.balls }) : '';
+}
+
+const CATEGORY_KEY: Record<SoundDef['category'], MessageKey> = {
+  'Game FX': 'sound.cat.gameFx',
+  'Boom Levels': 'sound.cat.boomLevels',
+  'Black & White Levels': 'sound.cat.bwLevels',
+  'System & UI': 'sound.cat.system',
+};
+
+/**
+ * A sound's name and when it plays, in the player's language. `name` and
+ * `situation` on the entry are the English, which the tests hold; this reads
+ * the same thing from the translations by the entry's id.
+ */
+export function soundText(sound: SoundDef): { name: string; situation: string; category: string } {
+  const category = t(CATEGORY_KEY[sound.category]);
+  const id = sound.id;
+  let m = /^boom_l(\d)$/.exec(id);
+  if (m) return { name: t('sound.boom.name', { tier: tierText(+m[1]) }), situation: t(`sound.${id}.situation` as MessageKey), category };
+  m = /^wb_boom_(\d+)$/.exec(id);
+  if (m) {
+    const i = LEVEL_TIERS.findIndex(l => l.boomSize === +m![1]);
+    return { name: t('sound.wb.name', { tier: tierText(i) }), situation: t('sound.wb.situation', { n: m[1] }), category };
+  }
+  m = /^black_lock_(single|pair)_(\d+)$/.exec(id);
+  if (m) {
+    const i = LEVEL_TIERS.findIndex(l => l.boomSize === +m![2]);
+    const kind = m[1] as 'single' | 'pair';
+    return { name: t(`sound.lock.${kind}.name`, { tier: tierText(i) }), situation: t(`sound.lock.${kind}.situation`, { n: m[2] }), category };
+  }
+  const nameKey = `sound.${id}.name` as MessageKey;
+  const sitKey = `sound.${id}.situation` as MessageKey;
+  return { name: nameKey in EN ? t(nameKey) : sound.name, situation: sitKey in EN ? t(sitKey) : sound.situation, category };
+}
 
 function echoText(boomSize: number, whiteBlack: boolean): string {
   const e = boomEchoSpec(boomSize, whiteBlack);
@@ -306,18 +347,19 @@ export function renderSoundTester(targetContainer: HTMLElement) {
 
     const title = document.createElement('span');
     title.className = 'sound-title';
-    title.textContent = sound.name;
+    const words = soundText(sound);
+    title.textContent = words.name;
 
     const badge = document.createElement('span');
     badge.className = `sound-badge ${catClass}`;
-    badge.textContent = sound.category;
+    badge.textContent = words.category;
 
     header.appendChild(title);
     header.appendChild(badge);
 
     const desc = document.createElement('div');
     desc.className = 'sound-desc';
-    desc.textContent = sound.situation;
+    desc.textContent = words.situation;
 
     const paramsText = sound.getParamsText();
     const params = document.createElement('div');
@@ -334,7 +376,7 @@ export function renderSoundTester(targetContainer: HTMLElement) {
     const btn = document.createElement('button');
     btn.className = 'sound-play-btn';
     btn.id = `sound-btn-${sound.id}`;
-    btn.textContent = '► Play';
+    btn.textContent = t('sound.play');
     btn.addEventListener('click', () => {
       sound.play();
     });

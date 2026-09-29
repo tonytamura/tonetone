@@ -11,6 +11,7 @@
  * Knob ids match the `<input>` ids in `index.html`; `tests/sim/Knobs.test.ts`
  * asserts the markup's min/max/step/value still agree with the registry.
  */
+import { t } from '../i18n/I18n';
 import { Game } from '../game/GameState';
 import { PhysicsConfig, chainPercent, recalcThresholds } from '../physics/Config';
 import { inertiaOf } from '../physics/RigidBody';
@@ -86,7 +87,7 @@ const KNOB_SPECS = {
   specials: {
     group: 'game', kind: 'range', min: 0, max: 1, step: 1, default: 1,
     apply: v => setSpecialsToggle(v > 0),
-    format: v => (v > 0 ? 'on' : 'off'),
+    format: v => (v > 0 ? t('fmt.on') : t('fmt.off')),
     read: () => (SPECIALS ? 1 : 0),
   },
 
@@ -116,7 +117,7 @@ const KNOB_SPECS = {
     // 0 is the ladder; 1..N forces that rung, for feeling one level at a time.
     group: 'game', kind: 'range', min: 0, max: AI_LEVELS.length, step: 1, default: 0,
     apply: v => setForcedAiLevel(v),
-    format: v => (v === 0 ? 'ladder' : AI_LEVELS[v - 1]?.label ?? String(v)),
+    format: v => (v === 0 ? t('fmt.ladder') : AI_LEVELS[v - 1]?.label ?? String(v)),
     read: () => FORCED_AI_LEVEL,
   },
 
@@ -147,14 +148,14 @@ const KNOB_SPECS = {
   labels: {
     group: 'game', kind: 'range', min: 0, max: 1, step: 1, default: 0, cosmetic: true,
     apply: (v, { game }) => { game.showLabels = v > 0; },
-    format: v => (v > 0 ? 'on' : 'off'),
+    format: v => (v > 0 ? t('fmt.on') : t('fmt.off')),
     read: ({ game }) => (game.showLabels ? 1 : 0),
   },
 
   stats: {
     group: 'game', kind: 'range', min: 0, max: 1, step: 1, default: 0, cosmetic: true,
     apply: (v, { game }) => { game.showStats = v > 0; },
-    format: v => (v > 0 ? 'on' : 'off'),
+    format: v => (v > 0 ? t('fmt.on') : t('fmt.off')),
     read: ({ game }) => (game.showStats ? 1 : 0),
   },
 
@@ -164,7 +165,7 @@ const KNOB_SPECS = {
     // still has to name it.
     group: 'game', kind: 'range', min: 60, max: 1200, step: 30, default: 120,
     apply: (v, { game }) => { game.matchLen = v; },
-    format: v => (v === 0 ? 'endless' : formatClock(v)),
+    format: v => (v === 0 ? t('fmt.endless') : formatClock(v)),
     read: ({ game }) => game.matchLen,
   },
 
@@ -183,7 +184,7 @@ const KNOB_SPECS = {
   rain: {
     group: 'game', kind: 'range', min: 0, max: 10, step: 0.5, default: 0,
     apply: (v, { game }) => { game.rainInterval = v; },
-    format: v => (v === 0 ? 'auto (low density)' : v.toFixed(1) + 's'),
+    format: v => (v === 0 ? t('fmt.auto') : v.toFixed(1) + 's'),
     read: ({ game }) => game.rainInterval,
   },
 
@@ -191,14 +192,14 @@ const KNOB_SPECS = {
     // Each further scoring event from one throw pays this fraction of the last.
     group: 'game', kind: 'range', min: 0.3, max: 1, step: 0.05, default: 0.5,
     apply: v => setShotDecay(v),
-    format: v => (v >= 1 ? 'no decay' : '×' + v.toFixed(2)),
+    format: v => (v >= 1 ? t('fmt.noDecay') : '×' + v.toFixed(2)),
     read: () => SHOT_DECAY,
   },
 
   roll: {
     group: 'physics', kind: 'range', min: 0.15, max: 1, step: 0.01, default: 0.59,
     apply: v => { PhysicsConfig.DRAG = v; },
-    format: v => (v >= 0.999 ? 'none' : Math.round(Math.log(500 / PhysicsConfig.STOP) / Math.log(1 / v)) + 's'),
+    format: v => (v >= 0.999 ? t('fmt.none') : Math.round(Math.log(500 / PhysicsConfig.STOP) / Math.log(1 / v)) + 's'),
     read: () => PhysicsConfig.DRAG,
   },
 
@@ -226,7 +227,7 @@ const KNOB_SPECS = {
   reload: {
     group: 'physics', kind: 'range', min: 0, max: 8, step: 0.5, default: 3,
     apply: (v, { game }) => { game.reloadTime = v; },
-    format: v => (v === 0 ? 'off' : v.toFixed(1) + 's'),
+    format: v => (v === 0 ? t('fmt.off') : v.toFixed(1) + 's'),
     read: ({ game }) => game.reloadTime,
   },
 
@@ -268,7 +269,7 @@ const KNOB_SPECS = {
   minboom: {
     group: 'chain', kind: 'range', min: 1, max: 6, step: 1, default: 2,
     apply: v => { PhysicsConfig.MIN_BOOM = v; },
-    format: v => (v <= 1 ? 'any' : v + '+'),
+    format: v => (v <= 1 ? t('fmt.any') : v + '+'),
     read: () => PhysicsConfig.MIN_BOOM,
   },
 
@@ -305,14 +306,14 @@ const KNOB_SPECS = {
     group: 'audio', kind: 'range', min: 0, max: 0.2, step: 0.01, default: 0.05,
     wakesAudio: true, cosmetic: true,
     apply: v => { setLatencyHint(v as number); },
-    format: v => (v ? Math.round((v as number) * 1000) + 'ms' : 'auto'),
+    format: v => (v ? Math.round((v as number) * 1000) + 'ms' : t('fmt.auto')),
     read: () => AudioStore.latency,
   },
 
   haptics: {
     group: 'audio', kind: 'range', min: 0, max: 1, step: 1, default: 1, cosmetic: true,
     apply: v => { AudioStore.haptics = v as number; },
-    format: v => (v ? 'on' : 'off'),
+    format: v => (v ? t('fmt.on') : t('fmt.off')),
     read: () => AudioStore.haptics,
   },
 
@@ -354,7 +355,7 @@ const KNOB_SPECS = {
   drone: {
     group: 'audio', kind: 'range', min: 0, max: 1, step: 0.05, default: 0.25, wakesAudio: true, cosmetic: true,
     apply: v => { AudioStore.drone = v; applyDrone(); },
-    format: v => (v === 0 ? 'off' : pct(v)),
+    format: v => (v === 0 ? t('fmt.off') : pct(v)),
     read: () => AudioStore.drone,
   },
 } satisfies Record<string, KnobSpec>;

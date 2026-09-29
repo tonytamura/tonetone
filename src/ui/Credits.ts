@@ -10,22 +10,22 @@
  * one.
  */
 import { version } from '../../package.json';
+import { t } from '../i18n/I18n';
 import capacitorCore from '../assets/licenses/Capacitor-MIT.txt?raw';
 import capacitorPlugins from '../assets/licenses/Capacitor-Plugins-MIT.txt?raw';
 import montserrat from '../assets/licenses/Montserrat-OFL.txt?raw';
 import outfit from '../assets/licenses/Outfit-OFL.txt?raw';
 
-export const CREDITS = {
-  title: 'Credits',
-  by: 'A game by Tony M. T. L.',
-  lines: [
-    'Every sound is synthesized as you play.',
-    'Type: Montserrat and Outfit, under the SIL Open Font License.',
-    'Built with Capacitor, under the MIT License.',
-  ],
-  licensesLabel: 'Open source licenses',
-  footer: `v${version} · © 2026 Tony M. T. L.`,
-};
+/** The credits' words, in the player's language. The names and the licences stay as they are. */
+export function credits() {
+  return {
+    title: t('credits.title'),
+    by: t('credits.by'),
+    lines: [t('credits.sound'), t('credits.type'), t('credits.built')],
+    licensesLabel: t('credits.licenses'),
+    footer: `v${version} · © 2026 Tony M. T. L.`,
+  };
+}
 
 export interface LicenseEntry {
   /** What it covers, as a reader would name it. */
@@ -46,7 +46,7 @@ export const LICENSES: LicenseEntry[] = [
   },
 ];
 
-/** Fill the Help screen's credits section from `CREDITS` and `LICENSES`. */
+/** Fill the Help screen's credits section from `credits()` and `LICENSES`. */
 export function fillCredits(root: HTMLElement | null) {
   if (!root) return;
   root.innerHTML = '';
@@ -57,6 +57,7 @@ export function fillCredits(root: HTMLElement | null) {
     parent.appendChild(e);
     return e;
   };
+  const CREDITS = credits();
   add('div', 'help-credits-title', CREDITS.title);
   add('div', 'help-credits-by', CREDITS.by);
   for (const l of CREDITS.lines) add('div', 'help-credits-line', l);

@@ -1,4 +1,5 @@
 import { Game } from '../game/GameState';
+import { t } from '../i18n/I18n';
 import { playCountdownTick } from '../audio/Voices';
 import { setHidden } from './Dom';
 
@@ -82,7 +83,7 @@ export function updateCountdown(game: Game, dt: number) {
       setCdText(game, Math.ceil(left).toString(), 'start');
       return;
     } else if (startElapsed < reloadSecs + 1) {
-      setCdText(game, 'Start!', 'go');
+      setCdText(game, t('countdown.start'), 'go');
       return;
     } else {
       startElapsed = -1; // done

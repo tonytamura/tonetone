@@ -11,6 +11,7 @@
  * guarded store as the tutorial flag: a missing, wiped or corrupt value reads as
  * no records, and a failed write loses only the record, never the game.
  */
+import { t } from '../i18n/I18n';
 import { KeyValueStore, deviceStore } from './Progress';
 
 export const RECORDS_KEY = 'toneboom.records';
@@ -97,14 +98,16 @@ export interface ResultNotes {
  * was played on settings that match no preset, and so set no record.
  */
 export function soloRecordNotes(result: RecordResult | null, presetLabel: string | null): ResultNotes {
-  if (!result || !presetLabel) return { lines: ['Custom settings set no record.'] };
+  if (!result || !presetLabel) return { lines: [t('rec.customNone')] };
   if (result.isNew) {
     return {
-      title: 'New highest score',
-      lines: [result.previous === null ? `${presetLabel} · first record` : `${presetLabel} · previous ${result.previous}`],
+      title: t('rec.newHigh'),
+      lines: [result.previous === null
+        ? t('rec.first', { preset: presetLabel })
+        : t('rec.previous', { preset: presetLabel, score: result.previous })],
     };
   }
-  return { lines: result.best > 0 ? [`Highest score on ${presetLabel}: ${result.best}`] : [] };
+  return { lines: result.best > 0 ? [t('rec.highestOn', { preset: presetLabel, score: result.best })] : [] };
 }
 
 export interface RecordSection {
@@ -122,7 +125,7 @@ export function recordSections(
 ): RecordSection[] {
   const dash = '–';
   return [
-    { title: 'Solo — highest score', rows: presets.map(p => ({ label: p.label, value: p.id in records.solo ? String(records.solo[p.id]) : dash })) },
+    { title: t('records.solo'), rows: presets.map(p => ({ label: p.label, value: p.id in records.solo ? String(records.solo[p.id]) : dash })) },
     ...extra,
   ];
 }
@@ -160,10 +163,10 @@ export function ladderNotes(
   played: string, next: string, direction: 'up' | 'down' | 'stay', atTop: boolean, record: RecordResult
 ): ResultNotes {
   const lines: string[] = [];
-  if (direction === 'up') lines.push(`Next: ${next}`);
-  else if (direction === 'down') lines.push(`Back to ${next}`);
-  else lines.push(atTop ? `${played} stays the one to beat.` : `Again: ${next}`);
-  if (record.isNew) lines.push(`New best against ${played}: ${record.best}`);
-  else if (record.best > 0) lines.push(`Best against ${played}: ${record.best}`);
+  if (direction === 'up') lines.push(t('ladder.next', { ai: next }));
+  else if (direction === 'down') lines.push(t('ladder.back', { ai: next }));
+  else lines.push(atTop ? t('ladder.top', { ai: played }) : t('ladder.again', { ai: next }));
+  if (record.isNew) lines.push(t('ladder.newBest', { ai: played, score: record.best }));
+  else if (record.best > 0) lines.push(t('ladder.best', { ai: played, score: record.best }));
   return { lines };
 }

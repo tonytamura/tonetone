@@ -1,4 +1,5 @@
 import { AudioStore, isOptionsOpen } from '../../audio/SynthEngine';
+import { tList } from '../../i18n/I18n';
 import { playNote, playRandomGameBoom } from '../../audio/Voices';
 import { clickHz, initMenuAudio, playBinauralClick } from '../../audio/UiSounds';
 import { pitchOf } from '../../audio/SoundEvents';
@@ -274,16 +275,24 @@ interface MenuPop extends Pop {
   vy: number;
 }
 const menuPops: MenuPop[] = [];
+
+/** Drop the words in the air, so none of the old language lingers after a switch. */
+export function clearMenuPops() {
+  menuPops.length = 0;
+}
 let nextPopId = 1;
 let lastAutoPopTime = 0;
 
-const POP_TEXTS = ['BOND!', 'BOOM!', 'PEEL!', 'LOCK!', 'COMBO!', '+100', '+500', '+1000', 'SLOT!', 'PERFECT!'];
+// The words are the player's language; the scores are the same everywhere.
+const POP_SCORES = ['+100', '+500', '+1000'];
+const popTexts = () => [...tList('menu.pops'), ...POP_SCORES];
 
 function spawnMenuPop(width: number, height: number) {
   if (isOptionsOpen()) return;
   const px = width * (0.15 + Math.random() * 0.70);
   const py = height * (0.20 + Math.random() * 0.60);
-  const txt = POP_TEXTS[Math.floor(Math.random() * POP_TEXTS.length)];
+  const texts = popTexts();
+  const txt = texts[Math.floor(Math.random() * texts.length)];
   const w = Math.random() < 0.5 ? 0 : 1;
 
   menuPops.push({

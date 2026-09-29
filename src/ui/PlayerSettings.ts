@@ -20,12 +20,22 @@
  */
 import { KNOBS, KnobDef, KnobId, KnobValue, PRESETS, presetIds, presetKnobs } from '../sim/Knobs';
 import { KeyValueStore, deviceStore } from './Progress';
+import { MessageKey, t } from '../i18n/I18n';
+import { EN } from '../i18n/en';
 
 export const SETTINGS_KEY = 'toneboom.settings';
 const VERSION = 2;
 
-/** The Custom slots, in the picker's order after the registry presets. */
+/** The Custom slots, in the picker's order after the registry presets. `label` is the English name. */
 export const CUSTOM_SLOTS: { id: string; label: string }[] = [1, 2, 3].map(n => ({ id: `custom${n}`, label: `Custom ${n}` }));
+
+/** What the player calls a preset or a Custom slot, in their language. */
+export function presetLabel(id: string): string {
+  const slot = /^custom(\d)$/.exec(id);
+  if (slot) return t('preset.custom', { n: slot[1] });
+  const key = `preset.${id}` as MessageKey;
+  return key in EN ? t(key) : PRESETS[id]?.label ?? id;
+}
 
 export function isCustom(id: string): boolean {
   return CUSTOM_SLOTS.some(c => c.id === id);
@@ -44,9 +54,9 @@ export function advancedKnobs(): KnobId[] {
   return (Object.keys(KNOBS) as KnobId[]).filter(id => !EVERYDAY_KNOBS.includes(id));
 }
 
-/** The picker's choices, in order: the registry's presets, then the Custom slots. */
+/** The picker's choices, in order: the registry's presets, then the Custom slots, named in the player's language. */
 export function presetChoices(): { id: string; label: string }[] {
-  return [...presetIds().map(id => ({ id, label: PRESETS[id].label })), ...CUSTOM_SLOTS];
+  return [...presetIds(), ...CUSTOM_SLOTS.map(c => c.id)].map(id => ({ id, label: presetLabel(id) }));
 }
 
 /** What a named preset sets every advanced knob to; for a Custom slot, where it starts: the registry defaults. */

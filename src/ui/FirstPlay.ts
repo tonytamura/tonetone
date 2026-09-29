@@ -12,7 +12,8 @@
 import { PlayMode } from '../game/GameState';
 import { renderSoundTester } from './SoundTester';
 import { uiClick } from '../audio/UiSounds';
-import { RULE_ROWS } from './RulesText';
+import { ruleRows } from './RulesText';
+import { onLanguageChange } from '../i18n/I18n';
 import { fillCredits } from './Credits';
 import { RecordSection } from './Records';
 import { setHidden } from './Dom';
@@ -70,18 +71,24 @@ export function createFirstPlayOffer(handlers: {
  * Replaying never resets the "seen" flag; it only shows the lesson again.
  */
 export function setupHelpScreen(onReplay: () => void, recordsContent: () => RecordSection[] = () => []) {
-  const rules = el('help-rules');
-  if (rules) {
-    rules.innerHTML = '';
-    for (const r of RULE_ROWS) {
-      const dt = document.createElement('dt');
-      dt.textContent = r.label;
-      const dd = document.createElement('dd');
-      dd.textContent = r.text;
-      rules.append(dt, dd);
+  // The rules and credits are written into the page, so they are written again
+  // in the new words whenever the language changes.
+  const fillText = () => {
+    const rules = el('help-rules');
+    if (rules) {
+      rules.innerHTML = '';
+      for (const r of ruleRows()) {
+        const dt = document.createElement('dt');
+        dt.textContent = r.label;
+        const dd = document.createElement('dd');
+        dd.textContent = r.text;
+        rules.append(dt, dd);
+      }
     }
-  }
-  fillCredits(el('help-credits'));
+    fillCredits(el('help-credits'));
+  };
+  fillText();
+  onLanguageChange(fillText);
   // One card at a time: How to play, or one of the cards it opens.
   const showCard = (which: 'help' | 'records' | 'sounds') => {
     setHidden(document.querySelector('#help-overlay > .help-card:not(#records-card):not(#sounds-card)') as HTMLElement | null, which !== 'help');

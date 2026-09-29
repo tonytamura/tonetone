@@ -55,7 +55,7 @@ function mountPanel() {
     els.set(id, fakeEl(id, 'range', String(KNOBS[id].default)));
     els.set(id + 'v', fakeEl(id + 'v', 'output'));
   }
-  els.set('preset', fakeEl('preset', 'select', PRESETS.normal.label));
+  els.set('preset', fakeEl('preset', 'select', PRESETS.normal.id));
   els.set('advanced', fakeEl('advanced', 'div'));
 
   (global as any).document = {
@@ -64,7 +64,7 @@ function mountPanel() {
 
   const game = createGame();
   const handle = setupSettingsKnobs(() => game, () => 620);
-  return { els, game, handle, pick: (label: string) => { els.get('preset')!.value = label; els.get('preset')!.fire('change'); } };
+  return { els, game, handle, pick: (id: string) => { els.get('preset')!.value = id; els.get('preset')!.fire('change'); } };
 }
 
 describe('tuning panel preset picker', () => {
@@ -76,7 +76,7 @@ describe('tuning panel preset picker', () => {
 
   it('applies every knob of the chosen preset to the live config', () => {
     const { pick, game } = mountPanel();
-    pick(PRESETS.chaos.label);
+    pick(PRESETS.chaos.id);
 
     const want = presetKnobs('chaos');
     expect(PhysicsConfig.DRAG).toBe(want.roll);
@@ -91,7 +91,7 @@ describe('tuning panel preset picker', () => {
     // A picker that changed the game without moving the controls would leave the
     // panel describing a game the player is no longer in.
     const { els, pick } = mountPanel();
-    pick(PRESETS.relax.label);
+    pick(PRESETS.relax.id);
 
     expect(els.get('roll')!.value).toBe('0.45');
     expect(els.get('rollv')!.textContent).toBe('7s');
@@ -103,15 +103,15 @@ describe('tuning panel preset picker', () => {
 
   it('undoes a preset when another is picked, including knobs it does not mention', () => {
     const { pick } = mountPanel();
-    pick(PRESETS.relax.label);
+    pick(PRESETS.relax.id);
     expect(PhysicsConfig.MIN_BOOM).toBe(3);
     expect(SHOT_DECAY).toBe(0.7);
 
-    pick(PRESETS.chaos.label);
+    pick(PRESETS.chaos.id);
     expect(PhysicsConfig.MIN_BOOM).toBe(KNOBS.minboom.default);
     expect(SHOT_DECAY).toBe(KNOBS.shotdecay.default);
 
-    pick(PRESETS.normal.label);
+    pick(PRESETS.normal.id);
     expect(PhysicsConfig.DRAG).toBe(KNOBS.roll.default);
     expect(PhysicsConfig.REST).toBe(KNOBS.bounce.default);
     expect(PhysicsConfig.THROW_MAX).toBe(KNOBS.maxpower.default);
@@ -121,59 +121,59 @@ describe('tuning panel preset picker', () => {
     // A named preset is a whole game. Anything tuned in Custom is hidden outside
     // it, so it must not follow the player into Normal unseen.
     const { els, pick } = mountPanel();
-    pick('Custom 1');
+    pick('custom1');
     const el = els.get(OUTSIDE_EVERY_PRESET)!;
     el.value = '0';
     el.fire('input');
-    pick(PRESETS.chaos.label);
+    pick(PRESETS.chaos.id);
     expect(el.value).toBe(String(KNOBS[OUTSIDE_EVERY_PRESET].default));
   });
 
   it('shows the advanced knobs on Custom only', () => {
     const { els, pick } = mountPanel();
     const hidden = () => 'hidden' in els.get('advanced')!.attrs;
-    pick(PRESETS.relax.label);
+    pick(PRESETS.relax.id);
     expect(hidden()).toBe(true);
-    pick('Custom 1');
+    pick('custom1');
     expect(hidden()).toBe(false);
-    pick(PRESETS.normal.label);
+    pick(PRESETS.normal.id);
     expect(hidden()).toBe(true);
   });
 
   it('starts a Custom slot from the defaults, and remembers what it was given', () => {
     const { els, pick } = mountPanel();
-    pick(PRESETS.relax.label);
-    pick('Custom 1');
+    pick(PRESETS.relax.id);
+    pick('custom1');
     expect(els.get('reload')!.value).toBe(String(KNOBS.reload.default)); // not Relax's
 
     els.get('reload')!.value = '6';
     els.get('reload')!.fire('input');
-    pick(PRESETS.normal.label);
+    pick(PRESETS.normal.id);
     expect(els.get('reload')!.value).toBe(String(KNOBS.reload.default));
-    pick('Custom 1');
+    pick('custom1');
     expect(els.get('reload')!.value).toBe('6');
   });
 
   it('keeps three Custom slots apart', () => {
     const { els, pick } = mountPanel();
     const setReload = (v: string) => { els.get('reload')!.value = v; els.get('reload')!.fire('input'); };
-    pick('Custom 1');
+    pick('custom1');
     setReload('6');
-    pick('Custom 2');
+    pick('custom2');
     expect(els.get('reload')!.value).toBe(String(KNOBS.reload.default)); // slot 1's value did not follow
     setReload('2');
-    pick('Custom 3');
+    pick('custom3');
     expect(els.get('reload')!.value).toBe(String(KNOBS.reload.default));
-    pick('Custom 1');
+    pick('custom1');
     expect(els.get('reload')!.value).toBe('6');
-    pick('Custom 2');
+    pick('custom2');
     expect(els.get('reload')!.value).toBe('2');
   });
 
   it('switches from outside the panel exactly as the picker does', () => {
     const { els, handle } = mountPanel();
     handle.choose('chaos');
-    expect(els.get('preset')!.value).toBe(PRESETS.chaos.label);
+    expect(els.get('preset')!.value).toBe(PRESETS.chaos.id); // the option's value is the id; its text is translated
     expect(handle.choice()).toBe('chaos');
     handle.choose('custom2');
     expect(handle.choice()).toBe('custom2');
@@ -183,9 +183,9 @@ describe('tuning panel preset picker', () => {
   it('reports the named preset for records, and none on a Custom slot', () => {
     const { handle, pick } = mountPanel();
     expect(handle.activePreset()).toBe('normal');
-    pick(PRESETS.drift.label);
+    pick(PRESETS.drift.id);
     expect(handle.activePreset()).toBe('drift');
-    pick('Custom 1');
+    pick('custom1');
     expect(handle.activePreset()).toBeNull();
   });
 });
