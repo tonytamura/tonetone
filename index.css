@@ -749,6 +749,15 @@ input[type=range] {
   text-align: right;
   color: var(--ink);
 }
+/* What a knob does, in a sentence or two, under its slider. */
+.knob-hint {
+  margin: -2px 0 10px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  opacity: 0.85;
+}
 select {
   font-family: var(--font-ui);
   font-size: var(--fs-sm);

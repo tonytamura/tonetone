@@ -159,6 +159,17 @@ describe('knob application', () => {
   });
 });
 
+describe('knob descriptions', () => {
+  it('explain every knob in the panel, right under its slider', () => {
+    // A knob the player can move but not understand is a knob nobody moves.
+    const src = panelMarkup();
+    for (const id of Object.keys(KNOBS)) {
+      const m = new RegExp('<input id="' + id + '"[^\\n]*</div>\\n\\s*<p class="knob-hint">([^<]{20,})</p>').exec(src);
+      expect(m, `${id} has no description under it`).not.toBeNull();
+    }
+  });
+});
+
 describe('preset controls', () => {
   it('offers exactly the presets the registry declares, in the same order, then the Custom slots', () => {
     // The Custom slots are the panel's own choices, not registry presets: they
