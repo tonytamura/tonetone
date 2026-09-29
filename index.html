@@ -20,20 +20,22 @@
 <div id="help-overlay" hidden>
   <div class="confirm-card help-card">
     <div class="confirm-title">How to play</div>
-    <button id="help-replay" class="confirm-btn primary help-replay">Replay tutorial</button>
-    <button id="help-records" class="confirm-btn secondary help-replay">Records</button>
-    <dl class="help-rules" id="help-rules"></dl>
-    <section class="help-credits" id="help-credits" aria-label="Credits"></section>
-    <div class="confirm-actions">
+    <!-- All the buttons at the top: the rules and credits below may scroll, and
+         a way out must never be hidden under that. -->
+    <div class="help-actions">
+      <button id="help-replay" class="confirm-btn secondary">Replay tutorial</button>
+      <button id="help-records" class="confirm-btn secondary">Records</button>
       <button id="help-close" class="confirm-btn secondary">Close</button>
     </div>
+    <dl class="help-rules" id="help-rules"></dl>
+    <section class="help-credits" id="help-credits" aria-label="Credits"></section>
   </div>
   <div class="confirm-card help-card" id="records-card" hidden>
     <div class="confirm-title">Records</div>
-    <div class="records-body" id="records-body"></div>
-    <div class="confirm-actions">
+    <div class="help-actions">
       <button id="records-back" class="confirm-btn secondary">Back</button>
     </div>
+    <div class="records-body" id="records-body"></div>
   </div>
 </div>
 

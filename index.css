@@ -1357,10 +1357,17 @@ select option {
   padding: 24px 22px;
 }
 
-.help-replay {
+.help-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
   flex: none;
   margin: 6px 0 16px;
+}
+
+.help-actions .confirm-btn {
+  width: 100%;
 }
 
 .help-rules {
