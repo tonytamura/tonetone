@@ -10,6 +10,7 @@
  * button decision (2026-09-19) and the offer decision (2026-09-27).
  */
 import { PlayMode } from '../game/GameState';
+import { renderSoundTester } from './SoundTester';
 import { uiClick } from '../audio/UiSounds';
 import { RULE_ROWS } from './RulesText';
 import { fillCredits } from './Credits';
@@ -64,8 +65,8 @@ export function createFirstPlayOffer(handlers: {
 }
 
 /**
- * The help screen over the main menu: replay the tutorial, the rules card, and
- * the credits.
+ * The help screen over the main menu: replay the tutorial, the records, the
+ * rules card, the credits, and last the sound preview.
  * Replaying never resets the "seen" flag; it only shows the lesson again.
  */
 export function setupHelpScreen(onReplay: () => void, recordsContent: () => RecordSection[] = () => []) {
@@ -81,18 +82,29 @@ export function setupHelpScreen(onReplay: () => void, recordsContent: () => Reco
     }
   }
   fillCredits(el('help-credits'));
-  const showCard = (records: boolean) => {
-    setHidden(document.querySelector('#help-overlay > .help-card:not(#records-card)') as HTMLElement | null, records);
-    setHidden(el('records-card'), !records);
+  // One card at a time: How to play, or one of the cards it opens.
+  const showCard = (which: 'help' | 'records' | 'sounds') => {
+    setHidden(document.querySelector('#help-overlay > .help-card:not(#records-card):not(#sounds-card)') as HTMLElement | null, which !== 'help');
+    setHidden(el('records-card'), which !== 'records');
+    setHidden(el('sounds-card'), which !== 'sounds');
   };
-  const close = () => { setHidden(el('help-overlay'), true); showCard(false); };
+  const close = () => { setHidden(el('help-overlay'), true); showCard('help'); };
   el('help-records')?.addEventListener('click', e => {
     e.stopPropagation();
     uiClick('confirm');
     fillRecords(el('records-body'), recordsContent());
-    showCard(true);
+    showCard('records');
   });
-  el('records-back')?.addEventListener('click', e => { e.stopPropagation(); uiClick('cancel'); showCard(false); });
+  el('records-back')?.addEventListener('click', e => { e.stopPropagation(); uiClick('cancel'); showCard('help'); });
+  el('help-sounds')?.addEventListener('click', e => {
+    e.stopPropagation();
+    uiClick('confirm');
+    // Built fresh on each visit, so every readout shows the settings as they are now.
+    const box = el('sound-tester-container');
+    if (box) renderSoundTester(box);
+    showCard('sounds');
+  });
+  el('sounds-back')?.addEventListener('click', e => { e.stopPropagation(); uiClick('cancel'); showCard('help'); });
   el('helpBtn')?.addEventListener('click', e => {
     e.stopPropagation();
     uiClick('confirm');

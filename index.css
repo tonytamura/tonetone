@@ -1452,6 +1452,20 @@ select option {
   color: var(--ink-soft);
 }
 
+/* The sound preview sits in a centred Help card; its sound cards read left to right. */
+#sounds-card .sound-tester-container {
+  width: 100%;
+  margin-top: 0;
+  text-align: left;
+}
+
+/* The Help screen's last button, after the credits. */
+.help-end-btn {
+  width: 100%;
+  flex: none;
+  margin-bottom: 4px;
+}
+
 .help-credits-title {
   font-weight: var(--fw-strong);
   color: var(--menu-cyan);

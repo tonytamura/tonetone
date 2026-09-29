@@ -12,7 +12,9 @@ import { initAudio } from '../audio/SynthEngine';
  * `<output>` labels, and waking the AudioContext. What a knob actually *does*
  * lives in the registry, which the simulation harness drives by the same names.
  */
-import { renderSoundTester, updateSoundTesterReadouts } from './SoundTester';
+// The sound preview lives on the Help screen now; a sound knob moved here still
+// refreshes its readouts, if it is open.
+import { updateSoundTesterReadouts } from './SoundTester';
 
 export interface SettingsHandle {
   /** The named preset being played, or null on a Custom slot, which sets no records. */
@@ -27,12 +29,6 @@ export function setupSettingsKnobs(
   getGame: () => Game,
   getHeight: () => number = () => window.innerHeight
 ): SettingsHandle {
-  // Render Sound FX Tester list in the options panel container if present
-  const soundTesterContainer = document.getElementById('sound-tester-container');
-  if (soundTesterContainer) {
-    renderSoundTester(soundTesterContainer);
-  }
-
   // Knobs that recompute scale-derived thresholds must see the height the
   // physics actually runs at — the stage, not the window, which is taller by
   // however much chrome the HUD and control strips occupy.
