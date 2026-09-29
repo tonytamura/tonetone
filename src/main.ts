@@ -2,6 +2,7 @@ import { PlayMode, createGame, resetField, startMatch } from './game/GameState';
 import { isLangId, onLanguageChange, setLanguage, startingLanguage, t } from './i18n/I18n';
 import { setupLanguagePicker } from './ui/LanguagePicker';
 import { setupRecordsScreen } from './ui/RecordsScreen';
+import { recordWords } from './ui/RecordsCelebration';
 import { isNativeApp } from './ui/Platform';
 import { advanceFrame } from './sim/Frame';
 import { createRenderContext, resizeRenderer, drawGame, drawResultsCanvas, drawTutorialRing, drawTutorialHint } from './graphics/Renderer';
@@ -184,7 +185,10 @@ const firstPlay = createFirstPlayOffer({
 });
 
 setupHelpScreen(() => tutorial.start({ then: null }));
-setupRecordsScreen(() => recordSections(loadRecords(), presetChoices(), AI_LEVELS, loadLadderLevel(AI_LEVELS.length)));
+setupRecordsScreen(
+  () => recordSections(loadRecords(), presetChoices(), AI_LEVELS, loadLadderLevel(AI_LEVELS.length)),
+  () => recordWords(loadRecords(), AI_LEVELS),
+);
 
 /**
  * What a finished match does to the records, and what the results card says

@@ -1,9 +1,11 @@
 /**
  * The Records screen, opened by the trophy on the main menu: the best solo
  * score on every mode, two-player wins by mode, and each AI's best score and
- * wins. Built fresh from storage each time it opens.
+ * wins. Built fresh from storage each time it opens, with a celebration
+ * around it (`RecordsCelebration.ts`) for as long as it stays open.
  */
 import { RecordSection } from './Records';
+import { startRecordsCelebration } from './RecordsCelebration';
 import { setHidden } from './Dom';
 import { uiClick } from '../audio/UiSounds';
 
@@ -11,8 +13,13 @@ function el(id: string) {
   return document.getElementById(id);
 }
 
-export function setupRecordsScreen(content: () => RecordSection[]) {
+/**
+ * `content` builds the card; `words` the celebration's floating words, from the
+ * same records (see `recordWords`).
+ */
+export function setupRecordsScreen(content: () => RecordSection[], words: () => string[] = () => []) {
   const overlay = el('records-overlay');
+  let stopCelebration: (() => void) | null = null;
   el('recordsBtn')?.addEventListener('click', e => {
     e.stopPropagation();
     uiClick('confirm');
@@ -20,8 +27,17 @@ export function setupRecordsScreen(content: () => RecordSection[]) {
     const card = el('records-card');
     if (card) card.scrollTop = 0;
     setHidden(overlay, false);
+    const canvas = el('records-canvas') as HTMLCanvasElement | null;
+    stopCelebration?.();
+    stopCelebration = canvas ? startRecordsCelebration(canvas, card, words()) : null;
   });
-  el('records-close')?.addEventListener('click', e => { e.stopPropagation(); uiClick('cancel'); setHidden(overlay, true); });
+  el('records-close')?.addEventListener('click', e => {
+    e.stopPropagation();
+    uiClick('cancel');
+    stopCelebration?.();
+    stopCelebration = null;
+    setHidden(overlay, true);
+  });
   // The menu listens on the window for its own taps; nothing on this screen
   // should reach it and choose a mode underneath.
   for (const type of ['pointerdown', 'pointerup'] as const) {
