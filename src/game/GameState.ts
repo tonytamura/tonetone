@@ -406,6 +406,8 @@ export function toCollisionState(game: Game): CollisionState {
     byId: game.byId,
     lastHit: game.lastHit,
     players: game.players,
+    // The same launchers `fits` keeps spawns away from: only the bottom one in solo.
+    bays: game.twoPlayer ? game.players : [game.players[0]],
     nextId: game.nextId,
     killBig: game.killBig,
     killGroups: game.killGroups,

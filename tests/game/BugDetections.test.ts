@@ -10,10 +10,10 @@ import { createRenderContext, resizeRenderer } from '../../src/graphics/Renderer
 import { clearSpriteCache } from '../../src/graphics/Sprites';
 import { createGame, resetField, toCollisionState } from '../../src/game/GameState';
 import { advanceFrame } from '../../src/sim/Frame';
-import { launchPointOf } from '../../src/physics/LauncherBays';
+import { launchPointOf, bayInset } from '../../src/physics/LauncherBays';
 import { setupTouchControls } from '../../src/ui/TouchControls';
 import { LauncherPlayer, Ball, Group } from '../../src/physics/Types';
-import { collide, boomGroup, RAIN_BLINK } from '../../src/physics/CollisionSolver';
+import { collide, boomGroup, RAIN_BLINK, stepPhysics } from '../../src/physics/CollisionSolver';
 import { makeBall, weld, loose, withSandbox } from '../../src/sim/Scenarios';
 import { makeGroup } from '../../src/physics/RigidBody';
 import { playNote, playSwoosh } from '../../src/audio/Voices';
@@ -527,6 +527,35 @@ describe('Bug Detection Test Suite', () => {
       } finally {
         spy.mockRestore();
       }
+    });
+  });
+
+  describe('Bug 16: solo play had an invisible wall where the top launcher would be', () => {
+    // The bay mouths push balls away, and the solver took every player's mouth
+    // from `players`, which always holds two. In solo the top launcher is not
+    // drawn, balls may even spawn there (`fits` counts active launchers only),
+    // yet balls bounced off its mouth (Tony, 2026-09-29).
+    function pushedFromTopMouth(twoPlayer: boolean): number {
+      return withSeed(2, () => {
+        const W = 380, H = 620;
+        recalcThresholds(H);
+        const game = createGame();
+        game.twoPlayer = twoPlayer;
+        resetField(game, W, H);
+        game.balls = []; game.byId.clear(); game.groups = [];
+        const x = W / 2, y = bayInset() + PhysicsConfig.R * 0.5;
+        const ball = makeBall(1, x, y, 0);
+        game.balls.push(ball); game.byId.set(1, ball);
+        game.groups = [makeGroup([ball], 0, 0)];
+        ball.group = game.groups[0];
+        stepPhysics(toCollisionState(game), 1 / 120, 1, W, H);
+        return Math.hypot(ball.x - x, ball.y - y);
+      });
+    }
+
+    it('lets a ball sit where the top mouth would be in solo, and pushes it out with two players', () => {
+      expect(pushedFromTopMouth(false)).toBe(0);
+      expect(pushedFromTopMouth(true)).toBeGreaterThan(1);
     });
   });
 });

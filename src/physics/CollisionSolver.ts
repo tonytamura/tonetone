@@ -79,6 +79,13 @@ export interface CollisionState {
   byId: Map<number, Ball>;
   lastHit: Map<string, number>;
   players: LauncherPlayer[];
+  /**
+   * The launchers on the table, whose mouths balls bounce off: both in a
+   * two-player match, only the bottom one in solo. Not `players`, which always
+   * holds two for scoring: taking the mouths from it left an invisible wall at
+   * the top of a solo table (Bug 16).
+   */
+  bays: LauncherPlayer[];
   nextId: number;
   killBig: number;
   killGroups: number;
@@ -521,7 +528,7 @@ export function relax(state: CollisionState, iterations: number, width: number, 
   // in case stepPhysics movement already drove a ball inside.
   for (const g of state.groups) {
     resolveWalls(g, width, height);
-    mouthClamp(g, state.players, width, height);
+    mouthClamp(g, state.bays, width, height);
   }
 
   for (let it = 0; it < iterations; it++) {
@@ -567,13 +574,13 @@ export function relax(state: CollisionState, iterations: number, width: number, 
 
       // Re-clamp both groups against the launch bay after each pair shift,
       // so that inter-ball pressure cannot drive a group through the mouth boundary.
-      mouthClamp(A, state.players, width, height);
-      mouthClamp(B, state.players, width, height);
+      mouthClamp(A, state.bays, width, height);
+      mouthClamp(B, state.bays, width, height);
     });
 
     for (const g of state.groups) {
       resolveWalls(g, width, height);
-      mouthClamp(g, state.players, width, height);
+      mouthClamp(g, state.bays, width, height);
       resolveWalls(g, width, height);
     }
     if (!moved) break;
@@ -634,7 +641,7 @@ export function stepPhysics(state: CollisionState, dt: number, now: number, widt
 
   for (const g of state.groups) {
     resolveWalls(g, width, height);
-    mouthCollide(g, state.players, width, height);
+    mouthCollide(g, state.bays, width, height);
   }
   collide(state, now);
   relax(state, RELAX_ITERATIONS, width, height);
@@ -648,7 +655,7 @@ export function stepPhysics(state: CollisionState, dt: number, now: number, widt
     }
   }
   ageGhosts(state, dt);
-  clearExempt(state.balls, state.players, dt, width, height);
+  clearExempt(state.balls, state.bays, dt, width, height);
   ageEffects(state, dt);
 }
 

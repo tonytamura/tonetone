@@ -111,6 +111,7 @@ export function withSandbox<T>(
       lastHit: new Map(),
       // No launchers: the bays cannot interfere with an isolated measurement.
       players: [],
+      bays: [],
       nextId: balls.length + 1,
       killBig: 0,
       killGroups: 0,
