@@ -176,8 +176,8 @@ export interface RecordSection {
 /**
  * The Records screen's content:
  *
- * - Solo: the best score on every mode, in the picker's order, a dash for any
- *   not yet played.
+ * - Solo: the best score on each mode that has one, in the picker's order; a
+ *   mode never played has no row (since 2026-09-29; it used to show a dash).
  * - Two players: P1's and P2's wins and P1's share, on each mode that has been
  *   played; a mode with no results has no row.
  * - vs AI: on every rung, the best score, the player's and the AI's wins, and
@@ -193,7 +193,8 @@ export function recordSections(
   return [
     {
       title: t('records.solo'),
-      rows: modes.map(m => ({ label: m.label, values: [m.id in records.solo ? String(records.solo[m.id]) : dash] })),
+      rows: modes.filter(m => m.id in records.solo).map(m => ({ label: m.label, values: [String(records.solo[m.id])] })),
+      empty: t('records.none'),
     },
     {
       title: t('records.duel'),

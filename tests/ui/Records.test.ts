@@ -119,11 +119,12 @@ describe('the Records screen', () => {
     duel: { custom1: { p1: 3, p2: 1, draws: 0 } }, vsAi: { agi: { p1: 1, p2: 3, draws: 0 } },
   };
 
-  it('lists every mode for solo, Custom slots included, with a dash for the unplayed', () => {
+  it('lists only the solo modes that have a record, Custom slots included', () => {
     const [solo] = recordSections(records, modes, ais, 0);
-    expect(solo.rows).toEqual([
-      { label: 'Normal', values: ['–'] }, { label: 'Chaos', values: ['90'] }, { label: 'Custom 1', values: ['40'] },
-    ]);
+    expect(solo.rows).toEqual([{ label: 'Chaos', values: ['90'] }, { label: 'Custom 1', values: ['40'] }]);
+    const [none] = recordSections({ ...records, solo: {} }, modes, ais, 0);
+    expect(none.rows).toEqual([]);
+    expect(none.empty).toBe('No matches yet');
   });
 
   it('lists only the two-player modes that have results: P1 and P2 wins, and P1\'s share', () => {
