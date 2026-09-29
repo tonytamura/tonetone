@@ -186,8 +186,16 @@
 }
 
 /* The menu's bottom row is icons: help, records, full screen, sound. */
-.icon-btn {
-  padding: 9px 12px;
+.icon-btn,
+.lang-btn {
+  /* One fixed box for every button in the row, icon or flag, so they line up
+     whatever each holds; the content is centred in it. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 42px;
+  padding: 0;
   line-height: 0;
 }
 .icon-btn svg {
@@ -229,10 +237,6 @@
 }
 
 /* The language button is its flag alone. */
-.lang-btn {
-  padding: 8px 11px;
-  line-height: 0;
-}
 .lang-btn .flag {
   width: 27px;
   height: 18px;
@@ -252,8 +256,8 @@ html.i18n-loading body {
   .menu-bottom-controls { gap: 6px; }
   .menu-control-btn,
   .audio-toggle-btn { padding: 9px 10px; font-size: 12px; }
-  .lang-btn { padding: 8px 8px; }
-  .icon-btn { padding: 8px 10px; }
+  .icon-btn,
+  .lang-btn { width: 44px; height: 40px; }
   .lang-btn .flag { width: 24px; height: 16px; }
 }
 
