@@ -148,12 +148,13 @@ export const AI_STRATEGIES: Record<string, AiProfile> = {
  * by more than 2 standard errors:
  *
  *   AI1 random                                   —
- *   AI2 careless: half its throws at random      beats AI1 63% ±4 (160 matches)
- *   AI3 hard: the biggest group, full power      beats AI2 68% ±7
- *   AGI simulates 15 throws x 3 tries, then aims beats AI3 66% ±7
+ *   AI2 careless: half its throws at random      beats AI1 65% ±4 (160 matches)
+ *   AI3 hard: the biggest group, full power      beats AI2 58% ±4 (160 matches)
+ *   AGI simulates 15 throws x 3 tries, then aims beats AI3 66% ±7 (40 matches)
  *
- * Confirmed on the final table with `npm run sim -- ladder --runs 20`: AI2 v
- * AI1 75% ±7, AI3 v AI2 68% ±7, AGI v AI3 66% ±7, each clearing 2 SE.
+ * Measured with `npm run sim -- ladder` after Bug 18 made careless throws a
+ * per-throw coin with a 0.35 strength floor (2026-09-29). AI3 over AI2 clears
+ * 2 SE by the narrowest margin of the three.
  *
  * Longer ladders were tried and did not hold: aim precision and rule-of-thumb
  * shot choice barely move a result in this game, and the planners short of AGI
@@ -199,8 +200,11 @@ interface AiState {
   job?: PlanJob;
   /** The loaded ball that decision is for: a new one means a new throw to plan. */
   forBall?: unknown;
-  /** This target's careless angle, when the throw is a wild one. */
+  /** This throw's careless angle and strength, when it is a careless one. */
   wildDeg?: number;
+  wildPow?: number;
+  /** The loaded ball that careless-or-not was drawn for. */
+  wildFor?: unknown;
 }
 
 function stateOf(p: LauncherPlayer): AiState {
@@ -378,13 +382,22 @@ export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, heigh
       st.errDeg = gauss() * prof.aimErrorDeg;
       st.errPow = gauss() * prof.powerError;
       if (prof.power === 'random') st.errPow += 0.35 + Math.random() * 0.65;
-      st.wildDeg = prof.wild && Math.random() < prof.wild ? Math.random() * 170 - 85 : undefined;
-      if (st.wildDeg !== undefined) st.errPow = Math.random();
+    }
+    // Careless or not is decided afresh for every throw, by the loaded ball
+    // changing. It used to be decided per target, and a group that stayed the
+    // biggest kept AI2 careless for up to 16 throws (48s) in a row, which read
+    // as the AI stopping and starting again. A careless throw takes the same
+    // 0.35-1.0 strength as the classic AI, so it leaves the bay rather than
+    // dribbling out of it (Bug 18).
+    if (prof.wild && st.wildFor !== p.loaded) {
+      st.wildFor = p.loaded;
+      st.wildDeg = Math.random() < prof.wild ? Math.random() * 170 - 85 : undefined;
+      st.wildPow = 0.35 + Math.random() * 0.65;
     }
     aimAt(want, choice.x, choice.y, width, height, game.twoPlayer);
     want.aimDeg = st.wildDeg ?? Math.max(-90, Math.min(90, want.aimDeg + st.errDeg));
     const base = prof.power === 'max' ? 1 : prof.power === 'random' ? 0 : choice.strength;
-    want.strength = st.wildDeg !== undefined ? st.errPow : Math.max(0, Math.min(1, base + st.errPow));
+    want.strength = st.wildDeg !== undefined ? st.wildPow! : Math.max(0, Math.min(1, base + st.errPow));
     st.idleDeg = undefined;
   } else {
     // Nothing worth a throw: settle on one idle angle rather than wander.

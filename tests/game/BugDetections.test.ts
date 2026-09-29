@@ -20,6 +20,7 @@ import { playNote, playSwoosh } from '../../src/audio/Voices';
 import * as Voices from '../../src/audio/Voices';
 import { PlanJob, plannerStats } from '../../src/game/AIPlanner';
 import { runSim } from '../../src/sim/Harness';
+import { levelIndex } from '../../src/game/AI';
 import { startMatch, throwBall } from '../../src/game/GameState';
 import { AudioStore } from '../../src/audio/SynthEngine';
 import { startTutorial, endTutorial, tutorialAfterFrame, drainTutorialEvents } from '../../src/game/Tutorial';
@@ -575,5 +576,35 @@ describe('Bug Detection Test Suite', () => {
         expect(decisions).toBeGreaterThanOrEqual(throws - 1);
       });
     }
+  });
+
+  describe('Bug 18: AI2 went careless for long stretches, and looked like it stopped', () => {
+    // Careless-or-not was drawn once per target, not per throw. A group that
+    // stayed the biggest kept AI2 careless for up to 16 throws (48s) at a time,
+    // 60% of throws in all against the 50% it is meant to be, and a careless
+    // throw could be as weak as 0, dribbling out of the bay (Tony, 2026-09-29).
+    it('decides careless or not for every throw, and never throws feebly', () => {
+      let throws = 0, careless = 0, feeble = 0, run = 0, longest = 0;
+      for (const seed of [1, 2, 3]) {
+        let lastLoaded: unknown = null;
+        runSim({
+          mode: 'ai', aiLevel: levelIndex('ai2'), seconds: 120, invariants: false, knobs: { match: 120 }, seed,
+          onFrame: g => {
+            const p: any = g.players[1];
+            if (p.loaded === lastLoaded) return;
+            if (lastLoaded) {
+              throws++;
+              if (p.strength < 0.2) feeble++;
+              if (p._ai?.wildDeg !== undefined) { careless++; longest = Math.max(longest, ++run); } else run = 0;
+            }
+            lastLoaded = p.loaded;
+          },
+        });
+      }
+      expect(feeble).toBe(0);
+      expect(careless / throws).toBeGreaterThan(0.35);
+      expect(careless / throws).toBeLessThan(0.65);
+      expect(longest).toBeLessThanOrEqual(8);
+    });
   });
 });
