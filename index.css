@@ -185,6 +185,49 @@
   box-shadow: 0 0 14px rgba(255, 0, 127, 0.85);
 }
 
+/* The menu's bottom row is icons: help, records, full screen, sound. */
+.icon-btn {
+  padding: 9px 12px;
+  line-height: 0;
+}
+.icon-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon-btn svg .dot {
+  fill: currentColor;
+  stroke: none;
+}
+/* Full screen on: the button lit, as it is under a hovering mouse. */
+.icon-btn.active {
+  background:
+    linear-gradient(135deg, rgba(0, 247, 255, 0.45), rgba(0, 180, 240, 0.55) 25%,
+      rgba(190, 0, 140, 0.62) 70%, rgba(255, 0, 127, 0.52)) padding-box,
+    linear-gradient(90deg, var(--menu-cyan), var(--menu-pink-deep)) border-box;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(0, 247, 255, 0.55);
+}
+/* Sound: the speaker's waves while on; the "no" sign over it while off. */
+.audio-toggle-btn .no {
+  display: none;
+  stroke: #ff4d6d;
+  stroke-width: 2.2;
+}
+.audio-toggle-btn.off .waves {
+  display: none;
+}
+.audio-toggle-btn.off .no {
+  display: inline;
+}
+.audio-toggle-btn.off .speaker {
+  opacity: 0.6;
+}
+
 /* The language button is its flag alone. */
 .lang-btn {
   padding: 8px 11px;
@@ -210,6 +253,7 @@ html.i18n-loading body {
   .menu-control-btn,
   .audio-toggle-btn { padding: 9px 10px; font-size: 12px; }
   .lang-btn { padding: 8px 8px; }
+  .icon-btn { padding: 8px 10px; }
   .lang-btn .flag { width: 24px; height: 16px; }
 }
 
@@ -1419,6 +1463,7 @@ select option {
 
 /* ── Help screen, over the main menu ── */
 #help-overlay,
+#records-overlay,
 #lang-overlay {
   position: fixed;
   inset: 0;

@@ -1,5 +1,6 @@
 import { AudioStore, applyGain, isOptionsOpen } from '../../audio/SynthEngine';
-import { onLanguageChange, t } from '../../i18n/I18n';
+import { onLanguageChange } from '../../i18n/I18n';
+import { isNativeApp } from '../Platform';
 import { clickHz, initMenuAudio, lastSelectAt, playBinauralClick, playHoverClick } from '../../audio/UiSounds';
 import { PlayMode } from '../../game/GameState';
 import { clearSpriteCache } from '../../graphics/Sprites';
@@ -386,15 +387,18 @@ function fullscreenApi() {
   const docEl = typeof document !== 'undefined' ? (document.documentElement as any) : null;
   return {
     docEl,
-    request: docEl ? (docEl.requestFullscreen || docEl.webkitRequestFullscreen || null) : null,
+    // The Android and iOS apps are full screen already: no button there.
+    request: docEl && !isNativeApp() ? (docEl.requestFullscreen || docEl.webkitRequestFullscreen || null) : null,
     exit: typeof document !== 'undefined' ? (document.exitFullscreen || (document as any).webkitExitFullscreen || null) : null,
     isOn: typeof document !== 'undefined' && !!(document.fullscreenElement || (document as any).webkitFullscreenElement),
   };
 }
 
+/** The speaker icon, with the "no" sign over it while the sound is off. Its name is in the markup. */
 function updateAudioBtnLabel() {
   if (audioBtn) {
-    audioBtn.textContent = AudioStore.soundOn ? t('menu.audioOn') : t('menu.audioOff');
+    audioBtn.classList.toggle('off', !AudioStore.soundOn);
+    audioBtn.setAttribute('aria-pressed', String(AudioStore.soundOn));
   }
 }
 
@@ -405,7 +409,9 @@ function updateFsBtnLabel() {
     setHidden(fsBtn, true);
     return;
   }
-  fsBtn.textContent = fs.isOn ? t('menu.exitFullScreen') : t('menu.fullScreen');
+  // The icon stays the same; lit while the game is full screen.
+  fsBtn.classList.toggle('active', fs.isOn);
+  fsBtn.setAttribute('aria-pressed', String(fs.isOn));
 }
 
 // ── The frame loop ─────────────────────────────────────────────────────

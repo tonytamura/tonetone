@@ -164,7 +164,7 @@ export async function setLanguage(id: LangId, opts: { save?: boolean } = {}): Pr
  * Relabel the markup: `data-i18n` sets an element's text (with `data-i18n-n`
  * as its `{n}`), `data-i18n-html` its
  * markup (for the few strings with bold words in them; the words are ours, not
- * the player's), and `data-i18n-aria` its accessible name.
+ * the player's), and `data-i18n-aria` its accessible name and tooltip.
  */
 export function translateDom(root: ParentNode): void {
   for (const el of root.querySelectorAll<HTMLElement>('[data-i18n]')) {
@@ -176,6 +176,10 @@ export function translateDom(root: ParentNode): void {
     el.innerHTML = t(el.dataset.i18nHtml as MessageKey);
   }
   for (const el of root.querySelectorAll<HTMLElement>('[data-i18n-aria]')) {
-    el.setAttribute('aria-label', t(el.dataset.i18nAria as MessageKey));
+    // The name also shows as a tooltip, which is how a mouse finds out what an
+    // icon-only button does.
+    const name = t(el.dataset.i18nAria as MessageKey);
+    el.setAttribute('aria-label', name);
+    el.setAttribute('title', name);
   }
 }

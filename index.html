@@ -11,11 +11,36 @@
 <div id="menu-screen">
   <canvas id="gameMenu"></canvas>
   <div class="menu-bottom-controls">
-    <button id="helpBtn" class="menu-control-btn" data-i18n="menu.help">Help</button>
-    <button id="fsToggle" class="menu-control-btn">Full screen</button>
-    <button id="audioToggle" class="menu-control-btn audio-toggle-btn">Audio on</button>
+    <!-- Icons, not words: they read the same in every language, and five of
+         them fit one row on a 320px phone. Each has its name for screen
+         readers (and as a tooltip) in the player's language. -->
+    <button id="helpBtn" class="menu-control-btn icon-btn" aria-label="Help" data-i18n-aria="menu.help">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.9v.6"/><circle class="dot" cx="12" cy="17.3" r="1.1"/></svg>
+    </button>
+    <button id="recordsBtn" class="menu-control-btn icon-btn" aria-label="Records" data-i18n-aria="help.records">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/><path d="M12 14v3.5"/><path d="M8.5 20.5h7l-.8-3h-5.4z"/></svg>
+    </button>
+    <!-- Lit while the game is full screen. Web only: hidden in the Android and
+         iOS apps, and in browsers without the Fullscreen API. -->
+    <button id="fsToggle" class="menu-control-btn icon-btn" aria-label="Full screen" aria-pressed="false" data-i18n-aria="menu.fullScreen">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5"/><path d="M15 4h5v5"/><path d="M20 15v5h-5"/><path d="M9 20H4v-5"/></svg>
+    </button>
+    <!-- A speaker; switched off, the "no" sign over it. -->
+    <button id="audioToggle" class="menu-control-btn icon-btn audio-toggle-btn" aria-label="Sound" aria-pressed="true" data-i18n-aria="panel.sound">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path class="speaker" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><g class="no"><circle cx="12" cy="12" r="9.5"/><path d="M5.3 5.3l13.4 13.4"/></g></svg>
+    </button>
     <!-- The language's flag, and nothing else: it has to be found by someone who cannot read the rest. -->
     <button id="langBtn" class="menu-control-btn lang-btn" aria-label="Language" data-i18n-aria="menu.language"></button>
+  </div>
+</div>
+
+<div id="records-overlay" hidden>
+  <div class="confirm-card help-card" id="records-card">
+    <div class="confirm-title" data-i18n="records.title">Records</div>
+    <div class="help-actions">
+      <button id="records-close" class="confirm-btn secondary" data-i18n="common.close">Close</button>
+    </div>
+    <div class="records-body" id="records-body"></div>
   </div>
 </div>
 
@@ -36,20 +61,12 @@
          a way out must never be hidden under that. -->
     <div class="help-actions">
       <button id="help-replay" class="confirm-btn secondary" data-i18n="help.replay">Replay tutorial</button>
-      <button id="help-records" class="confirm-btn secondary" data-i18n="help.records">Records</button>
       <button id="help-close" class="confirm-btn secondary" data-i18n="common.close">Close</button>
     </div>
     <dl class="help-rules" id="help-rules"></dl>
     <section class="help-credits" id="help-credits" aria-label="Credits" data-i18n-aria="credits.title"></section>
     <!-- Last of all, after the credits: every sound the game makes, to hear on its own. -->
     <button id="help-sounds" class="confirm-btn secondary help-end-btn" data-i18n="help.sounds">Sound preview</button>
-  </div>
-  <div class="confirm-card help-card" id="records-card" hidden>
-    <div class="confirm-title" data-i18n="records.title">Records</div>
-    <div class="help-actions">
-      <button id="records-back" class="confirm-btn secondary" data-i18n="common.back">Back</button>
-    </div>
-    <div class="records-body" id="records-body"></div>
   </div>
   <div class="confirm-card help-card" id="sounds-card" hidden>
     <div class="confirm-title" data-i18n="sounds.title">Sound preview</div>

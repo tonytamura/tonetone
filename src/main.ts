@@ -1,6 +1,8 @@
 import { PlayMode, createGame, resetField, startMatch } from './game/GameState';
 import { isLangId, onLanguageChange, setLanguage, startingLanguage, t } from './i18n/I18n';
 import { setupLanguagePicker } from './ui/LanguagePicker';
+import { setupRecordsScreen } from './ui/RecordsScreen';
+import { isNativeApp } from './ui/Platform';
 import { advanceFrame } from './sim/Frame';
 import { createRenderContext, resizeRenderer, drawGame, drawResultsCanvas, drawTutorialRing, drawTutorialHint } from './graphics/Renderer';
 import { clearSpriteCache } from './graphics/Sprites';
@@ -181,10 +183,8 @@ const firstPlay = createFirstPlayOffer({
   skip: mode => { markTutorialSeen(); if (needsSeatCard(mode)) seatCard.show(); },
 });
 
-setupHelpScreen(
-  () => tutorial.start({ then: null }),
-  () => recordSections(loadRecords(), presetChoices(), AI_LEVELS, loadLadderLevel(AI_LEVELS.length)),
-);
+setupHelpScreen(() => tutorial.start({ then: null }));
+setupRecordsScreen(() => recordSections(loadRecords(), presetChoices(), AI_LEVELS, loadLadderLevel(AI_LEVELS.length)));
 
 /**
  * What a finished match does to the records, and what the results card says
@@ -306,7 +306,8 @@ copyBtn?.addEventListener('click', () => {
 // Fullscreen API fallback
 const fsBtn = document.getElementById('fs');
 const docEl = document.documentElement as any;
-const fsRequest = docEl.requestFullscreen || docEl.webkitRequestFullscreen || null;
+// Web only: the Android and iOS apps are full screen already.
+const fsRequest = isNativeApp() ? null : docEl.requestFullscreen || docEl.webkitRequestFullscreen || null;
 const fsExit = document.exitFullscreen || (document as any).webkitExitFullscreen || null;
 function fsActive() { return document.fullscreenElement || (document as any).webkitFullscreenElement || null; }
 function fsLabel() { if (fsBtn) fsBtn.textContent = fsActive() ? t('menu.exitFullScreen') : t('menu.fullScreen'); }

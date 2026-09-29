@@ -4,6 +4,10 @@ import { computeMenuLayout } from '../../src/ui/menu/MenuLayout';
 import { MAX_MENU_VOICES, playBinauralClick, resetUiSoundsForTesting, setClickLockMs } from '../../src/audio/UiSounds';
 import { AudioStore } from '../../src/audio/SynthEngine';
 import type { PlayMode } from '../../src/game/GameState';
+import { isNativeApp } from '../../src/ui/Platform';
+
+// Where the game runs: a browser unless a test says it is the Android or iOS app.
+vi.mock('../../src/ui/Platform', () => ({ isNativeApp: vi.fn(() => false) }));
 
 /**
  * A 2D context that accepts anything drawn on it.
@@ -43,6 +47,11 @@ class MockElement {
     add: (c: string) => { this.classList.classes.add(c); },
     remove: (c: string) => { this.classList.classes.delete(c); },
     contains: (c: string) => this.classList.classes.has(c),
+    toggle: (c: string, on?: boolean) => {
+      const want = on ?? !this.classList.classes.has(c);
+      if (want) this.classList.classes.add(c); else this.classList.classes.delete(c);
+      return want;
+    },
   };
 
   setAttribute(name: string, val: string) {
@@ -146,19 +155,23 @@ describe('MenuScreen', () => {
     expect(menuContainer.hasAttribute('hidden')).toBe(true);
   });
 
-  it('refreshes the audio and full screen labels each time the menu is shown', () => {
+  it('refreshes the sound and full screen icons each time the menu is shown', () => {
     initMenuScreen(() => {});
 
     AudioStore.soundOn = false;
     showMenu();
-    expect(audioBtnEl.textContent).toBe('Audio off');
-    expect(fsBtnEl.textContent).toBe('Full screen');
+    // Off: the "no" sign over the speaker, and the toggle says it is not pressed.
+    expect(audioBtnEl.classList.contains('off')).toBe(true);
+    expect(audioBtnEl.attributes['aria-pressed']).toBe('false');
+    // Not full screen: the button is not lit.
+    expect(fsBtnEl.classList.contains('active')).toBe(false);
+    expect(fsBtnEl.attributes['aria-pressed']).toBe('false');
 
     hideMenu();
     AudioStore.soundOn = true;
     showMenu();
-    expect(audioBtnEl.textContent).toBe('Audio on');
-    expect(fsBtnEl.textContent).toBe('Full screen');
+    expect(audioBtnEl.classList.contains('off')).toBe(false);
+    expect(audioBtnEl.attributes['aria-pressed']).toBe('true');
 
     hideMenu();
   });
@@ -169,6 +182,15 @@ describe('MenuScreen', () => {
     showMenu();
     expect(fsBtnEl.hasAttribute('hidden')).toBe(true);
     hideMenu();
+  });
+
+  it('hides the full screen button in the Android and iOS apps, which are full screen already', () => {
+    vi.mocked(isNativeApp).mockReturnValue(true);
+    initMenuScreen(() => {});
+    showMenu();
+    expect(fsBtnEl.hasAttribute('hidden')).toBe(true);
+    hideMenu();
+    vi.mocked(isNativeApp).mockReturnValue(false);
   });
 
   it('accepts onOptions callback on initMenuScreen', () => {
