@@ -1562,6 +1562,11 @@ select option {
   letter-spacing: normal;
   text-align: left;
 }
+/* A long name wraps onto a second line rather than running out of its button. */
+.lang-choice span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .lang-choice .flag {
   width: 30px;
   height: 20px;

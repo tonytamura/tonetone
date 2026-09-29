@@ -40,7 +40,9 @@ export const LANGUAGES = [
   { id: 'fr', name: 'Français' },
   { id: 'de', name: 'Deutsch' },
   { id: 'it', name: 'Italiano' },
-  { id: 'id', name: 'Bahasa Indonesia' },
+  // "Indonesia", as the phone's own settings list it: "Bahasa Indonesia" ran
+  // out of its button in the two-column picker, and "Bahasa" alone only means "language".
+  { id: 'id', name: 'Indonesia' },
   { id: 'tr', name: 'Türkçe' },
   { id: 'vi', name: 'Tiếng Việt' },
   { id: 'ru', name: 'Русский' },
