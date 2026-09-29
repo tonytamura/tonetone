@@ -3,8 +3,8 @@ import type { Messages } from '../I18n';
 
 const M: Messages = {
   'menu.solo': 'Solo',
-  'menu.onePlayer': '1 Spieler',
-  'menu.twoPlayers': '2 Spieler',
+  'menu.vsAi': 'Gegen KI',
+  'menu.vsFriend': 'Gegen Freunde',
   'menu.options': 'Optionen',
   'menu.help': 'Hilfe',
   'menu.fullScreen': 'Vollbild',
@@ -24,7 +24,7 @@ const M: Messages = {
   'records.title': 'Rekorde',
   'records.solo': 'Solo – höchste Punktzahl',
   'records.ai': 'gegen KI',
-  'records.duel': '2 Spieler – Siege',
+  'records.duel': 'Gegen Freunde – Siege',
   'records.best': 'Rekord',
   'records.none': 'Noch keine Partien',
   'records.next': 'als Nächstes',
@@ -168,7 +168,7 @@ const M: Messages = {
   'knob.haptics.label': 'vibration',
   'knob.haptics.hint': 'Kurze Vibrationen bei Booms und beim Andocken, auf Handys, die das können.',
   'knob.ailevel.label': 'ki-gegner',
-  'knob.ailevel.hint': 'Gegen wen du bei 1 Spieler spielst. Leiter: Ein Sieg bringt dich zu einer stärkeren KI, eine Niederlage zu einer schwächeren, und verlierst du gegen AGI, fängst du wieder bei AI1 an. Wähl eine einzelne KI, um nur gegen sie zu spielen; dann bewegt sich die Leiter nicht und es gibt keinen Rekord.',
+  'knob.ailevel.hint': 'Gegen wen du bei „Gegen KI“ spielst. Leiter: Ein Sieg bringt dich zu einer stärkeren KI, eine Niederlage zu einer schwächeren, und verlierst du gegen AGI, fängst du wieder bei AI1 an. Wähl eine einzelne KI, um nur gegen sie zu spielen; dann bewegt sich die Leiter nicht und es gibt keinen Rekord.',
   'knob.specials.label': 'schwarz & weiß',
   'knob.specials.hint': 'Die zwei Spezialkugeln. Schwarz haftet an jeder Farbe und übersteht jeden Boom außer durch Weiß. Weiß sprengt alles, was es berührt, auch Schwarz.',
   'knob.white.label': 'weiß-chance',

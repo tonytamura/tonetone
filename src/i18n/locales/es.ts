@@ -3,8 +3,8 @@ import type { Messages } from '../I18n';
 
 const M: Messages = {
   'menu.solo': 'Solo',
-  'menu.onePlayer': '1 jugador',
-  'menu.twoPlayers': '2 jugadores',
+  'menu.vsAi': 'vs IA',
+  'menu.vsFriend': 'vs Amigo',
   'menu.options': 'Opciones',
   'menu.help': 'Ayuda',
   'menu.fullScreen': 'Maximizar',
@@ -26,7 +26,7 @@ const M: Messages = {
   'records.title': 'Récords',
   'records.solo': 'Solo — puntuación más alta',
   'records.ai': 'vs IA',
-  'records.duel': '2 jugadores — victorias',
+  'records.duel': 'vs Amigo — victorias',
   'records.best': 'récord',
   'records.none': 'Aún no hay partidas',
   'records.next': 'siguiente',
@@ -179,7 +179,7 @@ const M: Messages = {
   'knob.haptics.label': 'vibración',
   'knob.haptics.hint': 'Vibraciones cortas en explosiones y uniones, en los teléfonos que las tienen.',
   'knob.ailevel.label': 'rival IA',
-  'knob.ailevel.hint': 'Contra quién juegas en 1 jugador. Escalera: si ganas, subes a una IA más fuerte; si pierdes, bajas a una más débil, y perder contra AGI te devuelve a AI1. Elige una IA para jugar solo contra ella; así no se mueve la escalera ni se guarda récord.',
+  'knob.ailevel.hint': 'Contra quién juegas en vs IA. Escalera: si ganas, subes a una IA más fuerte; si pierdes, bajas a una más débil, y perder contra AGI te devuelve a AI1. Elige una IA para jugar solo contra ella; así no se mueve la escalera ni se guarda récord.',
   'knob.specials.label': 'negra y blanca',
   'knob.specials.hint': 'Las dos bolas especiales. La negra se pega a cualquier color y resiste toda explosión, salvo la de una blanca. La blanca hace explotar lo que toque, incluida la negra.',
   'knob.white.label': 'prob. blanca',

@@ -3,8 +3,8 @@ import type { Messages } from '../I18n';
 
 const M: Messages = {
   'menu.solo': 'Solo',
-  'menu.onePlayer': '1 jogador',
-  'menu.twoPlayers': '2 jogadores',
+  'menu.vsAi': 'vs IA',
+  'menu.vsFriend': 'vs Amigo',
   'menu.options': 'Opções',
   'menu.help': 'Ajuda',
   'menu.fullScreen': 'Tela cheia',
@@ -24,7 +24,7 @@ const M: Messages = {
   'records.title': 'Recordes',
   'records.solo': 'Solo — maior pontuação',
   'records.ai': 'vs. IA',
-  'records.duel': '2 jogadores — vitórias',
+  'records.duel': 'vs Amigo — vitórias',
   'records.best': 'recorde',
   'records.none': 'Nenhuma partida ainda',
   'records.next': 'próxima',
@@ -168,7 +168,7 @@ const M: Messages = {
   'knob.haptics.label': 'vibração',
   'knob.haptics.hint': 'Vibrações curtas nas explosões e ao grudar, em celulares que vibram.',
   'knob.ailevel.label': 'IA rival',
-  'knob.ailevel.hint': 'Contra quem você joga no modo 1 jogador. Escada: uma vitória leva você a uma IA mais forte, uma derrota a uma mais fraca, e perder para a AGI recomeça da AI1. Escolha uma IA para jogar só contra ela; assim a escada não anda e nenhum recorde é registrado.',
+  'knob.ailevel.hint': 'Contra quem você joga no modo vs IA. Escada: uma vitória leva você a uma IA mais forte, uma derrota a uma mais fraca, e perder para a AGI recomeça da AI1. Escolha uma IA para jogar só contra ela; assim a escada não anda e nenhum recorde é registrado.',
   'knob.specials.label': 'preta e branca',
   'knob.specials.hint': 'As duas bolas especiais. A preta gruda em qualquer cor e resiste a toda explosão, menos à de uma branca. A branca explode tudo o que toca, até a preta.',
   'knob.white.label': 'chance da branca',

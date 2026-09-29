@@ -3,8 +3,8 @@ import type { Messages } from '../I18n';
 
 const M: Messages = {
   'menu.solo': 'Solo',
-  'menu.onePlayer': '1 joueur',
-  'menu.twoPlayers': '2 joueurs',
+  'menu.vsAi': 'Contre l’IA',
+  'menu.vsFriend': 'Contre un ami',
   'menu.options': 'Options',
   'menu.help': 'Aide',
   'menu.fullScreen': 'Plein écran',
@@ -24,7 +24,7 @@ const M: Messages = {
   'records.title': 'Records',
   'records.solo': 'Solo — meilleur score',
   'records.ai': 'Contre l’IA',
-  'records.duel': '2 joueurs — victoires',
+  'records.duel': 'Contre un ami — victoires',
   'records.best': 'record',
   'records.none': 'Aucune partie pour l’instant',
   'records.next': 'suivante',
@@ -168,7 +168,7 @@ const M: Messages = {
   'knob.haptics.label': 'vibrations',
   'knob.haptics.hint': 'De courtes vibrations lors des explosions et des collages, sur les téléphones qui en ont.',
   'knob.ailevel.label': 'adversaire IA',
-  'knob.ailevel.hint': 'Contre qui tu joues à 1 joueur. Échelle : une victoire te fait monter vers une IA plus forte, une défaite descendre vers une plus faible, et perdre contre l’AGI te ramène à AI1. Choisis une IA pour n’affronter qu’elle ; l’échelle ne bouge pas et aucun record n’est enregistré.',
+  'knob.ailevel.hint': 'Contre qui tu joues en mode Contre l’IA. Échelle : une victoire te fait monter vers une IA plus forte, une défaite descendre vers une plus faible, et perdre contre l’AGI te ramène à AI1. Choisis une IA pour n’affronter qu’elle ; l’échelle ne bouge pas et aucun record n’est enregistré.',
   'knob.specials.label': 'noir & blanc',
   'knob.specials.hint': 'Les deux boules spéciales. La noire colle à toutes les couleurs et résiste à toutes les explosions, sauf à celle d’une blanche. La blanche fait exploser tout ce qu’elle touche, noire comprise.',
   'knob.white.label': 'proba blanche',

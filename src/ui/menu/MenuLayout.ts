@@ -17,8 +17,8 @@ export interface MenuItem {
 
 export const menuItems: MenuItem[] = [
   { key: 'menu.solo', action: 'solo' },
-  { key: 'menu.onePlayer', action: 'one_player' },
-  { key: 'menu.twoPlayers', action: 'two_player' },
+  { key: 'menu.vsAi', action: 'one_player' },
+  { key: 'menu.vsFriend', action: 'two_player' },
   { key: 'menu.options', action: 'options' }
 ];
 

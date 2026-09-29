@@ -3,8 +3,8 @@ import type { Messages } from '../I18n';
 
 const M: Messages = {
   'menu.solo': 'Solo',
-  'menu.onePlayer': '1 pemain',
-  'menu.twoPlayers': '2 pemain',
+  'menu.vsAi': 'Lawan AI',
+  'menu.vsFriend': 'Lawan Teman',
   'menu.options': 'Opsi',
   'menu.help': 'Bantuan',
   'menu.fullScreen': 'Layar penuh',
@@ -26,7 +26,7 @@ const M: Messages = {
   'records.title': 'Rekor',
   'records.solo': 'Solo — skor tertinggi',
   'records.ai': 'vs AI',
-  'records.duel': '2 pemain — kemenangan',
+  'records.duel': 'Lawan Teman — kemenangan',
   'records.best': 'terbaik',
   'records.none': 'Belum ada laga',
   'records.next': 'berikutnya',
@@ -179,7 +179,7 @@ const M: Messages = {
   'knob.haptics.label': 'getar',
   'knob.haptics.hint': 'Getaran singkat saat ledakan dan tempelan, di HP yang mendukung.',
   'knob.ailevel.label': 'lawan AI',
-  'knob.ailevel.hint': 'Lawanmu di mode 1 pemain. Tangga: menang membawamu naik ke AI yang lebih kuat, kalah menurunkanmu ke yang lebih lemah, dan kalah dari AGI mulai lagi dari AI1. Pilih satu AI untuk melawan AI itu saja; tangga tidak bergerak dan rekor tidak dicatat.',
+  'knob.ailevel.hint': 'Lawanmu di mode Lawan AI. Tangga: menang membawamu naik ke AI yang lebih kuat, kalah menurunkanmu ke yang lebih lemah, dan kalah dari AGI mulai lagi dari AI1. Pilih satu AI untuk melawan AI itu saja; tangga tidak bergerak dan rekor tidak dicatat.',
   'knob.specials.label': 'hitam & putih',
   'knob.specials.hint': 'Dua bola spesial. Hitam menempel ke warna apa pun dan tahan semua ledakan kecuali dari putih. Putih meledakkan apa pun yang disentuhnya, termasuk hitam.',
   'knob.white.label': 'peluang putih',

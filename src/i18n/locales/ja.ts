@@ -3,8 +3,8 @@ import type { Messages } from '../I18n';
 
 const M: Messages = {
   'menu.solo': 'ソロ',
-  'menu.onePlayer': '1人プレイ',
-  'menu.twoPlayers': '2人プレイ',
+  'menu.vsAi': 'AI対戦',
+  'menu.vsFriend': 'フレンド対戦',
   'menu.options': 'オプション',
   'menu.help': 'ヘルプ',
   'menu.fullScreen': '全画面',
@@ -26,7 +26,7 @@ const M: Messages = {
   'records.title': '記録',
   'records.solo': 'ソロ — ハイスコア',
   'records.ai': 'AI戦',
-  'records.duel': '2人プレイ — 勝利数',
+  'records.duel': 'フレンド対戦 — 勝利数',
   'records.best': 'ベスト',
   'records.none': 'まだ対戦がありません',
   'records.next': '次の相手',
@@ -179,7 +179,7 @@ const M: Messages = {
   'knob.haptics.label': '振動',
   'knob.haptics.hint': '爆破やロックのときに短く振動（対応端末のみ）。',
   'knob.ailevel.label': 'AIの相手',
-  'knob.ailevel.hint': '1人プレイの対戦相手。ラダー：勝てば強いAIへ、負ければ弱いAIへ。AGIに負けるとAI1からやり直し。AIを1つ選ぶとその相手とだけ対戦。ラダーは動かず、記録も残らない。',
+  'knob.ailevel.hint': 'AI対戦の相手。ラダー：勝てば強いAIへ、負ければ弱いAIへ。AGIに負けるとAI1からやり直し。AIを1つ選ぶとその相手とだけ対戦。ラダーは動かず、記録も残らない。',
   'knob.specials.label': '黒と白',
   'knob.specials.hint': '2種類の特殊ボール。黒はどの色にもくっつき、白以外の爆破では消えない。白は触れたものをなんでも爆破。黒も例外じゃない。',
   'knob.white.label': '白の確率',

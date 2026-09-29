@@ -13,9 +13,12 @@
 export const EN = {
   // ── Main menu ────────────────────────────────────────────────────────────
   // Four big buttons drawn on the menu, about 20 characters each at most.
+  // The middle two name the opponent: the computer (vsAi) and a person on the
+  // same device (vsFriend). They were "1 player" and "2 players" until
+  // 2026-09-29, which read as the same thing as Solo.
   'menu.solo': 'Solo',
-  'menu.onePlayer': '1 player',
-  'menu.twoPlayers': '2 players',
+  'menu.vsAi': 'vs AI',
+  'menu.vsFriend': 'vs Friend',
   'menu.options': 'Options',
   // The small buttons along the bottom, three or four side by side: short.
   'menu.help': 'Help',
@@ -44,7 +47,7 @@ export const EN = {
   // The Records screen's sections. Under the two-player and vs AI ones, columns
   // headed P1, P2, AI and P1 % (kept as they are), and 'best' for the best score.
   'records.ai': 'vs AI',
-  'records.duel': '2 players — wins',
+  'records.duel': 'vs Friend — wins',
   'records.best': 'best',
   'records.none': 'No matches yet',
   // Marks the AI the ladder will play next, after its name: "AI2 · next".
@@ -227,7 +230,7 @@ export const EN = {
   'knob.haptics.label': 'haptics',
   'knob.haptics.hint': 'Short vibrations on booms and locks, on phones that have them.',
   'knob.ailevel.label': 'AI opponent',
-  'knob.ailevel.hint': 'Who you play in 1 player. Ladder: a win moves you up to a stronger AI, a loss down to a weaker one, and losing to AGI starts again from AI1. Pick one AI to play only that one; it moves no ladder and sets no record.',
+  'knob.ailevel.hint': 'Who you play in vs AI. Ladder: a win moves you up to a stronger AI, a loss down to a weaker one, and losing to AGI starts again from AI1. Pick one AI to play only that one; it moves no ladder and sets no record.',
   'knob.specials.label': 'black & white',
   'knob.specials.hint': 'The two special balls. Black sticks to any colour and survives every boom but a white one. White booms whatever it touches, black included.',
   'knob.white.label': 'white chance',

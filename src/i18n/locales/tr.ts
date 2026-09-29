@@ -3,8 +3,8 @@ import type { Messages } from '../I18n';
 
 const M: Messages = {
   'menu.solo': 'Solo',
-  'menu.onePlayer': '1 oyuncu',
-  'menu.twoPlayers': '2 oyuncu',
+  'menu.vsAi': 'Yapay Zekâya Karşı',
+  'menu.vsFriend': 'Arkadaşa Karşı',
   'menu.options': 'Seçenekler',
   'menu.help': 'Yardım',
   'menu.fullScreen': 'Tam ekran',
@@ -26,7 +26,7 @@ const M: Messages = {
   'records.title': 'Rekorlar',
   'records.solo': 'Solo — en yüksek puan',
   'records.ai': 'Yapay zekâya karşı',
-  'records.duel': '2 oyuncu — galibiyetler',
+  'records.duel': 'Arkadaşa Karşı — galibiyetler',
   'records.best': 'rekor',
   'records.none': 'Henüz maç yok',
   'records.next': 'sıradaki',
@@ -179,7 +179,7 @@ const M: Messages = {
   'knob.haptics.label': 'titreşim',
   'knob.haptics.hint': 'Patlamalarda ve kilitlerde kısa titreşimler (destekleyen telefonlarda).',
   'knob.ailevel.label': 'rakip',
-  'knob.ailevel.hint': '1 oyuncu modunda kiminle oynadığın. Merdiven: kazanınca daha güçlü bir yapay zekâya çıkarsın, kaybedince daha zayıfına inersin; AGI karşısında kaybedersen AI1’den yeniden başlarsın. Yalnızca onunla oynamak için bir yapay zekâ seç; bu merdiveni ilerletmez ve rekor tutmaz.',
+  'knob.ailevel.hint': 'Yapay Zekâya Karşı modunda kiminle oynadığın. Merdiven: kazanınca daha güçlü bir yapay zekâya çıkarsın, kaybedince daha zayıfına inersin; AGI karşısında kaybedersen AI1’den yeniden başlarsın. Yalnızca onunla oynamak için bir yapay zekâ seç; bu merdiveni ilerletmez ve rekor tutmaz.',
   'knob.specials.label': 'siyah ve beyaz',
   'knob.specials.hint': 'İki özel top. Siyah her renge yapışır ve beyaz dışında her patlamadan sağ çıkar. Beyaz neye değerse patlatır, siyah da dahil.',
   'knob.white.label': 'beyaz şansı',

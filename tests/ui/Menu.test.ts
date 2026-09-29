@@ -205,8 +205,8 @@ describe('MenuScreen', () => {
     const layout = computeMenuLayout(1024, 768, canvasEl.getContext('2d') as any);
     expect(layout.buttons.length).toBe(4);
     expect(layout.buttons[0].text).toBe('Solo');
-    expect(layout.buttons[1].text).toBe('1 player');
-    expect(layout.buttons[2].text).toBe('2 players');
+    expect(layout.buttons[1].text).toBe('vs AI');
+    expect(layout.buttons[2].text).toBe('vs Friend');
     expect(layout.buttons[3].text).toBe('Options');
 
     for (let i = 0; i < layout.buttons.length - 1; i++) {

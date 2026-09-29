@@ -3,8 +3,8 @@ import type { Messages } from '../I18n';
 
 const M: Messages = {
   'menu.solo': 'Chơi đơn',
-  'menu.onePlayer': '1 người chơi',
-  'menu.twoPlayers': '2 người chơi',
+  'menu.vsAi': 'Đấu AI',
+  'menu.vsFriend': 'Đấu bạn bè',
   'menu.options': 'Tùy chọn',
   'menu.help': 'Trợ giúp',
   'menu.fullScreen': 'Toàn màn hình',
@@ -26,7 +26,7 @@ const M: Messages = {
   'records.title': 'Kỷ lục',
   'records.solo': 'Chơi đơn — điểm cao nhất',
   'records.ai': 'Đấu AI',
-  'records.duel': '2 người chơi — số trận thắng',
+  'records.duel': 'Đấu bạn bè — số trận thắng',
   'records.best': 'cao nhất',
   'records.none': 'Chưa có trận nào',
   'records.next': 'kế tiếp',
@@ -179,7 +179,7 @@ const M: Messages = {
   'knob.haptics.label': 'rung',
   'knob.haptics.hint': 'Rung ngắn khi nổ và khi khóa, trên điện thoại có hỗ trợ.',
   'knob.ailevel.label': 'đối thủ AI',
-  'knob.ailevel.hint': 'Đối thủ của bạn ở chế độ 1 người chơi. Bậc thang: thắng thì lên AI mạnh hơn, thua thì xuống AI yếu hơn, thua AGI thì bắt đầu lại từ AI1. Chọn một AI để chỉ đấu AI đó; không đổi bậc thang và không ghi kỷ lục.',
+  'knob.ailevel.hint': 'Đối thủ của bạn ở chế độ Đấu AI. Bậc thang: thắng thì lên AI mạnh hơn, thua thì xuống AI yếu hơn, thua AGI thì bắt đầu lại từ AI1. Chọn một AI để chỉ đấu AI đó; không đổi bậc thang và không ghi kỷ lục.',
   'knob.specials.label': 'đen & trắng',
   'knob.specials.hint': 'Hai quả bóng đặc biệt. Bóng đen dính vào mọi màu và sống sót qua mọi vụ nổ trừ nổ bằng bóng trắng. Bóng trắng làm nổ mọi thứ nó chạm vào, kể cả bóng đen.',
   'knob.white.label': 'tỉ lệ trắng',

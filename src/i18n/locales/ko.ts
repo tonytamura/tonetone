@@ -3,8 +3,8 @@ import type { Messages } from '../I18n';
 
 const M: Messages = {
   'menu.solo': '솔로',
-  'menu.onePlayer': '1인 플레이',
-  'menu.twoPlayers': '2인 플레이',
+  'menu.vsAi': 'AI 대전',
+  'menu.vsFriend': '친구 대전',
   'menu.options': '옵션',
   'menu.help': '도움말',
   'menu.fullScreen': '전체 화면',
@@ -26,7 +26,7 @@ const M: Messages = {
   'records.title': '기록',
   'records.solo': '솔로 — 최고 점수',
   'records.ai': 'AI 대전',
-  'records.duel': '2인 플레이 — 승리',
+  'records.duel': '친구 대전 — 승리',
   'records.best': '최고',
   'records.none': '아직 경기가 없어요',
   'records.next': '다음',
@@ -179,7 +179,7 @@ const M: Messages = {
   'knob.haptics.label': '진동',
   'knob.haptics.hint': '폭발과 결합 때 짧게 진동해요. 진동을 지원하는 폰에서만 작동해요.',
   'knob.ailevel.label': 'AI 상대',
-  'knob.ailevel.hint': '1인 플레이에서 맞붙을 상대예요. 단계: 이기면 더 강한 AI로 올라가고, 지면 더 약한 AI로 내려가요. AGI에게 지면 AI1부터 다시 시작해요. AI 하나를 고르면 그 AI하고만 겨뤄요. 단계는 움직이지 않고 기록도 남지 않아요.',
+  'knob.ailevel.hint': 'AI 대전에서 맞붙을 상대예요. 단계: 이기면 더 강한 AI로 올라가고, 지면 더 약한 AI로 내려가요. AGI에게 지면 AI1부터 다시 시작해요. AI 하나를 고르면 그 AI하고만 겨뤄요. 단계는 움직이지 않고 기록도 남지 않아요.',
   'knob.specials.label': '검은·흰 공',
   'knob.specials.hint': '두 가지 특수 공이에요. 검은 공은 어떤 색에도 붙고, 흰 공이 아니면 어떤 폭발에도 살아남아요. 흰 공은 닿는 건 뭐든 터뜨려요. 검은 공도요.',
   'knob.white.label': '흰 공 확률',

@@ -3,8 +3,8 @@ import type { Messages } from '../I18n';
 
 const M: Messages = {
   'menu.solo': 'Da solo',
-  'menu.onePlayer': '1 giocatore',
-  'menu.twoPlayers': '2 giocatori',
+  'menu.vsAi': 'Contro l’IA',
+  'menu.vsFriend': 'Contro un amico',
   'menu.options': 'Opzioni',
   'menu.help': 'Aiuto',
   'menu.fullScreen': 'Schermo intero',
@@ -26,7 +26,7 @@ const M: Messages = {
   'records.title': 'Record',
   'records.solo': 'Da solo — punteggio più alto',
   'records.ai': 'Contro l’IA',
-  'records.duel': '2 giocatori — vittorie',
+  'records.duel': 'Contro un amico — vittorie',
   'records.best': 'record',
   'records.none': 'Ancora nessuna partita',
   'records.next': 'prossima',
@@ -179,7 +179,7 @@ const M: Messages = {
   'knob.haptics.label': 'vibrazione',
   'knob.haptics.hint': 'Brevi vibrazioni su boom e agganci, sui telefoni che le supportano.',
   'knob.ailevel.label': 'avversario IA',
-  'knob.ailevel.hint': 'Chi affronti in 1 giocatore. Scala: una vittoria ti porta a un’IA più forte, una sconfitta a una più debole, e perdere contro AGI ti fa ripartire da AI1. Scegli un’IA per giocare solo contro quella: non muove la scala e non registra record.',
+  'knob.ailevel.hint': 'Chi affronti in «Contro l’IA». Scala: una vittoria ti porta a un’IA più forte, una sconfitta a una più debole, e perdere contro AGI ti fa ripartire da AI1. Scegli un’IA per giocare solo contro quella: non muove la scala e non registra record.',
   'knob.specials.label': 'bianco e nero',
   'knob.specials.hint': 'Le due palle speciali. Il nero si attacca a qualsiasi colore e resiste a ogni boom, tranne a quello del bianco. Il bianco fa esplodere tutto ciò che tocca, nero compreso.',
   'knob.white.label': 'prob. bianco',
