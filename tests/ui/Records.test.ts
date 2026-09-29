@@ -9,7 +9,7 @@ function memoryStore(): KeyValueStore & { data: Map<string, string> } {
 
 describe('records', () => {
   it('start empty', () => {
-    expect(loadRecords(memoryStore())).toEqual({ solo: {}, ai: {} });
+    expect(loadRecords(memoryStore())).toEqual({ solo: {}, ai: {}, duel: {}, vsAi: {} });
   });
 
   it('call the first scored match a new record, and keep it', () => {
@@ -31,7 +31,7 @@ describe('records', () => {
     submitScore('solo', 'normal', 500, s);
     expect(submitScore('solo', 'chaos', 100, s).isNew).toBe(true);
     submitScore('ai', 'ai3', 250, s);
-    expect(loadRecords(s)).toEqual({ solo: { normal: 500, chaos: 100 }, ai: { ai3: 250 } });
+    expect(loadRecords(s)).toEqual({ solo: { normal: 500, chaos: 100 }, ai: { ai3: 250 }, duel: {}, vsAi: {} });
   });
 
   it('never set a record from nothing', () => {
@@ -44,23 +44,23 @@ describe('records', () => {
     for (const raw of ['{not json', '{"v":99,"solo":{"normal":5}}', '"x"', 'null']) {
       const s = memoryStore();
       s.data.set(RECORDS_KEY, raw);
-      expect(loadRecords(s), raw).toEqual({ solo: {}, ai: {} });
+      expect(loadRecords(s), raw).toEqual({ solo: {}, ai: {}, duel: {}, vsAi: {} });
     }
     const s = memoryStore();
     s.data.set(RECORDS_KEY, JSON.stringify({ v: 1, solo: { normal: -3, relax: 'lots', chaos: 12.7, drift: Infinity }, ai: [] }));
-    expect(loadRecords(s)).toEqual({ solo: { chaos: 12 }, ai: {} });
+    expect(loadRecords(s)).toEqual({ solo: { chaos: 12 }, ai: {}, duel: {}, vsAi: {} });
   });
 
   it('survive a store that throws', () => {
     const broken: KeyValueStore = { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('full'); } };
-    expect(loadRecords(broken)).toEqual({ solo: {}, ai: {} });
+    expect(loadRecords(broken)).toEqual({ solo: {}, ai: {}, duel: {}, vsAi: {} });
     expect(() => saveRecords({ solo: { normal: 1 }, ai: {} }, broken)).not.toThrow();
     expect(submitScore('solo', 'normal', 50, broken).isNew).toBe(true);
     expect(submitScore('solo', 'normal', 50, null).isNew).toBe(true);
   });
 });
 
-import { recordSections, soloRecordNotes } from '../../src/ui/Records';
+import { recordMatch, recordSections, soloRecordNotes, winShare } from '../../src/ui/Records';
 
 describe('the results card', () => {
   it('says "New highest score" only when a record is set', () => {
@@ -71,16 +71,77 @@ describe('the results card', () => {
     expect(plain.lines).toEqual(['Highest score on Chaos: 500']);
   });
 
-  it('says nothing about a best that does not exist, and why custom settings set none', () => {
+  it('says nothing about a best that does not exist', () => {
     expect(soloRecordNotes({ isNew: false, best: 0, previous: null }, 'Normal')).toEqual({ lines: [] });
-    expect(soloRecordNotes(null, null)).toEqual({ lines: ['Custom settings set no record.'] });
+  });
+
+  it('names a Custom slot like any mode', () => {
+    expect(soloRecordNotes({ isNew: true, best: 300, previous: null }, 'Custom 2').lines).toEqual(['Custom 2 · first record']);
+  });
+});
+
+describe('match tallies', () => {
+  it('count a win for whoever scored more, and a draw', () => {
+    const s = memoryStore();
+    recordMatch('duel', 'chaos', 500, 300, s);
+    recordMatch('duel', 'chaos', 200, 300, s);
+    recordMatch('duel', 'chaos', 400, 100, s);
+    expect(recordMatch('duel', 'chaos', 250, 250, s)).toEqual({ p1: 2, p2: 1, draws: 1 });
+    recordMatch('vsAi', 'agi', 100, 900, s);
+    expect(loadRecords(s).vsAi).toEqual({ agi: { p1: 0, p2: 1, draws: 0 } });
+    expect(loadRecords(s).duel.normal).toBeUndefined();
+  });
+
+  it('give player 1\'s share of the decided matches, and a dash while none is decided', () => {
+    expect(winShare({ p1: 2, p2: 1, draws: 5 })).toBe('67%');
+    expect(winShare({ p1: 0, p2: 0, draws: 3 })).toBe('–');
+    expect(winShare(undefined)).toBe('–');
+  });
+
+  it('survive a stored table they cannot read', () => {
+    const s = memoryStore();
+    s.data.set(RECORDS_KEY, JSON.stringify({ v: 1, solo: { normal: 9 }, duel: { chaos: { p1: 'x', p2: -2, draws: 1.7 }, relax: 4 } }));
+    expect(loadRecords(s)).toEqual({ solo: { normal: 9 }, ai: {}, duel: { chaos: { p1: 0, p2: 0, draws: 1 } }, vsAi: {} });
+  });
+
+  it('keep what the old format stored', () => {
+    const s = memoryStore();
+    s.data.set(RECORDS_KEY, JSON.stringify({ v: 1, solo: { normal: 420 }, ai: { ai2: 610 } }));
+    expect(loadRecords(s)).toEqual({ solo: { normal: 420 }, ai: { ai2: 610 }, duel: {}, vsAi: {} });
   });
 });
 
 describe('the Records screen', () => {
-  it('lists every preset in order, with a dash for the unplayed', () => {
-    const [solo] = recordSections({ solo: { chaos: 90 }, ai: {} }, [{ id: 'normal', label: 'Normal' }, { id: 'chaos', label: 'Chaos' }]);
-    expect(solo.rows).toEqual([{ label: 'Normal', value: '–' }, { label: 'Chaos', value: '90' }]);
+  const modes = [{ id: 'normal', label: 'Normal' }, { id: 'chaos', label: 'Chaos' }, { id: 'custom1', label: 'Custom 1' }];
+  const ais = [{ id: 'ai1', label: 'AI1' }, { id: 'agi', label: 'AGI' }];
+  const records = {
+    solo: { chaos: 90, custom1: 40 }, ai: { agi: 1500 },
+    duel: { custom1: { p1: 3, p2: 1, draws: 0 } }, vsAi: { agi: { p1: 1, p2: 3, draws: 0 } },
+  };
+
+  it('lists every mode for solo, Custom slots included, with a dash for the unplayed', () => {
+    const [solo] = recordSections(records, modes, ais, 0);
+    expect(solo.rows).toEqual([
+      { label: 'Normal', values: ['–'] }, { label: 'Chaos', values: ['90'] }, { label: 'Custom 1', values: ['40'] },
+    ]);
+  });
+
+  it('lists only the two-player modes that have results: P1 and P2 wins, and P1\'s share', () => {
+    const [, duel] = recordSections(records, modes, ais, 0);
+    expect(duel.columns).toEqual(['P1', 'P2', 'P1 %']);
+    expect(duel.rows).toEqual([{ label: 'Custom 1', values: ['3', '1', '75%'] }]);
+    const [, none] = recordSections({ ...records, duel: {} }, modes, ais, 0);
+    expect(none.rows).toEqual([]);
+    expect(none.empty).toBe('No matches yet');
+  });
+
+  it('gives every AI its best score, both sides\' wins and the player\'s share, and marks the next', () => {
+    const [, , vsAi] = recordSections(records, modes, ais, 1);
+    expect(vsAi.columns).toEqual(['best', 'P1', 'AI', 'P1 %']);
+    expect(vsAi.rows).toEqual([
+      { label: 'AI1', values: ['–', '–', '–', '–'] },
+      { label: 'AGI', note: 'next', values: ['1500', '1', '3', '25%'] },
+    ]);
   });
 });
 

@@ -41,7 +41,12 @@ export const EN = {
   'help.sounds': 'Sound preview',
   'records.title': 'Records',
   'records.solo': 'Solo — highest score',
-  'records.ai': 'vs AI — best score',
+  // The Records screen's sections. Under the two-player and vs AI ones, columns
+  // headed P1, P2, AI and P1 % (kept as they are), and 'best' for the best score.
+  'records.ai': 'vs AI',
+  'records.duel': '2 players — wins',
+  'records.best': 'best',
+  'records.none': 'No matches yet',
   // Marks the AI the ladder will play next, after its name: "AI2 · next".
   'records.next': 'next',
   'sounds.title': 'Sound preview',
@@ -173,7 +178,6 @@ export const EN = {
   'rec.first': '{preset} · first record',
   'rec.previous': '{preset} · previous {score}',
   'rec.highestOn': 'Highest score on {preset}: {score}',
-  'rec.customNone': 'Custom settings set no record.',
   // {ai} is an AI's name: AI1, AI2, AI3 or AGI.
   'ladder.next': 'Next: {ai}',
   'ladder.back': 'Back to {ai}',

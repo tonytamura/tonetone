@@ -1607,15 +1607,39 @@ select option {
 }
 
 .records-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  /* The label, then one fixed column per value, so the numbers of every row
+     line up under their heads (P1, P2, AI, P1 %, best). */
+  grid-template-columns: minmax(0, 1fr) repeat(var(--cols, 1), 3.4em);
+  column-gap: 6px;
+  align-items: baseline;
   padding: 5px 2px;
   border-bottom: 1px solid rgba(172, 145, 208, 0.15);
   color: var(--ink);
 }
 
-.records-row b {
+.records-row > :not(:first-child) {
+  text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.records-head {
+  padding-bottom: 3px;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* The ladder's "next" under an AI's name, on a line of its own so it never
+   breaks the name in a narrow column. */
+.records-note {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--menu-cyan);
+}
+
+.records-empty {
+  padding: 5px 2px;
+  color: var(--ink-soft);
 }
 
 /* The results card's own lines under the breakdown: the record, the ladder. */

@@ -18,12 +18,11 @@ import { createSeatCard, needsSeatCard } from './ui/SeatCard';
 import { createFirstPlayOffer, setupHelpScreen, shouldOfferTutorial } from './ui/FirstPlay';
 import { hasSeenTutorial, markTutorialSeen } from './ui/Progress';
 import {
-  ResultNotes, ladderNotes, loadLadderLevel, loadRecords, recordSections, saveLadderLevel, soloRecordNotes, submitScore,
+  ResultNotes, ladderNotes, loadLadderLevel, loadRecords, recordMatch, recordSections, saveLadderLevel, soloRecordNotes, submitScore,
 } from './ui/Records';
 import { AI_LEVELS, ladderStep } from './game/AI';
 import { setPlannerBudget } from './game/AIPlanner';
 import { FORCED_AI_LEVEL } from './game/AIChoice';
-import { presetIds } from './sim/Knobs';
 import { settingsLine } from './game/Settings';
 import { initAudio, wakeAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
 import { uiClick } from './audio/UiSounds';
@@ -184,43 +183,41 @@ const firstPlay = createFirstPlayOffer({
 
 setupHelpScreen(
   () => tutorial.start({ then: null }),
-  () => {
-    const records = loadRecords();
-    const current = loadLadderLevel(AI_LEVELS.length);
-    const ladder = {
-      title: t('records.ai'),
-      rows: AI_LEVELS.map((l, i) => ({
-        label: i === current ? `${l.label} · ${t('records.next')}` : l.label,
-        value: l.id in records.ai ? String(records.ai[l.id]) : '\u2013',
-      })),
-    };
-    return recordSections(records, presetIds().map(id => ({ id, label: presetLabel(id) })), [ladder]);
-  },
+  () => recordSections(loadRecords(), presetChoices(), AI_LEVELS, loadLadderLevel(AI_LEVELS.length)),
 );
 
 /**
- * What the results card says about records: a solo match on a preset puts its
- * score against that preset's best. Only here, where a real match ends, so the
- * harness and the tutorial never touch the records.
+ * What a finished match does to the records, and what the results card says
+ * about it. A solo match puts its score against that mode's best, a Custom
+ * slot's included; a two-player match counts a win or a draw for its mode; a
+ * vs AI match counts one against its AI and moves the ladder. Only here, where
+ * a real match ends, so the harness and the tutorial never touch the records.
  */
 function resultNotes(g: typeof game): ResultNotes | undefined {
-  const preset = settings.activePreset();
-  if (g.aiOn) return ladderResult(g, preset);
-  if (g.twoPlayer) return undefined;
-  if (!preset) return soloRecordNotes(null, null);
-  return soloRecordNotes(submitScore('solo', preset, g.players[0].score), presetLabel(preset));
+  const mode = settings.choice();
+  if (g.aiOn) return ladderResult(g, settings.activePreset());
+  if (g.twoPlayer) {
+    recordMatch('duel', mode, g.players[0].score, g.players[1].score);
+    return undefined;
+  }
+  return soloRecordNotes(submitScore('solo', mode, g.players[0].score), presetLabel(mode));
 }
 
 /**
- * A vs AI match moves the ladder: a win one rung up, a loss one down (a loss to
- * AGI, Game Over, all the way back to AI1), a draw nowhere. The next match, Play again included, is against the new rung. The
- * best score against each AI counts on a named preset only, as solo records do.
+ * A vs AI match counts in that AI's tally, and moves the ladder: a win one rung
+ * up, a loss one down (a loss to AGI, Game Over, all the way back to AI1), a
+ * draw nowhere. The next match, Play again included, is against the new rung.
+ * The best score against each AI counts on a named preset only: a Custom
+ * slot's match could be twenty minutes long.
  */
 function ladderResult(g: typeof game, preset: string | null): ResultNotes {
   const played = AI_LEVELS[g.aiLevel];
+  const mine = g.players[0].score, theirs = g.players[1].score;
+  // Every match against an AI counts in its tally, a fixed one's too: the win
+  // was real, even if the ladder does not move for it.
+  recordMatch('vsAi', played.id, mine, theirs);
   // Forced in Options, to feel one level: the ladder stays where it was.
   if (FORCED_AI_LEVEL > 0) return { lines: [t('ladder.forced', { ai: played.label })] };
-  const mine = g.players[0].score, theirs = g.players[1].score;
   const next = ladderStep(g.aiLevel, mine, theirs);
   const direction = next > g.aiLevel ? 'up' : next < g.aiLevel ? 'down' : 'stay';
   const atTop = mine > theirs && g.aiLevel === AI_LEVELS.length - 1;
