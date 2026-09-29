@@ -197,6 +197,8 @@ interface AiState {
   /** A planning AI's decision for the coming throw, and the job making it. */
   planned?: Candidate;
   job?: PlanJob;
+  /** The loaded ball that decision is for: a new one means a new throw to plan. */
+  forBall?: unknown;
   /** This target's careless angle, when the throw is a wild one. */
   wildDeg?: number;
 }
@@ -347,10 +349,14 @@ export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, heigh
   const st = stateOf(p);
   const want = { ...p };
   if (prof.plan) {
-    // One job per reload: started when the ring is `window` from full, worked
+    // One job per throw: started when the ring is `window` from full, worked
     // on each frame, and its best so far aimed at the moment of the throw.
-    if (p.reload > prof.plan.window) { st.job = undefined; st.planned = undefined; }
-    else {
+    // A new throw is told by the loaded ball changing, not by the ring reading
+    // more than `window`: with a reload of `window` or less (Chaos, Rally, the
+    // slider) it never does, and the first decision of the match stood for
+    // every throw after it (Bug 17).
+    if (st.forBall !== p.loaded) { st.forBall = p.loaded; st.job = undefined; st.planned = undefined; }
+    if (p.reload <= prof.plan.window) {
       if (!st.job) {
         const who = game.players.indexOf(p);
         st.job = new PlanJob(game, who, planCandidates(p, game, width, height, prof.plan), prof.plan.seconds,

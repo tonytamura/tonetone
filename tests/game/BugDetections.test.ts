@@ -18,7 +18,8 @@ import { makeBall, weld, loose, withSandbox } from '../../src/sim/Scenarios';
 import { makeGroup } from '../../src/physics/RigidBody';
 import { playNote, playSwoosh } from '../../src/audio/Voices';
 import * as Voices from '../../src/audio/Voices';
-import { PlanJob } from '../../src/game/AIPlanner';
+import { PlanJob, plannerStats } from '../../src/game/AIPlanner';
+import { runSim } from '../../src/sim/Harness';
 import { startMatch, throwBall } from '../../src/game/GameState';
 import { AudioStore } from '../../src/audio/SynthEngine';
 import { startTutorial, endTutorial, tutorialAfterFrame, drainTutorialEvents } from '../../src/game/Tutorial';
@@ -557,5 +558,22 @@ describe('Bug Detection Test Suite', () => {
       expect(pushedFromTopMouth(false)).toBe(0);
       expect(pushedFromTopMouth(true)).toBeGreaterThan(1);
     });
+  });
+
+  describe('Bug 17: AGI stopped thinking when balls came two seconds apart or faster', () => {
+    // The planner started a decision once the ring was 2s from full, and only
+    // cleared it when the ring read more than 2s. With a reload of 2s or less
+    // (Chaos 1.5s, Rally 2s, or the slider) it never read more, so AGI kept the
+    // first decision of the match and aimed every throw at it (Tony, 2026-09-29).
+    for (const reload of [3, 2, 1.5, 1]) {
+      it(`decides afresh for every throw with a ${reload}s reload`, () => {
+        const jobs = plannerStats.jobs;
+        const r = runSim({ mode: 'duel', seconds: 12, invariants: false, knobs: { reload }, policies: ['fixed', 'agi'] });
+        const decisions = plannerStats.jobs - jobs;
+        const throws = Math.round(12 / reload);
+        expect(r.throws).toBeGreaterThan(0);
+        expect(decisions).toBeGreaterThanOrEqual(throws - 1);
+      });
+    }
   });
 });
