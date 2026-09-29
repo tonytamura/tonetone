@@ -160,10 +160,10 @@ describe('knob application', () => {
 });
 
 describe('preset controls', () => {
-  it('offers exactly the presets the registry declares, in the same order, then Custom', () => {
-    // Custom is the panel's own choice, not a registry preset: it has no fixed
-    // values, so the harness has nothing to apply for it.
-    expect(markupPresetOptions()).toEqual([...Object.values(PRESETS).map(p => p.label), 'Custom']);
+  it('offers exactly the presets the registry declares, in the same order, then the Custom slots', () => {
+    // The Custom slots are the panel's own choices, not registry presets: they
+    // have no fixed values, so the harness has nothing to apply for them.
+    expect(markupPresetOptions()).toEqual([...Object.values(PRESETS).map(p => p.label), 'Custom 1', 'Custom 2', 'Custom 3']);
   });
 
   it('opens on the default preset, which a bare <select> takes from its first option', () => {

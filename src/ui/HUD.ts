@@ -91,7 +91,17 @@ function escapeHtml(t: string): string {
   return t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 }
 
-export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNotes) {
+/**
+ * The next match's mode, offered on a duel's results card. Only the winner gets
+ * it, with Play again; on a draw both players do.
+ */
+export interface ModePicker {
+  choices: { id: string; label: string }[];
+  current(): string;
+  pick(id: string): void;
+}
+
+export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNotes, modes?: ModePicker) {
   game.matchOver = true;
   game.matchRunning = false;
   game.flashes = [];
@@ -124,6 +134,8 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
     .join('');
 
   const agi = againstAgi(game);
+  const duel = !solo && !game.aiOn;
+  const modeLabel = () => (modes ? modes.choices.find(c => c.id === modes.current())?.label ?? '' : '');
 
   function makeCard(pIndex: number): string {
     let titleText: string;
@@ -153,11 +165,22 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
     if (mine && notes!.title) titleText = notes!.title;
     const extra = mine ? notes!.lines.map(l => '<p class="result-note">' + escapeHtml(l) + '</p>').join('') : '';
 
+    // In a duel the winner decides what comes next; the loser's card is only the score.
+    const decides = !duel || a.score === b.score || (a.score > b.score ? 0 : 1) === pIndex;
+    // Mode and Play again share one row, so two cards still fit a short phone on a draw.
+    const picker = duel && modes
+      ? '<div class="mode-pick" aria-label="Next match mode">' +
+        '<button class="mode-step" data-step="-1" aria-label="Previous mode">\u2039</button>' +
+        '<b class="mode-name">' + escapeHtml(modeLabel()) + '</b>' +
+        '<button class="mode-step" data-step="1" aria-label="Next mode">\u203a</button></div>'
+      : '';
+    const again = '<button class="again">Play again</button>';
+
     return (
       '<h2' + (epic ? ' class="epic"' : '') + ' style="color:' + titleColor + '">' + escapeHtml(titleText) + '</h2>' +
       '<table>' + head + body + '</table>' +
       extra +
-      '<button class="again">Play again</button>'
+      (decides ? (picker ? '<div class="card-actions">' + picker + again + '</div>' : again) : '')
     );
   }
 
@@ -175,13 +198,26 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
   const overEl = document.getElementById('over');
   if (overEl) {
     setHidden(overEl, false);
+    // The listener is bound once; what it calls is refreshed on every result.
+    (overEl as any)._restart = onRestart;
+    (overEl as any)._modes = modes;
     if (!(overEl as any)._boundRestart && overEl.addEventListener) {
       (overEl as any)._boundRestart = true;
       overEl.addEventListener('click', e => {
         const target = e.target as HTMLElement;
-        if (target && target.closest('button')) {
+        const step = target?.closest('.mode-step') as HTMLElement | null;
+        const m = (overEl as any)._modes as ModePicker | undefined;
+        if (step && m) {
           initAudio();
-          onRestart();
+          const i = m.choices.findIndex(c => c.id === m.current());
+          const n = m.choices.length;
+          const next = m.choices[(i + Number(step.dataset.step) + n) % n];
+          m.pick(next.id);
+          // On a draw both cards show the mode; keep them saying the same thing.
+          for (const el of overEl.querySelectorAll('.mode-name')) el.textContent = next.label;
+        } else if (target?.closest('.again')) {
+          initAudio();
+          (overEl as any)._restart();
         }
       });
     }

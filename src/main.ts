@@ -5,6 +5,7 @@ import { clearSpriteCache } from './graphics/Sprites';
 import { createStrip, topStripFor } from './ui/ControlStrips';
 import { setupTouchControls } from './ui/TouchControls';
 import { updateHUD, endMatchUI } from './ui/HUD';
+import { presetChoices } from './ui/PlayerSettings';
 import { setupSettingsKnobs } from './ui/SettingsModal';
 import { setHidden } from './ui/Dom';
 import { resetStartCountdown, updateCountdown } from './ui/Countdown';
@@ -153,6 +154,8 @@ function newMatch() {
 setPlannerBudget(4);
 
 const settings = setupSettingsKnobs(() => game, () => renderCtx.H || window.innerHeight);
+// A duel's winner picks the next match's mode on the results card.
+const duelModes = { choices: presetChoices(), current: settings.choice, pick: settings.choose };
 
 /**
  * The two-player seat card. While it is up the field waits: nothing moves and
@@ -343,7 +346,7 @@ function frame(ts: number) {
   if (!held) {
     tutorial.before();
     const fr = advanceFrame(game, rawDt, W, H, clock, {
-      onMatchOver: g => { setPaused(g, false); startResultsEffects(); endMatchUI(g, newMatch, resultNotes(g)); },
+      onMatchOver: g => { setPaused(g, false); startResultsEffects(); endMatchUI(g, newMatch, resultNotes(g), duelModes); },
     });
     clock = fr.clock;
     tutorial.after(fr.dt, fr.threw);

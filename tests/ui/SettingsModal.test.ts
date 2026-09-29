@@ -121,7 +121,7 @@ describe('tuning panel preset picker', () => {
     // A named preset is a whole game. Anything tuned in Custom is hidden outside
     // it, so it must not follow the player into Normal unseen.
     const { els, pick } = mountPanel();
-    pick('Custom');
+    pick('Custom 1');
     const el = els.get(OUTSIDE_EVERY_PRESET)!;
     el.value = '0';
     el.fire('input');
@@ -134,32 +134,58 @@ describe('tuning panel preset picker', () => {
     const hidden = () => 'hidden' in els.get('advanced')!.attrs;
     pick(PRESETS.relax.label);
     expect(hidden()).toBe(true);
-    pick('Custom');
+    pick('Custom 1');
     expect(hidden()).toBe(false);
     pick(PRESETS.normal.label);
     expect(hidden()).toBe(true);
   });
 
-  it('starts Custom from the game the player was in, and remembers what it was given', () => {
+  it('starts a Custom slot from the defaults, and remembers what it was given', () => {
     const { els, pick } = mountPanel();
     pick(PRESETS.relax.label);
-    pick('Custom');
-    expect(els.get('reload')!.value).toBe('4.5'); // Relax's, carried over
+    pick('Custom 1');
+    expect(els.get('reload')!.value).toBe(String(KNOBS.reload.default)); // not Relax's
 
     els.get('reload')!.value = '6';
     els.get('reload')!.fire('input');
     pick(PRESETS.normal.label);
     expect(els.get('reload')!.value).toBe(String(KNOBS.reload.default));
-    pick('Custom');
+    pick('Custom 1');
     expect(els.get('reload')!.value).toBe('6');
   });
 
-  it('reports the named preset for records, and none on Custom', () => {
+  it('keeps three Custom slots apart', () => {
+    const { els, pick } = mountPanel();
+    const setReload = (v: string) => { els.get('reload')!.value = v; els.get('reload')!.fire('input'); };
+    pick('Custom 1');
+    setReload('6');
+    pick('Custom 2');
+    expect(els.get('reload')!.value).toBe(String(KNOBS.reload.default)); // slot 1's value did not follow
+    setReload('2');
+    pick('Custom 3');
+    expect(els.get('reload')!.value).toBe(String(KNOBS.reload.default));
+    pick('Custom 1');
+    expect(els.get('reload')!.value).toBe('6');
+    pick('Custom 2');
+    expect(els.get('reload')!.value).toBe('2');
+  });
+
+  it('switches from outside the panel exactly as the picker does', () => {
+    const { els, handle } = mountPanel();
+    handle.choose('chaos');
+    expect(els.get('preset')!.value).toBe(PRESETS.chaos.label);
+    expect(handle.choice()).toBe('chaos');
+    handle.choose('custom2');
+    expect(handle.choice()).toBe('custom2');
+    expect(handle.activePreset()).toBeNull();
+  });
+
+  it('reports the named preset for records, and none on a Custom slot', () => {
     const { handle, pick } = mountPanel();
     expect(handle.activePreset()).toBe('normal');
     pick(PRESETS.drift.label);
     expect(handle.activePreset()).toBe('drift');
-    pick('Custom');
+    pick('Custom 1');
     expect(handle.activePreset()).toBeNull();
   });
 });

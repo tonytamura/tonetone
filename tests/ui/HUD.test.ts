@@ -204,6 +204,50 @@ describe('endMatchUI', () => {
     expect(elements.overcard1.innerHTML).toContain(`<h2 style="color:${P_COLOR[0]}">You Won</h2>`);
   });
 
+  describe('a duel\'s next match', () => {
+    const modes = { choices: [{ id: 'normal', label: 'Normal' }, { id: 'chaos', label: 'Chaos' }], current: () => 'chaos', pick: () => {} };
+    const duel = (p1: number, p2: number) => {
+      const game = createGame();
+      game.twoPlayer = true;
+      game.aiOn = false;
+      game.players[0].score = p1;
+      game.players[1].score = p2;
+      endMatchUI(game, () => {}, undefined, modes);
+    };
+
+    it('is the winner\'s to choose: mode and Play again on their card, no buttons on the loser\'s', () => {
+      duel(100, 400);
+      expect(elements.overcard2.innerHTML).toContain('class="mode-pick"');
+      expect(elements.overcard2.innerHTML).toContain('<b class="mode-name">Chaos</b>');
+      expect(elements.overcard2.innerHTML).toContain('class="again"');
+      expect(elements.overcard1.innerHTML).not.toContain('<button');
+
+      duel(400, 100);
+      expect(elements.overcard1.innerHTML).toContain('class="mode-pick"');
+      expect(elements.overcard1.innerHTML).toContain('class="again"');
+      expect(elements.overcard2.innerHTML).not.toContain('<button');
+    });
+
+    it('is both players\' on a draw', () => {
+      duel(250, 250);
+      for (const card of [elements.overcard1, elements.overcard2]) {
+        expect(card.innerHTML).toContain('class="mode-pick"');
+        expect(card.innerHTML).toContain('class="again"');
+      }
+    });
+
+    it('offers no mode outside a duel', () => {
+      const game = createGame();
+      game.twoPlayer = true;
+      game.aiOn = true;
+      game.players[0].score = 10;
+      game.players[1].score = 90;
+      endMatchUI(game, () => {}, undefined, modes);
+      expect(elements.overcard1.innerHTML).not.toContain('mode-pick');
+      expect(elements.overcard1.innerHTML).toContain('class="again"'); // losing to the AI still offers a rematch
+    });
+  });
+
   it('takes a headline and lines from the caller, on player 1\'s card only', () => {
     const game = createGame();
     game.twoPlayer = false;

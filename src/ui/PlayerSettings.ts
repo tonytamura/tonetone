@@ -1,12 +1,14 @@
 /**
  * The options a player keeps between visits: which preset they play, what
- * Custom holds, and the everyday settings.
+ * each Custom slot holds, and the everyday settings.
  *
  * The panel shows the preset picker and the everyday settings to everyone.
- * Every other knob belongs to Custom: it is shown, and remembered, only there.
- * A named preset is a whole game — its own values for the knobs it declares and
- * the registry defaults for every other advanced knob — so nothing changed in
- * Custom follows the player into Normal unseen.
+ * Every other knob belongs to the Custom slots: shown, and remembered, only
+ * there. There are three, each a game of the player's own, and each starts
+ * from the registry defaults the first time it is opened. A named preset is a
+ * whole game — its own values for the knobs it declares and the registry
+ * defaults for every other advanced knob — so nothing changed in a Custom slot
+ * follows the player into Normal, or into another slot, unseen.
  *
  * Stored as one versioned JSON value under `toneboom.settings`. Every value read
  * back is checked against the knob registry — clamped into range, snapped to its
@@ -20,10 +22,14 @@ import { KNOBS, KnobDef, KnobId, KnobValue, PRESETS, presetIds, presetKnobs } fr
 import { KeyValueStore, deviceStore } from './Progress';
 
 export const SETTINGS_KEY = 'toneboom.settings';
-const VERSION = 1;
+const VERSION = 2;
 
-export const CUSTOM_ID = 'custom';
-export const CUSTOM_LABEL = 'Custom';
+/** The Custom slots, in the picker's order after the registry presets. */
+export const CUSTOM_SLOTS: { id: string; label: string }[] = [1, 2, 3].map(n => ({ id: `custom${n}`, label: `Custom ${n}` }));
+
+export function isCustom(id: string): boolean {
+  return CUSTOM_SLOTS.some(c => c.id === id);
+}
 
 /**
  * Shown whatever the preset, and kept as the player left them. Ball numbers is
@@ -33,29 +39,29 @@ export const CUSTOM_LABEL = 'Custom';
  */
 export const EVERYDAY_KNOBS: KnobId[] = ['labels', 'vol', 'haptics', 'ailevel'];
 
-/** Every other knob: the ones Custom shows and remembers. */
+/** Every other knob: the ones a Custom slot shows and remembers. */
 export function advancedKnobs(): KnobId[] {
   return (Object.keys(KNOBS) as KnobId[]).filter(id => !EVERYDAY_KNOBS.includes(id));
 }
 
-/** The picker's choices, in order: the registry's presets, then Custom. */
+/** The picker's choices, in order: the registry's presets, then the Custom slots. */
 export function presetChoices(): { id: string; label: string }[] {
-  return [...presetIds().map(id => ({ id, label: PRESETS[id].label })), { id: CUSTOM_ID, label: CUSTOM_LABEL }];
+  return [...presetIds().map(id => ({ id, label: PRESETS[id].label })), ...CUSTOM_SLOTS];
 }
 
-/** What a named preset sets every advanced knob to. */
+/** What a named preset sets every advanced knob to; for a Custom slot, where it starts: the registry defaults. */
 export function namedPresetValues(presetId: string): Record<string, KnobValue> {
-  const own = presetKnobs(presetId);
+  const own = isCustom(presetId) ? {} : presetKnobs(presetId);
   const out: Record<string, KnobValue> = {};
   for (const id of advancedKnobs()) out[id] = id in own ? own[id] : KNOBS[id].default;
   return out;
 }
 
 export interface SavedSettings {
-  /** A preset id, or `custom`. */
+  /** A preset id, or a Custom slot's. */
   preset: string;
-  /** Custom's values; empty until Custom has been used. */
-  custom: Record<string, KnobValue>;
+  /** Each Custom slot's values, by slot id; a slot is absent until it has been opened. */
+  customs: Record<string, Record<string, KnobValue>>;
   /** The everyday settings. */
   player: Record<string, KnobValue>;
 }
@@ -92,13 +98,19 @@ export function loadSettings(store: KeyValueStore | null = deviceStore()): Saved
     const raw = store?.getItem(SETTINGS_KEY);
     if (!raw) return null;
     const p = JSON.parse(raw);
-    if (!p || p.v !== VERSION) return null;
-    const preset = presetChoices().some(c => c.id === p.preset) ? p.preset : presetIds()[0];
-    return {
-      preset,
-      custom: cleanValues(p.custom, advancedKnobs()),
-      player: cleanValues(p.player, EVERYDAY_KNOBS),
-    };
+    if (!p || (p.v !== VERSION && p.v !== 1)) return null;
+    // Version 1 had a single Custom; it becomes the first slot.
+    const stored: unknown = p.v === 1 ? { [CUSTOM_SLOTS[0].id]: p.custom } : p.customs;
+    const wanted = p.v === 1 && p.preset === 'custom' ? CUSTOM_SLOTS[0].id : p.preset;
+    const preset = presetChoices().some(c => c.id === wanted) ? wanted : presetIds()[0];
+    const customs: Record<string, Record<string, KnobValue>> = {};
+    if (stored && typeof stored === 'object') {
+      for (const { id } of CUSTOM_SLOTS) {
+        const slot = (stored as Record<string, unknown>)[id];
+        if (slot && typeof slot === 'object') customs[id] = cleanValues(slot, advancedKnobs());
+      }
+    }
+    return { preset, customs, player: cleanValues(p.player, EVERYDAY_KNOBS) };
   } catch {
     return null;
   }

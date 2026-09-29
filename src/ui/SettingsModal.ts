@@ -1,7 +1,7 @@
 import { Game } from '../game/GameState';
 import { DEFAULT_PRESET, KNOBS, KnobContext, KnobId, KnobValue, applyKnob, formatKnob } from '../sim/Knobs';
 import {
-  CUSTOM_ID, EVERYDAY_KNOBS, SavedSettings, advancedKnobs, loadSettings, namedPresetValues, presetChoices, saveSettings,
+  EVERYDAY_KNOBS, SavedSettings, advancedKnobs, isCustom, loadSettings, namedPresetValues, presetChoices, saveSettings,
 } from './PlayerSettings';
 import { setHidden } from './Dom';
 import { initAudio } from '../audio/SynthEngine';
@@ -15,8 +15,12 @@ import { initAudio } from '../audio/SynthEngine';
 import { renderSoundTester, updateSoundTesterReadouts } from './SoundTester';
 
 export interface SettingsHandle {
-  /** The named preset being played, or null on Custom, which sets no records. */
+  /** The named preset being played, or null on a Custom slot, which sets no records. */
   activePreset(): string | null;
+  /** The picker's choice, a Custom slot included. */
+  choice(): string;
+  /** Switch to a choice, exactly as picking it in the panel does. */
+  choose(id: string): void;
 }
 
 export function setupSettingsKnobs(
@@ -47,9 +51,9 @@ export function setupSettingsKnobs(
   // a drag does instead of a second one that could diverge from it.
   const runners: Record<string, () => void> = {};
   const liveValues: Record<string, KnobValue> = {};
-  // The picker's state: which choice is live, and what Custom holds.
+  // The picker's state: which choice is live, and what each Custom slot holds.
   let selected: string = DEFAULT_PRESET;
-  let custom: Record<string, KnobValue> = {};
+  let customs: Record<string, Record<string, KnobValue>> = {};
 
   for (const def of Object.values(KNOBS)) {
     const el = document.getElementById(def.id) as HTMLInputElement | HTMLSelectElement | null;
@@ -79,8 +83,8 @@ export function setupSettingsKnobs(
   }
 
   // --- Preset picker -------------------------------------------------------
-  // Everyone sees the picker and the everyday settings. The rest of the panel is
-  // Custom's: shown only there, and remembered between visits.
+  // Everyone sees the picker and the everyday settings. The rest of the panel
+  // belongs to the Custom slots: shown only there, and remembered between visits.
   const presetEl = document.getElementById('preset') as HTMLSelectElement | null;
   const advancedEl = document.getElementById('advanced');
   const choices = presetChoices();
@@ -102,32 +106,31 @@ export function setupSettingsKnobs(
   function persist() {
     const player: Record<string, KnobValue> = {};
     for (const id of EVERYDAY_KNOBS) if (id in liveValues) player[id] = liveValues[id];
-    const saved: SavedSettings = { preset: selected, custom, player };
+    const saved: SavedSettings = { preset: selected, customs, player };
     saveSettings(saved);
   }
 
   /**
-   * Switch to a choice. A named preset sets every advanced knob, its own values
-   * and the defaults for the rest, so nothing tuned in Custom follows the player
-   * into it unseen. Custom brings back what it held, or, the first time, starts
-   * from the game the player was just in.
+   * Switch to a choice. Every advanced knob is set, so nothing tuned in one
+   * Custom slot follows the player into a named preset or another slot unseen.
+   * A named preset sets its own values and the defaults for the rest. A Custom
+   * slot brings back what it held, over the defaults it started from the first
+   * time it was opened.
    */
   function choose(id: string) {
+    if (!choices.some(c => c.id === id)) id = DEFAULT_PRESET;
     selected = id;
-    if (id === CUSTOM_ID) {
-      for (const [k, v] of Object.entries(custom)) setKnob(k, v);
-      custom = advancedNow();
-    } else {
-      for (const [k, v] of Object.entries(namedPresetValues(id))) setKnob(k, v);
-    }
+    const values = { ...namedPresetValues(id), ...(isCustom(id) ? customs[id] : {}) };
+    for (const [k, v] of Object.entries(values)) setKnob(k, v);
+    if (isCustom(id)) customs[id] = advancedNow();
     const label = choices.find(c => c.id === id)?.label;
     if (presetEl && label) presetEl.value = label;
-    setHidden(advancedEl, id !== CUSTOM_ID);
+    setHidden(advancedEl, !isCustom(id));
     persist();
   }
 
   function knobChanged(id: KnobId) {
-    if (selected === CUSTOM_ID && !EVERYDAY_KNOBS.includes(id)) custom[id] = liveValues[id];
+    if (isCustom(selected) && !EVERYDAY_KNOBS.includes(id)) customs[selected][id] = liveValues[id];
     persist();
   }
 
@@ -140,7 +143,7 @@ export function setupSettingsKnobs(
   const saved = loadSettings();
   if (saved) {
     for (const [k, v] of Object.entries(saved.player)) setKnob(k, v);
-    custom = saved.custom;
+    customs = saved.customs;
     choose(saved.preset);
   } else {
     const label = choices.find(c => c.id === DEFAULT_PRESET)?.label;
@@ -148,5 +151,9 @@ export function setupSettingsKnobs(
     setHidden(advancedEl, true);
   }
 
-  return { activePreset: () => (selected === CUSTOM_ID ? null : selected) };
+  return {
+    activePreset: () => (isCustom(selected) ? null : selected),
+    choice: () => selected,
+    choose,
+  };
 }
