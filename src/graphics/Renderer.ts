@@ -625,18 +625,21 @@ export function drawResultsCanvas(rc: RenderContext, game: Game) {
     ctx.globalCompositeOperation = 'source-over';
     for (const f of game.pops) {
       const k = f.t / POP_LIFE;
+      const fontSize = ((17 + 8 * (1 - k)) * (f.scale ?? 1)).toFixed(1);
+      ctx.font = uiFont(800, fontSize);
+      const text = popText(f.label);
+      // Keep the whole word on screen: a big pop near an edge slides inwards.
+      const half = ctx.measureText(text).width / 2 + 6;
+      const x = half * 2 < W ? Math.min(W - half, Math.max(half, f.x)) : W / 2;
       ctx.save();
-      ctx.translate(f.x, f.y);
+      ctx.translate(x, f.y);
       if (game.twoPlayer && f.who === 1) ctx.rotate(Math.PI);
       const alpha = Math.max(0, 1 - k * k);
       ctx.globalAlpha = alpha;
-      const fontSize = (17 + 8 * (1 - k)).toFixed(1);
-      ctx.font = uiFont(800, fontSize);
       const color = P_COLOR[f.who] || hex(MENU_CYAN);
       ctx.shadowColor = color;
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 14 * (f.scale ?? 1);
       ctx.fillStyle = color;
-      const text = popText(f.label);
       ctx.fillText(text, 0, -k * 34);
 
       ctx.fillStyle = WHITE_HEX;

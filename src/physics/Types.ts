@@ -127,6 +127,8 @@ export interface Pop {
   t: number;
   label: PopLabel;
   who: number;
+  /** Size relative to the usual pop; the results celebration draws some bigger. */
+  scale?: number;
 }
 
 export interface BallOnDeck {

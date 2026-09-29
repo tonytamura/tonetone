@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createGame } from '../../src/game/GameState';
 import { updateHUD, endMatchUI } from '../../src/ui/HUD';
 import { P_COLOR } from '../../src/graphics/Renderer';
+import { AI_LEVELS } from '../../src/game/AI';
 
 class MockElement {
   innerHTML: string = '';
@@ -160,6 +161,47 @@ describe('endMatchUI', () => {
 
     expect(elements.overcard1.innerHTML).toContain(`<h2 style="color:${P_COLOR[0]}">You Lost</h2>`);
     expect(elements.overcard2.hasAttribute('hidden')).toBe(true);
+  });
+
+  it('says Game Over, not You Lost, when AGI wins', () => {
+    const game = createGame();
+    game.twoPlayer = true;
+    game.aiOn = true;
+    game.aiLevel = AI_LEVELS.length - 1;
+    game.players[0].score = 40;
+    game.players[1].score = 90;
+
+    endMatchUI(game, () => {});
+
+    expect(elements.overcard1.innerHTML).toContain(`<h2 style="color:${P_COLOR[0]}">Game Over</h2>`);
+    expect(elements.overcard1.innerHTML).not.toContain('You Lost');
+  });
+
+  it('gives beating AGI its own headline, drawn big', () => {
+    const game = createGame();
+    game.twoPlayer = true;
+    game.aiOn = true;
+    game.aiLevel = AI_LEVELS.length - 1;
+    game.players[0].score = 900;
+    game.players[1].score = 90;
+
+    endMatchUI(game, () => {});
+
+    expect(elements.overcard1.innerHTML).toContain(`<h2 class="epic" style="color:${P_COLOR[0]}">You Beat AGI</h2>`);
+  });
+
+  it('keeps You Won and You Lost for every rung below AGI', () => {
+    const game = createGame();
+    game.twoPlayer = true;
+    game.aiOn = true;
+    game.aiLevel = AI_LEVELS.length - 2;
+    game.players[0].score = 40;
+    game.players[1].score = 90;
+    endMatchUI(game, () => {});
+    expect(elements.overcard1.innerHTML).toContain('>You Lost</h2>');
+    game.players[0].score = 900;
+    endMatchUI(game, () => {});
+    expect(elements.overcard1.innerHTML).toContain(`<h2 style="color:${P_COLOR[0]}">You Won</h2>`);
   });
 
   it('takes a headline and lines from the caller, on player 1\'s card only', () => {

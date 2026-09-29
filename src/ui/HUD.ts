@@ -4,7 +4,7 @@ import { initAudio, fadeDroneForResults } from '../audio/SynthEngine';
 import { formatClock } from '../game/Clock';
 import { setHidden } from './Dom';
 import { ResultNotes } from './Records';
-import { AI_LEVELS } from '../game/AI';
+import { AI_LEVELS, againstAgi } from '../game/AI';
 
 /**
  * `updateHUD` runs inside the rAF callback on every frame, but almost nothing it
@@ -123,9 +123,12 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
     )
     .join('');
 
+  const agi = againstAgi(game);
+
   function makeCard(pIndex: number): string {
     let titleText: string;
     let titleColor: string;
+    let epic = false;
 
     if (solo) {
       titleText = 'Score';
@@ -136,10 +139,12 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
     } else {
       const winnerIndex = a.score > b.score ? 0 : 1;
       if (pIndex === winnerIndex) {
-        titleText = 'You Won';
+        // Beating the top of the ladder is the game's biggest ending.
+        titleText = agi ? 'You Beat AGI' : 'You Won';
         titleColor = P_COLOR[pIndex];
+        epic = agi;
       } else {
-        titleText = 'You Lost';
+        titleText = agi ? 'Game Over' : 'You Lost';
         titleColor = P_COLOR[pIndex];
       }
     }
@@ -149,7 +154,7 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
     const extra = mine ? notes!.lines.map(l => '<p class="result-note">' + escapeHtml(l) + '</p>').join('') : '';
 
     return (
-      '<h2 style="color:' + titleColor + '">' + escapeHtml(titleText) + '</h2>' +
+      '<h2' + (epic ? ' class="epic"' : '') + ' style="color:' + titleColor + '">' + escapeHtml(titleText) + '</h2>' +
       '<table>' + head + body + '</table>' +
       extra +
       '<button class="again">Play again</button>'

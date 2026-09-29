@@ -8,7 +8,7 @@ import { updateHUD, endMatchUI } from './ui/HUD';
 import { setupSettingsKnobs } from './ui/SettingsModal';
 import { setHidden } from './ui/Dom';
 import { resetStartCountdown, updateCountdown } from './ui/Countdown';
-import { updateResultsEffects } from './ui/ResultsCelebration';
+import { startResultsEffects, updateResultsEffects } from './ui/ResultsCelebration';
 import { exitToMenu, onExitToMenu, setPaused, setupMatchControls } from './ui/MatchControls';
 import { TUTORIAL_CLOCK, createTutorialSession } from './ui/TutorialUI';
 import { createSeatCard, needsSeatCard } from './ui/SeatCard';
@@ -343,7 +343,7 @@ function frame(ts: number) {
   if (!held) {
     tutorial.before();
     const fr = advanceFrame(game, rawDt, W, H, clock, {
-      onMatchOver: g => { setPaused(g, false); endMatchUI(g, newMatch, resultNotes(g)); },
+      onMatchOver: g => { setPaused(g, false); startResultsEffects(); endMatchUI(g, newMatch, resultNotes(g)); },
     });
     clock = fr.clock;
     tutorial.after(fr.dt, fr.threw);

@@ -162,7 +162,7 @@ export function ladderNotes(
   const lines: string[] = [];
   if (direction === 'up') lines.push(`Next: ${next}`);
   else if (direction === 'down') lines.push(`Back to ${next}`);
-  else lines.push(atTop ? `You beat ${played}. It stays the one to beat.` : `Again: ${next}`);
+  else lines.push(atTop ? `${played} stays the one to beat.` : `Again: ${next}`);
   if (record.isNew) lines.push(`New best against ${played}: ${record.best}`);
   else if (record.best > 0) lines.push(`Best against ${played}: ${record.best}`);
   return { lines };

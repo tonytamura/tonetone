@@ -177,6 +177,11 @@ export function levelIndex(id: string): number {
   return AI_LEVELS.findIndex(l => l.id === id);
 }
 
+/** Is this a match against the top of the ladder? Its ending is played bigger either way. */
+export function againstAgi(game: Pick<Game, 'aiOn' | 'aiLevel'>): boolean {
+  return game.aiOn && game.aiLevel === AI_LEVELS.length - 1;
+}
+
 /** A ladder rung or a named strategy, by id; `engine-ai` is the pre-ladder AI. */
 export function profileNamed(name: string): AiProfile | null {
   if (name === 'engine-ai') return AI_STRATEGIES.current;

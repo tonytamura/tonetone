@@ -504,6 +504,18 @@ input[type=range] {
   letter-spacing: var(--ls-title);
   color: var(--ink);
 }
+/* Beating AGI: the headline swells and glows, in time with the fireworks. */
+.overcard h2.epic {
+  text-shadow: 0 0 12px currentColor, 0 0 28px currentColor;
+  animation: epic-title 0.9s ease-in-out infinite alternate;
+}
+@keyframes epic-title {
+  from { transform: scale(1); }
+  to { transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overcard h2.epic { animation: none; }
+}
 .overcard .winner {
   margin: 0 0 4px;
   font-size: var(--fs-lg);
