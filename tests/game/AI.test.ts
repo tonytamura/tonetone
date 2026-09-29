@@ -91,6 +91,10 @@ describe('the AI ladder', () => {
     expect(ladderStep(2, 450, 450)).toBe(2);
     expect(ladderStep(0, 100, 900)).toBe(0);
     expect(ladderStep(top, 900, 100)).toBe(top);
+    // Losing to AGI is Game Over: back to the first rung, not one down.
+    expect(ladderStep(top, 100, 900)).toBe(0);
+    expect(ladderStep(top, 500, 500)).toBe(top);
+    expect(ladderStep(top - 1, 100, 900)).toBe(top - 2);
   });
 
   it('throws exactly as hard as it means to', () => {

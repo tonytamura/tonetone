@@ -188,11 +188,14 @@ export function profileNamed(name: string): AiProfile | null {
   return AI_LEVELS.find(l => l.id === name) ?? AI_STRATEGIES[name] ?? null;
 }
 
-/** Win: one rung up. Loss: one down. Draw: stay. The ends hold. */
+/**
+ * Win: one rung up. Loss: one down. Draw: stay. The ends hold. Losing to AGI
+ * is Game Over, and Game Over sends the player back to the first rung.
+ */
 export function ladderStep(level: number, mine: number, theirs: number): number {
   const top = AI_LEVELS.length - 1;
   if (mine > theirs) return Math.min(top, level + 1);
-  if (mine < theirs) return Math.max(0, level - 1);
+  if (mine < theirs) return level === top ? 0 : Math.max(0, level - 1);
   return level;
 }
 

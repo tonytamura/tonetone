@@ -206,8 +206,8 @@ function resultNotes(g: typeof game): ResultNotes | undefined {
 }
 
 /**
- * A vs AI match moves the ladder: a win one rung up, a loss one down, a draw
- * nowhere. The next match, Play again included, is against the new rung. The
+ * A vs AI match moves the ladder: a win one rung up, a loss one down (a loss to
+ * AGI, Game Over, all the way back to AI1), a draw nowhere. The next match, Play again included, is against the new rung. The
  * best score against each AI counts on a named preset only, as solo records do.
  */
 function ladderResult(g: typeof game, preset: string | null): ResultNotes {
