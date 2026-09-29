@@ -129,7 +129,7 @@ const PLAN = (targets: number, grid: number, seconds: number, rollouts = 1): Omi
  */
 export const AI_STRATEGIES: Record<string, AiProfile> = {
   random: { id: 'random', label: 'random', ...CLASSIC, wild: 1 },
-  careless: { id: 'careless', label: 'careless', ...CLASSIC, wild: 0.5 },
+  careless: { id: 'careless', label: 'careless', ...CLASSIC, wild: 0.6 },
   current: { id: 'current', label: 'current', ...CLASSIC, classic: true },
   hard: { id: 'hard', label: 'hard', ...CLASSIC, power: 'max' },
   nearest: { id: 'nearest', label: 'nearest', ...CLASSIC, target: 'nearest' },
@@ -148,13 +148,14 @@ export const AI_STRATEGIES: Record<string, AiProfile> = {
  * by more than 2 standard errors:
  *
  *   AI1 random                                   —
- *   AI2 careless: half its throws at random      beats AI1 65% ±4 (160 matches)
- *   AI3 hard: the biggest group, full power      beats AI2 58% ±4 (160 matches)
+ *   AI2 careless: 60% of its throws at random    beats AI1 60% ±4 (160 matches)
+ *   AI3 hard: the biggest group, full power      beats AI2 67% ±4 (160 matches)
  *   AGI simulates 15 throws x 3 tries, then aims beats AI3 66% ±7 (40 matches)
  *
- * Measured with `npm run sim -- ladder` after Bug 18 made careless throws a
- * per-throw coin with a 0.35 strength floor (2026-09-29). AI3 over AI2 clears
- * 2 SE by the narrowest margin of the three.
+ * AI2's careless share was set by measurement (2026-09-29, after Bug 18 made
+ * careless a per-throw coin with a 0.35 strength floor), 160 matches a step:
+ * at 50% AI3 beat it only 58% ±4, the narrowest step; at 70% it no longer beat
+ * AI1 (54% ±4, inside the noise); at 60% both steps clear 2 SE with room.
  *
  * Longer ladders were tried and did not hold: aim precision and rule-of-thumb
  * shot choice barely move a result in this game, and the planners short of AGI
