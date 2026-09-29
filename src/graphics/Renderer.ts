@@ -6,7 +6,7 @@ import { BG_SCALE, FIELD_RING, FLASH_SPECS, RESULTS_RING, drawLiquid, drawRipple
 import { AIM_HOT, BLACK_HEX, CYAN, FIELD_BG, MENU_CYAN, PINK, Rgb, VOID, WHITE, WHITE_HEX, hex, mix, rgba } from './Palette';
 import { FLASH_LIFE, POP_LIFE } from '../physics/Types';
 import { setHidden } from '../ui/Dom';
-import { popText } from './PopText';
+import { popScale, popText } from './PopText';
 import { aimDirOf, aimReachOf, boomHeatOf, boomsOnImpact, launchPointOf, mouthRadius } from '../physics/LauncherBays';
 import { LauncherPlayer } from '../physics/Types';
 import { kindLabel } from '../game/Rules';
@@ -206,7 +206,9 @@ export function drawPops(rc: RenderContext, game: Game) {
   for (const f of game.pops) {
     const k = f.t / POP_LIFE;
     ctx.save();
-    ctx.font = uiFont(800, (17 + 8 * (1 - k)).toFixed(1));
+    // Full size is 25px shrinking to 17px as it rises; smaller events draw
+    // smaller, in four steps (`popScale`).
+    ctx.font = uiFont(800, ((17 + 8 * (1 - k)) * popScale(f.label)).toFixed(1));
     // A pop is centred on the event that earned it, and now carries a word as
     // well as its points, so one earned against a side wall would hang off the
     // screen. Slide it back on rather than letting it clip.

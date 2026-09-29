@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { boomLabel, popText, scoreText } from '../../src/graphics/PopText';
+import { boomLabel, popScale, popText, scoreText } from '../../src/graphics/PopText';
 
 /**
  * These assertions moved here from `tests/physics/CollisionSolver.test.ts` on
@@ -66,4 +66,25 @@ describe('PopText', () => {
       expect(popText({ points: 12, source: 'lock' })).toBe('+12');
     });
   });
+
+  describe('popScale', () => {
+    it('draws small events smaller, in four steps, with the old size as the largest', () => {
+      expect(popScale({ points: 1, source: 'lock' })).toBe(0.6);
+      expect(popScale({ points: 4, source: 'peel' })).toBe(0.6);
+      expect(popScale({ points: 5, source: 'lock' })).toBe(0.72);
+      expect(popScale({ points: 14, source: 'boom', boom: { count: 3, whiteBlack: false } })).toBe(0.72);
+      expect(popScale({ points: 15, source: 'lock' })).toBe(0.84);
+      expect(popScale({ points: 49, source: 'lock' })).toBe(0.84);
+      expect(popScale({ points: 50, source: 'lock' })).toBe(1);
+      expect(popScale({ points: 600, source: 'boom', boom: { count: 20, whiteBlack: false } })).toBe(1);
+    });
+
+    it('always draws a pop with a word at full size, however few its points', () => {
+      // A long throw's decay can leave a DOUBLE worth only a few points.
+      expect(popScale({ points: 6, source: 'boom', boom: { count: 5, whiteBlack: false } })).toBe(1);
+      expect(popScale({ points: 3, source: 'boom', boom: { count: 2, whiteBlack: true } })).toBe(1);
+      expect(popScale({ text: 'WINNER!' })).toBe(1);
+    });
+  });
 });
+

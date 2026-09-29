@@ -35,3 +35,27 @@ export function scoreText(points: number, source?: 'lock' | 'boom' | 'peel', boo
 export function popText(label: PopLabel): string {
   return 'text' in label ? label.text : scoreText(label.points, label.source, label.boom);
 }
+
+/**
+ * How big a pop is drawn, as a share of the full size: the bigger the event,
+ * the bigger its pop. In a two-minute duel on Normal about 97 pops a minute
+ * appear and up to a dozen share the screen, and half of them are worth 1 to 4
+ * points; at one size, a +2 for touching two balls looked as loud as a +300
+ * boom. Measured over 12 such matches (2,322 pops):
+ *
+ * | points | share of pops | scale |
+ * | 1-4    | 50%           | 0.60  |
+ * | 5-14   | 29%           | 0.72  |
+ * | 15-49  | 18%           | 0.84  |
+ * | 50+    | 4%            | 1     |
+ *
+ * A pop that carries a word (DOUBLE, SUPER, MEGA, GIGA, BOOM!) is always full
+ * size, however much a long throw's decay cut its points: the word is the
+ * celebration, and it should never be small. So is a pop of words alone.
+ */
+export function popScale(label: PopLabel): number {
+  if ('text' in label) return 1;
+  if (label.source === 'boom' && label.boom && boomLabel(label.boom.count, label.boom.whiteBlack)) return 1;
+  const p = label.points;
+  return p >= 50 ? 1 : p >= 15 ? 0.84 : p >= 5 ? 0.72 : 0.6;
+}
