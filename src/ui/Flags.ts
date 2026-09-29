@@ -1,14 +1,13 @@
 /**
  * A flag for each of the game's languages, drawn as inline SVG.
  *
- * Emoji flags are not an option: Windows draws them as two letters, and the
- * flag of England — the one English uses here, as asked, rather than the
- * Union Jack or the United States — is a tag sequence many Android versions
- * cannot draw at all. These are simplified to read at 24 pixels wide: the
- * emblems are shapes, not artwork.
+ * Emoji flags are not an option: Windows draws them as two letters. These are
+ * simplified to read at 24 pixels wide: the emblems are shapes, not artwork.
  *
- * One country stands for each language: England for English, Mexico for the
- * Latin American Spanish, Brazil for Brazilian Portuguese.
+ * One country stands for each language: the United Kingdom for English (the
+ * Union Jack, which replaced England's cross of St George on 2026-09-29, as
+ * asked), Mexico for the Latin American Spanish, Brazil for Brazilian
+ * Portuguese.
  */
 import { LangId } from '../i18n/I18n';
 
@@ -40,8 +39,18 @@ function trigram(cx: number, cy: number, deg: number, broken: [boolean, boolean,
 }
 
 const FLAGS: Record<LangId, string> = {
-  // England: the cross of St George.
-  en: '<rect width="30" height="20" fill="#fff"/><rect x="13" width="4" height="20" fill="#CE1124"/><rect y="8" width="30" height="4" fill="#CE1124"/>',
+  // The Union Jack, drawn on its own 60×30 grid and fitted to the 3:2 box. The
+  // red diagonals are counterchanged, as on the real flag: the clip keeps each
+  // to one side of its white band. The clip ids repeat when several flags are
+  // on the page, which is harmless because every copy is identical.
+  en: '<g transform="scale(0.5 0.6667)">' +
+    '<clipPath id="uk-flag"><rect width="60" height="30"/></clipPath>' +
+    '<clipPath id="uk-diag"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>' +
+    '<g clip-path="url(#uk-flag)"><rect width="60" height="30" fill="#012169"/>' +
+    '<path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>' +
+    '<path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#uk-diag)" stroke="#C8102E" stroke-width="4"/>' +
+    '<path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>' +
+    '<path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></g></g>',
   // Mexico, the emblem as a disc.
   es: vertical('#006847', '#fff', '#CE1126') + '<circle cx="15" cy="10" r="2.6" fill="#8C6A3F"/><circle cx="15" cy="10" r="2.6" fill="none" stroke="#3E7A3A" stroke-width="0.6"/>',
   // Brazil: the rhombus, the globe and its band.

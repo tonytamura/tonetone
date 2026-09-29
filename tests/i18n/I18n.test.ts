@@ -128,9 +128,9 @@ describe('flags', () => {
     for (const { id } of LANGUAGES) expect(flagSvg(id)).toMatch(/^<svg class="flag" viewBox="0 0 30 20"[^>]*>.+<\/svg>$/);
   });
 
-  it('show England, not the United Kingdom, for English', () => {
-    // A white field with the red cross of St George, and no blue anywhere.
-    expect(flagSvg('en')).toContain('#CE1124');
-    expect(flagSvg('en')).not.toMatch(/#0|#00247D|blue/i);
+  it('show the Union Jack for English', () => {
+    // Its blue field and red crosses, not England's white field alone.
+    expect(flagSvg('en')).toContain('#012169');
+    expect(flagSvg('en')).toContain('#C8102E');
   });
 });
