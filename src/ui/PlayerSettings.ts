@@ -27,9 +27,11 @@ export const CUSTOM_LABEL = 'Custom';
 
 /**
  * Shown whatever the preset, and kept as the player left them. Ball numbers is
- * the colour-blind option and must never hide behind Custom.
+ * the colour-blind option and must never hide behind Custom. The AI opponent —
+ * the ladder, or one rung held fixed — is a choice about who to play, not about
+ * the rules, so it stays put whichever preset is picked.
  */
-export const EVERYDAY_KNOBS: KnobId[] = ['labels', 'vol', 'haptics'];
+export const EVERYDAY_KNOBS: KnobId[] = ['labels', 'vol', 'haptics', 'ailevel'];
 
 /** Every other knob: the ones Custom shows and remembers. */
 export function advancedKnobs(): KnobId[] {
