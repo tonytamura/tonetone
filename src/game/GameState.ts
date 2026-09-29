@@ -339,7 +339,14 @@ export function launchSpot(p: LauncherPlayer, dir: number, game: Game, width: nu
   return null;
 }
 
-export function throwBall(p: LauncherPlayer, game: Game, width: number, height: number): boolean {
+/**
+ * Launch player `p`'s loaded ball as aimed. `silent` launches it without the
+ * swoosh: the planning AI throws imagined balls with this, on a copy of the
+ * table, and every one of them used to be heard (Bug 15).
+ */
+export function throwBall(
+  p: LauncherPlayer, game: Game, width: number, height: number, opts: { silent?: boolean } = {}
+): boolean {
   if (p.reload > 0) return false;
   if (!p.loaded) p.loaded = drawFor(p, game.players, game.twoPlayer);
   const isWhite = p.loaded.special === 'white';
@@ -378,7 +385,7 @@ export function throwBall(p: LauncherPlayer, game: Game, width: number, height: 
   p.nextUp = p.then || drawFor(p, game.players, game.twoPlayer);
   p.then = drawFor(p, game.players, game.twoPlayer);
 
-  playSwoosh(panOf(spot.x, width), speed / (PhysicsConfig.THROW_MAX * 1.4), { isWhite });
+  if (!opts.silent) playSwoosh(panOf(spot.x, width), speed / (PhysicsConfig.THROW_MAX * 1.4), { isWhite });
   p.reload = game.reloadTime;
 
   if (!game.matchRunning && !game.matchOver) {

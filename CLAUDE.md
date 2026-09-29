@@ -130,8 +130,9 @@ simulation that no longer exists.
   clears 2x that error. Repeat the phrasing they use; do not upgrade
   "inside the noise" into an effect.
 - **Quote the numbers**, with their error bars, not just the direction.
-- **Name the proxy's limits.** `--policy engine-ai` is the pre-ladder AI (rung
-  AI5): it aims at the biggest group and never checks whether the line is clear.
+- **Name the proxy's limits.** `--policy engine-ai` is the pre-ladder AI (no
+  longer a ladder rung, but still what the baseline plays): it aims at the
+  biggest group and never checks whether the line is clear.
   It cannot represent shot selection. If that is the skill in question, say so
   instead of reporting its number. `--policy agi` (and the `planner` strategy)
   do select shots, by simulating candidates, but they are slow to run.

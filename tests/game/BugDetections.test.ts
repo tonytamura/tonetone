@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { drawFor, setColorsCount, colorOfKind } from '../../src/game/Rules';
 import { BLACK_HEX, WHITE_HEX } from '../../src/graphics/Palette';
 import { KNOB_IDS } from '../../src/game/Settings';
@@ -17,6 +17,9 @@ import { collide, boomGroup, RAIN_BLINK } from '../../src/physics/CollisionSolve
 import { makeBall, weld, loose, withSandbox } from '../../src/sim/Scenarios';
 import { makeGroup } from '../../src/physics/RigidBody';
 import { playNote, playSwoosh } from '../../src/audio/Voices';
+import * as Voices from '../../src/audio/Voices';
+import { PlanJob } from '../../src/game/AIPlanner';
+import { startMatch, throwBall } from '../../src/game/GameState';
 import { AudioStore } from '../../src/audio/SynthEngine';
 import { startTutorial, endTutorial, tutorialAfterFrame, drainTutorialEvents } from '../../src/game/Tutorial';
 import { rebuildGroups } from '../../src/physics/RigidBody';
@@ -493,6 +496,36 @@ describe('Bug Detection Test Suite', () => {
         });
       } finally {
         restoreConfig(snap);
+      }
+    });
+  });
+
+  describe('Bug 15: the planning AI played a swoosh for every throw it only imagined', () => {
+    // The top AI tries candidate throws on a copy of the table, and launched
+    // them with the same throwBall the real frame uses. throwBall plays the
+    // swoosh itself, so every imagined throw was heard. playSwoosh drops a
+    // swoosh within 80ms of the last, which hid it where the planning finished
+    // in a frame or two; on a slower phone the planning spreads over many
+    // frames and they came out as a run of swooshes (Tony, 2026-09-29).
+    it('plans in silence, while a real throw is still heard', () => {
+      const spy = vi.spyOn(Voices, 'playSwoosh');
+      try {
+        withSeed(4, () => {
+          const W = 380, H = 620;
+          recalcThresholds(H);
+          const game = createGame();
+          game.twoPlayer = true;
+          resetField(game, W, H);
+          startMatch(game, 0);
+          const cands = [-30, 0, 30].map(aimDeg => ({ aimDeg, strength: 1 }));
+          new PlanJob(game, 1, cands, 1, 0.5, W, H, 42, 3).run();
+          expect(spy).not.toHaveBeenCalled();
+          game.players[0].reload = 0;
+          expect(throwBall(game.players[0], game, W, H)).toBe(true);
+          expect(spy).toHaveBeenCalledTimes(1);
+        });
+      } finally {
+        spy.mockRestore();
       }
     });
   });

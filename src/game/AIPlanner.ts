@@ -5,8 +5,8 @@
  *
  * This predicts; it does not play. It steps the same `stepPhysics` with the
  * same substep rule (`substepCount`) and launches with the same `throwBall` as
- * the real frame, on a copy, and nothing it does reaches the game: the copy's
- * sound events are dropped, its scores are thrown away, and the shared
+ * the real frame (silently), on a copy, and nothing it does reaches the game: the
+ * copy's sound events are dropped, its scores are thrown away, and the shared
  * `Math.random` is swapped for a private generator while it runs, so a seeded
  * harness run draws exactly the same numbers with or without it.
  */
@@ -173,7 +173,8 @@ export class PlanJob {
           p.strength = c.strength;
           p.reload = 0;
           this.simBefore = p.score;
-          if (!throwBall(p, sim, this.width, this.height)) { this.idx++; continue; }
+          // Silent: an imagined throw must not be heard.
+          if (!throwBall(p, sim, this.width, this.height, { silent: true })) { this.idx++; continue; }
           this.sim = sim;
           this.simState = toCollisionState(sim);
           this.simFrames = Math.round(this.seconds / FALLBACK_DT);
