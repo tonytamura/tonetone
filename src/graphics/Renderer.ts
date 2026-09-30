@@ -10,7 +10,7 @@ import { popScale, popText } from './PopText';
 import { aimDirOf, aimReachOf, boomHeatOf, boomsOnImpact, launchPointOf, mouthRadius } from '../physics/LauncherBays';
 import { LauncherPlayer } from '../physics/Types';
 import { drawBallMark, marksShown } from './BallMarks';
-import { BANK_MAX, FIRE_ON_RELEASE } from '../game/Rules';
+import { FIRE_ON_RELEASE } from '../game/Rules';
 import { TAU } from '../math';
 
 /** The player colours, indexed by player. */
@@ -377,7 +377,6 @@ export function drawOneLauncher(rc: RenderContext, game: Game, p: LauncherPlayer
   } else if (ready) {
     drawReadyPulse(ctx, m, mouthR, time, paint);
   }
-  if (FIRE_ON_RELEASE) drawBank(ctx, m, mouthR, p, paint);
 
   ctx.beginPath();
   ctx.arc(m.x, m.y, R * 1.25, 0, TAU);
@@ -386,36 +385,10 @@ export function drawOneLauncher(rc: RenderContext, game: Game, p: LauncherPlayer
   ctx.stroke();
   ctx.globalCompositeOperation = 'source-over';
 
-  drawLoadedBall(ctx, game, p, m, R, ready, time);
+  // Under continuous fire the ball in the mouth is the next one ready to throw:
+  // an empty bank leaves the mouth empty until the ring adds one.
+  if (!FIRE_ON_RELEASE || p.bank > 0) drawLoadedBall(ctx, game, p, m, R, ready, time);
   drawAim(ctx, game, p, m, R, W, H, ready);
-}
-
-/**
- * Continuous fire: the balls in the bank, as `BANK_MAX` beads beside the mouth,
- * lit for each ball ready and hollow for each still to come. They sit to the
- * player's right, so player 2 reads them from their own side of the table.
- */
-function drawBank(ctx: CanvasRenderingContext2D, m: { x: number; y: number }, mouthR: number, p: LauncherPlayer, paint: LauncherPaint) {
-  ctx.save();
-  ctx.globalCompositeOperation = 'source-over';
-  const r = 4, gap = 11;
-  for (let i = 0; i < BANK_MAX; i++) {
-    const x = m.x + p.side * (mouthR + 10 + i * gap);
-    ctx.beginPath();
-    ctx.arc(x, m.y, r, 0, TAU);
-    if (i < p.bank) {
-      ctx.fillStyle = hex(paint.ring);
-      ctx.shadowColor = hex(paint.ring);
-      ctx.shadowBlur = 6;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    } else {
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = rgba(paint.ring, 0.45);
-      ctx.stroke();
-    }
-  }
-  ctx.restore();
 }
 
 /** The dark disc and the ring around it. */
