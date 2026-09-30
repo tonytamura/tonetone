@@ -2,6 +2,7 @@ import { Game } from '../game/GameState';
 import { LauncherPlayer } from '../physics/Types';
 import { aimAt } from '../physics/LauncherBays';
 import { initAudio } from '../audio/SynthEngine';
+import { FIRE_ON_RELEASE } from '../game/Rules';
 
 export function setupTouchControls(
   canvas: HTMLCanvasElement,
@@ -49,15 +50,20 @@ export function setupTouchControls(
     }
   });
 
-  const release = (e: PointerEvent) => {
+  // `throws`: a finger lifted throws, under continuous fire. A cancelled touch
+  // (the system taking the gesture, a palm) only ends the aim.
+  const release = (e: PointerEvent, throws: boolean) => {
     const p = owners.get(e.pointerId);
     if (!p) return;
     owners.delete(e.pointerId);
     const r = canvas.getBoundingClientRect();
     pointAt(e, p, r.height || window.innerHeight, r.width || window.innerWidth);
+    const game = getGame();
+    // The frame loop throws it: one ball per release, as many as the bank holds.
+    if (throws && FIRE_ON_RELEASE && !game.paused && !game.matchOver) p.releases = Math.min(p.bank, p.releases + 1);
   };
 
-  canvas.addEventListener('pointerup', release);
-  canvas.addEventListener('pointercancel', release);
-  canvas.addEventListener('lostpointercapture', release);
+  canvas.addEventListener('pointerup', e => release(e, true));
+  canvas.addEventListener('pointercancel', e => release(e, false));
+  canvas.addEventListener('lostpointercapture', e => release(e, false));
 }

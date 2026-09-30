@@ -1,6 +1,6 @@
 import { Ball, Flash, Group, LauncherPlayer, Pop } from '../physics/Types';
 import { PhysicsConfig } from '../physics/Config';
-import { drawFor, randomKind, colorOfKind } from './Rules';
+import { BANK_MAX, FIRE_ON_RELEASE, drawFor, randomKind, colorOfKind } from './Rules';
 import { BLACK_HEX, WHITE_HEX } from '../graphics/Palette';
 import { rebuildGroups } from '../physics/RigidBody';
 import { aimDirOf, launchPointOf, throwSpeedOf } from '../physics/LauncherBays';
@@ -31,6 +31,10 @@ export function makeLauncher(side: number): LauncherPlayer {
     nextUp: null,
     then: null,
     reload: 0,
+    bank: BANK_MAX,
+    releases: 0,
+    hold: 0,
+    lastThrowAt: -Infinity,
     destroyed: 0,
     booms: 0,
     locks: 0,
@@ -61,6 +65,11 @@ export interface Game {
   aiLevel: number;
   /** Shapes on the balls: 0 automatic (from `AUTO_MARK_COLORS`), 1 always, 2 never. */
   marks: number;
+  /**
+   * Launchers driven by the harness rather than a finger. Under continuous fire
+   * they release by themselves (`BOT_RELEASE_GAP`), as the AI's launcher does.
+   */
+  bots: [boolean, boolean];
   showStats: boolean;
   matchLen: number;
   matchT: number;
@@ -100,6 +109,7 @@ export function createGame(): Game {
     aiOn: false,
     aiLevel: CLASSIC_LEVEL,
     marks: 0,
+    bots: [false, false],
     showStats: false,
     matchLen: 120,
     matchT: 0,
@@ -141,7 +151,12 @@ export function startTurns(game: Game) {
 export function startMatch(game: Game, countdown = 0) {
   game.matchT = 0;
   game.matchOver = false;
-  for (const p of game.players) p.reload = countdown;
+  for (const p of game.players) {
+    // Continuous fire starts with a full bank and the ring at rest; the countdown
+    // is held separately, since the ring now counts refills rather than throws.
+    if (FIRE_ON_RELEASE) { p.reload = 0; p.bank = BANK_MAX; p.releases = 0; p.hold = countdown; }
+    else p.reload = countdown;
+  }
   game.matchRunning = true;
 }
 
@@ -188,7 +203,7 @@ export function resetField(game: Game, width?: number, height?: number) {
     p.loaded = drawFor(p, game.players, game.twoPlayer);
     p.nextUp = drawFor(p, game.players, game.twoPlayer);
     p.then = drawFor(p, game.players, game.twoPlayer);
-    p.reload = 0; p.destroyed = 0; p.booms = 0;
+    p.reload = 0; p.bank = BANK_MAX; p.releases = 0; p.hold = 0; p.destroyed = 0; p.booms = 0;
     p.locks = 0; p.peels = 0; p.score = 0; p.best = 0;
     p.lockPts = 0; p.boomPts = 0; p.peelPts = 0;
   }
@@ -349,6 +364,31 @@ export function throwBall(
   p: LauncherPlayer, game: Game, width: number, height: number, opts: { silent?: boolean } = {}
 ): boolean {
   if (p.reload > 0) return false;
+  if (!launchBall(p, game, width, height, opts)) return false;
+  p.reload = game.reloadTime;
+  return true;
+}
+
+/**
+ * Continuous fire: throw one ball from the bank, as aimed. A throw from a full
+ * bank sets the ring going again; while the bank is short it is already going.
+ * A blocked throw keeps its ball. `clock` is the simulation clock, for the
+ * launchers that release by themselves.
+ */
+export function releaseBall(p: LauncherPlayer, game: Game, width: number, height: number, clock: number): boolean {
+  if (p.bank <= 0 || p.hold > 0) return false;
+  const wasFull = p.bank >= BANK_MAX;
+  if (!launchBall(p, game, width, height)) return false;
+  p.bank--;
+  p.lastThrowAt = clock;
+  if (wasFull) p.reload = game.reloadTime;
+  return true;
+}
+
+/** Put `p`'s loaded ball on the field as aimed, and move the deck along. What paces it is the caller's. */
+function launchBall(
+  p: LauncherPlayer, game: Game, width: number, height: number, opts: { silent?: boolean } = {}
+): boolean {
   if (!p.loaded) p.loaded = drawFor(p, game.players, game.twoPlayer);
   const isWhite = p.loaded.special === 'white';
   const dir = aimDirOf(p);
@@ -387,7 +427,6 @@ export function throwBall(
   p.then = drawFor(p, game.players, game.twoPlayer);
 
   if (!opts.silent) playSwoosh(panOf(spot.x, width), speed / (PhysicsConfig.THROW_MAX * 1.4), { isWhite });
-  p.reload = game.reloadTime;
 
   if (!game.matchRunning && !game.matchOver) {
     game.matchRunning = true;

@@ -191,6 +191,9 @@
     <p class="preset-hint" data-i18n-html="panel.presetHint">Pick <b>Custom 1</b>, <b>2</b> or <b>3</b> to change the rules, motion and sound yourself. Each keeps its own settings.</p>
 
     <h2 data-i18n="panel.basics">Basics</h2>
+    <div class="knob"><label for="fire" data-i18n="knob.fire.label">firing</label>
+      <input id="fire" type="range" min="0" max="1" step="1" value="0"><output id="firev">automatic</output></div>
+    <p class="knob-hint" data-i18n="knob.fire.hint">Automatic: the launcher throws by itself each time the ring fills. On release: it throws every time you let go, as fast as you tap, up to 3 balls; the ring adds one ball each time it fills.</p>
     <div class="knob"><label for="labels" data-i18n="knob.labels.label">ball shapes</label>
       <input id="labels" type="range" min="0" max="2" step="1" value="0"><output id="labelsv">auto</output></div>
     <p class="knob-hint" data-i18n="knob.labels.hint">Draws a shape on every ball, one per colour, so colours can be told apart without relying on their hue. Auto shows them from 5 colours up; on, always; off, never.</p>

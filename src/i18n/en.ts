@@ -57,6 +57,7 @@ export const EN = {
   // ── The rules ────────────────────────────────────────────────────────────
   // The five things to know, one short line each (tutorial end, seat card).
   'rules.core.1': 'Aim — it fires by itself.',
+  'rules.core.1.release': 'Aim, then let go to throw.',
   'rules.core.2': 'Same colours lock.',
   'rules.core.3': 'A different colour, thrown hard, booms.',
   'rules.core.4': 'Black sticks to anything.',
@@ -64,6 +65,7 @@ export const EN = {
   // The rules card on the Help screen: a short label, then a sentence or two.
   'rules.aim.label': 'Aim',
   'rules.aim.text': 'Drag to aim; farther is harder. It fires by itself when the ring fills.',
+  'rules.aim.text.release': 'Drag to aim; farther is harder. Let go to throw — up to 3 balls in a row, and the ring adds one each time it fills.',
   'rules.lock.label': 'Lock',
   'rules.lock.text': 'Same colours stick together.',
   'rules.boom.label': 'Boom',
@@ -223,6 +225,8 @@ export const EN = {
   'panel.copied': 'Copied',
   // Each knob: a label beside its slider (a narrow column: two short words at
   // most), then what it does, under it.
+  'knob.fire.label': 'firing',
+  'knob.fire.hint': 'Automatic: the launcher throws by itself each time the ring fills. On release: it throws every time you let go, as fast as you tap, up to 3 balls; the ring adds one ball each time it fills.',
   'knob.labels.label': 'ball shapes',
   'knob.labels.hint': 'Draws a shape on every ball, one per colour, so colours can be told apart without relying on their hue. Auto shows them from 5 colours up; on, always; off, never.',
   'knob.vol.label': 'volume',
@@ -288,6 +292,8 @@ export const EN = {
   // Readouts beside a slider, in a narrow column: very short.
   'fmt.on': 'on',
   'fmt.marks.auto': 'auto',
+  'fmt.fire.auto': 'automatic',
+  'fmt.fire.release': 'on release',
   'fmt.off': 'off',
   'fmt.ladder': 'ladder',
   'fmt.auto': 'auto',

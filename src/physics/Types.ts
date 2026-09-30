@@ -145,6 +145,16 @@ export interface LauncherPlayer {
   nextUp: BallOnDeck | null;
   then: BallOnDeck | null;
   reload: number;
+  /** Continuous fire: balls ready to throw, 0 to `BANK_MAX`. The reload ring adds them. */
+  bank: number;
+  /** Continuous fire: releases of the finger waiting for the next frame to throw. */
+  releases: number;
+  /** Continuous fire: seconds before this launcher may throw, for the start countdown. */
+  hold: number;
+  /** The simulation clock at this launcher's last throw. */
+  lastThrowAt: number;
+  /** A planning AI still deciding its throw: under continuous fire it does not release yet. */
+  holdFire?: boolean;
   destroyed: number;
   booms: number;
   locks: number;

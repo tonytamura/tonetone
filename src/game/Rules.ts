@@ -29,6 +29,24 @@ export let COLORS = 3;
 export let SPECIALS = true;
 
 /**
+ * Continuous fire (the `fire` knob): a launcher throws when its player lets go,
+ * as fast as they tap, from a bank of up to `BANK_MAX` balls that the reload
+ * ring refills one at a time. Off, the launcher throws by itself each time the
+ * ring fills, as it always has.
+ */
+export let FIRE_ON_RELEASE = false;
+export const BANK_MAX = 3;
+/**
+ * The quickest a launcher nobody is touching releases under continuous fire:
+ * the AI and the harness's players. About as fast as a person taps twice.
+ */
+export const BOT_RELEASE_GAP = 0.4;
+
+export function setFireOnRelease(on: boolean) {
+  FIRE_ON_RELEASE = on;
+}
+
+/**
  * White's share of the special-ball slot, for the player who is behind.
  *
  * A draw first rolls one slot against the colours (`1 / (COLORS + 1)`); this is

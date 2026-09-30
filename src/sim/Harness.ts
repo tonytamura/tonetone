@@ -253,6 +253,9 @@ export function runSim(opts: SimOptions = {}): RunResult {
     game.twoPlayer = mode === 'duel' || mode === 'ai';
     game.aiOn = mode === 'ai';
     if (opts.aiLevel !== undefined) game.aiLevel = opts.aiLevel;
+    // The harness's players are policies, not fingers: under continuous fire
+    // they release by themselves. `idle` has nobody throwing at all.
+    game.bots = mode === 'idle' ? [false, false] : [true, true];
 
     const ctx: KnobContext = { game, height };
     applyKnobDefaults(ctx);

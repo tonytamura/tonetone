@@ -15,7 +15,7 @@ import { t } from '../i18n/I18n';
 import { Game } from '../game/GameState';
 import { PhysicsConfig, chainPercent, recalcThresholds } from '../physics/Config';
 import { inertiaOf } from '../physics/RigidBody';
-import { COLORS, MAX_COLORS, MIN_COLORS, SHOT_DECAY, SPECIALS, WHITE_ODDS, colorOfKind, setColorsCount, setShotDecay, setSpecialsToggle, setWhiteOdds } from '../game/Rules';
+import { BANK_MAX, COLORS, FIRE_ON_RELEASE, MAX_COLORS, MIN_COLORS, SHOT_DECAY, SPECIALS, WHITE_ODDS, colorOfKind, setColorsCount, setFireOnRelease, setShotDecay, setSpecialsToggle, setWhiteOdds } from '../game/Rules';
 import { AudioStore, applyDrone, applyGain, setLatencyHint } from '../audio/SynthEngine';
 import { formatClock } from '../game/Clock';
 
@@ -143,6 +143,17 @@ const KNOB_SPECS = {
     },
     format: v => String(v),
     read: () => COLORS,
+  },
+
+  fire: {
+    group: 'game', kind: 'range', min: 0, max: 1, step: 1, default: 0,
+    apply: (v, { game }) => {
+      setFireOnRelease(v > 0);
+      // Switched mid-match, each launcher starts from a full bank and a resting ring.
+      for (const p of game.players) { p.bank = BANK_MAX; p.releases = 0; if (v > 0) p.reload = 0; }
+    },
+    format: v => (v > 0 ? t('fmt.fire.release') : t('fmt.fire.auto')),
+    read: () => (FIRE_ON_RELEASE ? 1 : 0),
   },
 
   labels: {
@@ -647,6 +658,7 @@ export interface ConfigSnapshot {
   whiteOdds: number;
   forcedAi: number;
   shotDecay: number;
+  fireOnRelease: boolean;
   audio: { volume: number; lockVol: number; breakVol: number; boomVol: number; clickVol: number; drone: number; haptics: number; latency: number; boomCut: number; lockTone: number };
 }
 
@@ -658,6 +670,7 @@ export function snapshotConfig(): ConfigSnapshot {
     whiteOdds: WHITE_ODDS,
     forcedAi: FORCED_AI_LEVEL,
     shotDecay: SHOT_DECAY,
+    fireOnRelease: FIRE_ON_RELEASE,
     audio: {
       volume: AudioStore.volume, lockVol: AudioStore.lockVol, breakVol: AudioStore.breakVol,
       boomVol: AudioStore.boomVol, clickVol: AudioStore.clickVol, drone: AudioStore.drone,
@@ -674,5 +687,6 @@ export function restoreConfig(snap: ConfigSnapshot): void {
   setWhiteOdds(snap.whiteOdds);
   setForcedAiLevel(snap.forcedAi);
   setShotDecay(snap.shotDecay);
+  setFireOnRelease(snap.fireOnRelease);
   Object.assign(AudioStore, snap.audio);
 }

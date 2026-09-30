@@ -47,7 +47,7 @@ export function isCustom(id: string): boolean {
  * the ladder, or one rung held fixed — is a choice about who to play, not about
  * the rules, so it stays put whichever preset is picked.
  */
-export const EVERYDAY_KNOBS: KnobId[] = ['labels', 'vol', 'haptics', 'ailevel'];
+export const EVERYDAY_KNOBS: KnobId[] = ['fire', 'labels', 'vol', 'haptics', 'ailevel'];
 
 /** Every other knob: the ones a Custom slot shows and remembers. */
 export function advancedKnobs(): KnobId[] {

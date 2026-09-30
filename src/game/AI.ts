@@ -1,7 +1,7 @@
 import { Ball, Group, LauncherPlayer } from '../physics/Types';
 import { aimAt, launchPointOf, launchSpeedOf } from '../physics/LauncherBays';
 import { PhysicsConfig } from '../physics/Config';
-import { boomPay, lockPay, peelPay } from './Rules';
+import { FIRE_ON_RELEASE, boomPay, lockPay, peelPay } from './Rules';
 import type { Game } from './GameState';
 import { Candidate, PlanJob } from './AIPlanner';
 
@@ -381,6 +381,7 @@ export function aiAimLevel(p: LauncherPlayer, game: Game, width: number, height:
 
 /** Aim player `p` the way `prof` plays. */
 export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, height: number, prof: AiProfile) {
+  p.holdFire = false;
   if (prof.classic) {
     aiAim(p, game.groups, game.balls, width, height, game.twoPlayer);
     return;
@@ -388,6 +389,9 @@ export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, heigh
   const st = stateOf(p);
   const want = { ...p };
   if (prof.plan) {
+    // Under continuous fire there is no ring to count down to the throw: the
+    // AI plans as soon as it has a ball and holds its release until it has
+    // decided (`holdFire`), then lets go.
     // One job per throw: started when the ring is `window` from full, worked
     // on each frame, and its best so far aimed at the moment of the throw.
     // A new throw is told by the loaded ball changing, not by the ring reading
@@ -395,15 +399,16 @@ export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, heigh
     // slider) it never does, and the first decision of the match stood for
     // every throw after it (Bug 17).
     if (st.forBall !== p.loaded) { st.forBall = p.loaded; st.job = undefined; st.planned = undefined; }
-    if (p.reload <= prof.plan.window) {
+    if (FIRE_ON_RELEASE || p.reload <= prof.plan.window) {
       if (!st.job) {
         const who = game.players.indexOf(p);
         st.job = new PlanJob(game, who, planCandidates(p, game, width, height, prof.plan), prof.plan.seconds,
-          p.reload, width, height, game.nextId * 7919, prof.plan.rollouts ?? 1);
+          FIRE_ON_RELEASE ? 0 : p.reload, width, height, game.nextId * 7919, prof.plan.rollouts ?? 1);
       }
       if (!st.job.done) st.job.run();
       if (st.job.best) st.planned = st.job.best;
     }
+    if (FIRE_ON_RELEASE) p.holdFire = !st.job?.done;
     if (st.planned) {
       p.aimDeg += (st.planned.aimDeg - p.aimDeg) * prof.turn;
       p.strength += (st.planned.strength - p.strength) * prof.turn;

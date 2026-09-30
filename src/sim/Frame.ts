@@ -13,10 +13,13 @@ import {
   Game,
   isLowBallDensity,
   spawnRainBall,
+  releaseBall,
   syncFromCollisionState,
   throwBall,
   toCollisionState,
 } from '../game/GameState';
+import { BANK_MAX, BOT_RELEASE_GAP, FIRE_ON_RELEASE } from '../game/Rules';
+import { LauncherPlayer } from '../physics/Types';
 import { aiAimLevel } from '../game/AI';
 import { playSoundEvents } from '../audio/SoundEvents';
 
@@ -86,6 +89,33 @@ export function effectiveRainInterval(game: Game, width: number, height: number)
   return isLowBallDensity(game, width, height) ? AUTO_RAIN_INTERVAL : 0;
 }
 
+/** How little the AI's aim may move in a frame and still count as settled on its target. */
+export const AI_SETTLED_DEG = 0.5;
+
+/**
+ * Continuous fire: count down the start hold, and let the reload ring add a ball
+ * each time it fills until the bank is full, where the ring rests. A ring with
+ * no time (`reload` 0) keeps the bank full.
+ */
+function refillBank(p: LauncherPlayer, reloadTime: number, dt: number) {
+  if (p.hold > 0) p.hold = Math.max(0, p.hold - dt);
+  if (reloadTime <= 0) { p.bank = BANK_MAX; return; }
+  if (p.bank < BANK_MAX && p.reload <= 0) {
+    p.bank++;
+    p.reload = p.bank < BANK_MAX ? reloadTime : 0;
+  }
+}
+
+/**
+ * Whether a launcher nobody is touching lets go now: it has a ball, it is past
+ * the start hold, and `BOT_RELEASE_GAP` has passed since its last throw. The AI
+ * also waits for its aim to settle and, when it plans, for the plan.
+ */
+function botReleases(p: LauncherPlayer, clock: number, isAi: boolean, aiSettled: boolean): boolean {
+  if (p.bank <= 0 || p.hold > 0 || clock - p.lastThrowAt < BOT_RELEASE_GAP) return false;
+  return !isAi || (aiSettled && !p.holdFire);
+}
+
 /**
  * Advance the whole game by one frame: physics substeps, reload timers, AI aim,
  * ball rain, turn firing and the match clock.
@@ -122,9 +152,13 @@ export function advanceFrame(
   syncFromCollisionState(game, colState);
 
   for (const p of game.players) if (p.reload > 0) p.reload = Math.max(0, p.reload - dt);
+  if (FIRE_ON_RELEASE) for (const p of game.players) refillBank(p, game.reloadTime, dt);
 
+  let aiSettled = false;
   if (game.aiOn && !game.matchOver) {
+    const before = game.players[1].aimDeg;
     aiAimLevel(game.players[1], game, width, height, game.aiLevel);
+    aiSettled = Math.abs(game.players[1].aimDeg - before) < AI_SETTLED_DEG;
   }
 
   let fired = 0;
@@ -146,7 +180,21 @@ export function advanceFrame(
 
     const activePlayers = game.twoPlayer ? game.players : [game.players[0]];
     for (const p of activePlayers) {
-      if (p.reload <= 0) {
+      if (FIRE_ON_RELEASE) {
+        const i = game.players.indexOf(p);
+        const isAi = game.aiOn && i === 1;
+        if ((isAi || game.bots[i]) && botReleases(p, clock, isAi, aiSettled)) p.releases = 1;
+        // Every release waiting is thrown now, one ball each, while the bank lasts.
+        // A release with the bank empty is spent, not saved for the next ball; a
+        // blocked one keeps its ball and drops the rest of the burst.
+        while (p.releases > 0) {
+          p.releases--;
+          if (p.bank <= 0 || p.hold > 0) { p.releases = 0; break; }
+          fired++;
+          if (releaseBall(p, game, width, height, clock)) threw++;
+          else { p.releases = 0; break; }
+        }
+      } else if (p.reload <= 0) {
         fired++;
         if (throwBall(p, game, width, height)) threw++;
       }
