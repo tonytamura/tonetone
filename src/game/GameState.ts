@@ -59,7 +59,8 @@ export interface Game {
    * or `CLASSIC_LEVEL` (-1) for the pre-ladder AI, which the harness plays.
    */
   aiLevel: number;
-  showLabels: boolean;
+  /** Shapes on the balls: 0 automatic (from `AUTO_MARK_COLORS`), 1 always, 2 never. */
+  marks: number;
   showStats: boolean;
   matchLen: number;
   matchT: number;
@@ -98,7 +99,7 @@ export function createGame(): Game {
     twoPlayer: false,
     aiOn: false,
     aiLevel: CLASSIC_LEVEL,
-    showLabels: false,
+    marks: 0,
     showStats: false,
     matchLen: 120,
     matchT: 0,

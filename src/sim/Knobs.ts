@@ -146,10 +146,12 @@ const KNOB_SPECS = {
   },
 
   labels: {
-    group: 'game', kind: 'range', min: 0, max: 1, step: 1, default: 0, cosmetic: true,
-    apply: (v, { game }) => { game.showLabels = v > 0; },
-    format: v => (v > 0 ? t('fmt.on') : t('fmt.off')),
-    read: ({ game }) => (game.showLabels ? 1 : 0),
+    // 0 automatic, 1 always, 2 never. 0 and 1 kept what they meant when this was
+    // an off/on switch, so a saved setting still reads the same.
+    group: 'game', kind: 'range', min: 0, max: 2, step: 1, default: 0, cosmetic: true,
+    apply: (v, { game }) => { game.marks = v; },
+    format: v => (v === 1 ? t('fmt.on') : v === 2 ? t('fmt.off') : t('fmt.marks.auto')),
+    read: ({ game }) => game.marks,
   },
 
   stats: {

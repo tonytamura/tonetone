@@ -224,7 +224,7 @@ export const EN = {
   // Each knob: a label beside its slider (a narrow column: two short words at
   // most), then what it does, under it.
   'knob.labels.label': 'ball shapes',
-  'knob.labels.hint': 'Draws a shape on every ball, one per colour, so colours can be told apart without relying on their hue. With 5 or more colours the shapes are always on.',
+  'knob.labels.hint': 'Draws a shape on every ball, one per colour, so colours can be told apart without relying on their hue. Auto shows them from 5 colours up; on, always; off, never.',
   'knob.vol.label': 'volume',
   'knob.vol.hint': 'Loudness of the whole game. Above 100% boosts it, for a quiet phone speaker.',
   'knob.haptics.label': 'haptics',
@@ -287,6 +287,7 @@ export const EN = {
   'knob.latency.hint': 'How far ahead sound is prepared. Raise it if sound crackles or drops out; lower it if sounds come late. Auto lets the device choose. Changing it restarts the sound.',
   // Readouts beside a slider, in a narrow column: very short.
   'fmt.on': 'on',
+  'fmt.marks.auto': 'auto',
   'fmt.off': 'off',
   'fmt.ladder': 'ladder',
   'fmt.auto': 'auto',

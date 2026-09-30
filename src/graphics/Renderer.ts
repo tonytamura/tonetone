@@ -160,7 +160,7 @@ export function drawGame(rc: RenderContext, game: Game, time: number) {
     ctx.globalAlpha = 1;
   }
 
-  if (marksShown(game.showLabels)) {
+  if (marksShown(game.marks)) {
     for (const b of game.balls) {
       ctx.globalAlpha = b.ghost ? 0.5 : getRainBallAlpha(b.rainTime);
       drawBallMark(ctx, b.kind, b.x, b.y, R, b.color);
@@ -476,7 +476,7 @@ function drawLoadedBall(
   const bob = ready ? 1 + 0.04 * Math.sin(time * 2.6) : 1;
   const d = 2 * R * (SPRITE / (2 * SP_R)) * bob;
   ctx.drawImage(ballSprite(p.loaded.color, false), m.x - d / 2, m.y - d / 2, d, d);
-  if (!marksShown(game.showLabels)) return;
+  if (!marksShown(game.marks)) return;
   ctx.save();
   ctx.translate(m.x, m.y);
   if (p.side < 0) ctx.rotate(Math.PI);

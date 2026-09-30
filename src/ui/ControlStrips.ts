@@ -41,7 +41,7 @@ export function createStrip(
     g.drawImage(ballSprite(ball.color, false), 0, 0, w, h);
     const game = getGame();
     // The sprite's ball spans SP_R of its SPRITE/2 half-width.
-    if (marksShown(game.showLabels)) drawBallMark(g, ball.kind, w / 2, h / 2, (w / 2) * (2 * SP_R / SPRITE), ball.color);
+    if (marksShown(game.marks)) drawBallMark(g, ball.kind, w / 2, h / 2, (w / 2) * (2 * SP_R / SPRITE), ball.color);
   }
 
   let sizeKey = 0;
@@ -63,7 +63,7 @@ export function createStrip(
       // swap in a slot keep repainting the previous special's colour.
       const key = p.nextUp.kind + ':' + p.nextUp.special +
                   '|' + p.then.kind + ':' + p.then.special +
-                  '|' + marksShown(game.showLabels) +
+                  '|' + marksShown(game.marks) +
                   '|' + getSpriteEpoch();
       if (key !== chipKey) {
         chipKey = key;

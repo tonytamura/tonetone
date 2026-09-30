@@ -33,9 +33,14 @@ export const AUTO_MARK_COLORS = 5;
 export const MARK_SHAPES = ['none', 'triangle', 'bar', 'ring', 'plus', 'dots'] as const;
 export type MarkShape = (typeof MARK_SHAPES)[number];
 
-/** Whether the balls carry their shapes: asked for, or enough colours to need them. */
-export function marksShown(asked: boolean): boolean {
-  return asked || COLORS >= AUTO_MARK_COLORS;
+/**
+ * Whether the balls carry their shapes, for the `labels` setting: 0 automatic
+ * (from `AUTO_MARK_COLORS` colours), 1 always, 2 never. Never is there because
+ * automatic could not be switched off, and a player who can tell six colours
+ * apart may not want the shapes (Tony, 2026-09-30).
+ */
+export function marksShown(mode: number): boolean {
+  return mode === 1 || (mode !== 2 && COLORS >= AUTO_MARK_COLORS);
 }
 
 /** The shape for a ball of `kind`, or null for the black and white specials, which need none. */
