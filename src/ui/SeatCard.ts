@@ -72,7 +72,9 @@ function el(id: string) {
  */
 export function createSeatCard(onReady: () => void): SeatCard {
   let state: SeatState | null = null;
-  const copy = seatCopy();
+  // Read afresh on every show: the card is built at start-up, before a language
+  // other than English has loaded, so copy taken then stayed English.
+  let copy = seatCopy();
 
   function fill(half: HTMLElement) {
     half.innerHTML = '';
@@ -123,6 +125,7 @@ export function createSeatCard(onReady: () => void): SeatCard {
 
   return {
     show() {
+      copy = seatCopy();
       state = newSeatState();
       for (const id of ['seat-bottom', 'seat-top']) {
         const h = el(id);
