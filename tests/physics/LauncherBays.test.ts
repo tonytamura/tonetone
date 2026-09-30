@@ -6,6 +6,7 @@ import {
   aimDirOf,
   aimMaxReach,
   aimReachOf,
+  FINGER_CLEARANCE,
   aimAt,
   throwSpeedOf,
   boomHeatOf,
@@ -74,24 +75,28 @@ describe('LauncherBays module', () => {
       expect(aimMaxReach(400, 900, true)).toBe(200); // 200 < 450 - 38
     });
 
-    it('grows reach with strength, scaled to the round limit', () => {
-      const p = makeLauncher(1);
-      p.strength = 0.5;
-      const maxReach = aimMaxReach(2000, 600, false); // 562
-      expect(aimReachOf(p, 2000, 600, false)).toBeCloseTo(0.5 * maxReach * 1.5);
+    it('puts the arrow tip a fingertip past the finger, at every strength', () => {
+      // The finger sits at strength x the round limit (aimAt). Continuous fire
+      // keeps it on the screen, and the arrow used to end under it from two
+      // thirds of the range up (Tony, 2026-09-30).
+      // Screens where straight up the field leaves room past a full-power finger.
+      for (const [W, H] of [[390, 780], [1200, 900]]) {
+        const p = makeLauncher(1);
+        const maxReach = aimMaxReach(W, H, false);
+        for (const s of [0.1, 0.4, 0.67, 0.9, 1]) {
+          p.strength = s;
+          p.aimDeg = 0; // straight up the field, where there is room
+          expect(aimReachOf(p, W, H, false)).toBeCloseTo(Math.min(s * maxReach + FINGER_CLEARANCE, H - bayInset()), 6);
+          expect(aimReachOf(p, W, H, false)).toBeGreaterThan(s * maxReach);
+        }
+      }
     });
 
-    it('saturates two thirds up the strength range whatever the screen shape', () => {
+    it('grows with power over the whole range, not only the first two thirds', () => {
       const p = makeLauncher(1);
-      // Portrait, where the width bounds the limit, and landscape, where the
-      // height does. The arrow has to reach full length at the same strength.
-      for (const [W, H] of [[400, 900], [1200, 600]]) {
-        const maxReach = aimMaxReach(W, H, false);
-        p.strength = 0.66;
-        expect(aimReachOf(p, W, H, false)).toBeLessThan(maxReach);
-        p.strength = 0.67;
-        expect(aimReachOf(p, W, H, false)).toBe(maxReach);
-      }
+      p.strength = 0.67; const at67 = aimReachOf(p, 390, 780, false);
+      p.strength = 1; const at100 = aimReachOf(p, 390, 780, false);
+      expect(at100).toBeGreaterThan(at67);
     });
 
     it('caps reach in 2-player mode so arrow head does not cross the playing area boundary', () => {
@@ -119,9 +124,10 @@ describe('LauncherBays module', () => {
           const p = makeLauncher(side);
           p.strength = 1.0;
           const m = launchPointOf(p, W, H);
-          const reach = aimReachOf(p, W, H, twoPlayer);
           for (let deg = -90; deg <= 90; deg += 5) {
             p.aimDeg = deg;
+            // The reach depends on the angle now: it is kept on the field along the aim.
+            const reach = aimReachOf(p, W, H, twoPlayer);
             const dir = aimDirOf(p);
             const tx = m.x + Math.cos(dir) * reach;
             const ty = m.y + Math.sin(dir) * reach;

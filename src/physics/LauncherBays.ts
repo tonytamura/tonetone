@@ -44,19 +44,44 @@ export function aimMaxReach(width: number, height: number, twoPlayer: boolean): 
 }
 
 /**
- * How long to draw the aim arrow, growing with strength and topping out at the
- * round limit above.
+ * How far past the finger the aim arrow's tip sits, in CSS px: about a
+ * fingertip, so the finger aiming never covers the arrow's head.
+ */
+export const FINGER_CLEARANCE = 48;
+
+/**
+ * How long to draw the aim arrow: to where the finger is, plus
+ * `FINGER_CLEARANCE`, so its head always shows ahead of the finger. The finger
+ * sits at `strength` of the round limit (`aimAt`), so the arrow grows with power
+ * over the whole range.
  *
- * The length is scaled to that limit rather than to the height, so the arrow
- * saturates two thirds of the way up the strength range whatever the screen
- * shape. Scaling it to the height instead left the arrow at full length from a
- * sixth of the range upward on a tall phone, once the width bounded the limit,
- * which stopped it reporting power over most of the throw.
+ * It was 1.5 x the finger's distance, topping out at the round limit two thirds
+ * of the way up the strength range; above that the finger reached the tip and
+ * hid it, which continuous fire, where the finger stays down to aim each throw,
+ * made plain (Tony, 2026-09-30).
+ *
+ * The tip is kept on the field along the aim: inside the screen, and in a duel
+ * on the thrower's own half. Only a nearly flat throw at full power, with the
+ * finger already at the screen's edge, has no room to spare.
  */
 export function aimReachOf(p: LauncherPlayer, width: number, height: number, twoPlayer: boolean): number {
-  const maxReach = aimMaxReach(width, height, twoPlayer);
-  const reach = p.strength * maxReach * 1.5;
-  return Math.min(maxReach, Math.max(38, reach));
+  const finger = Math.min(1, Math.max(0, p.strength)) * aimMaxReach(width, height, twoPlayer);
+  return Math.min(Math.max(38, finger + FINGER_CLEARANCE), roomAlongAim(p, width, height, twoPlayer));
+}
+
+/** How far the aim arrow can run from the mouth before leaving the thrower's part of the field. */
+function roomAlongAim(p: LauncherPlayer, width: number, height: number, twoPlayer: boolean): number {
+  const m = launchPointOf(p, width, height);
+  const dir = aimDirOf(p);
+  const cx = Math.cos(dir), cy = Math.sin(dir);
+  const yMin = p.side > 0 && twoPlayer ? height / 2 : 0;
+  const yMax = p.side < 0 && twoPlayer ? height / 2 : height;
+  let room = Infinity;
+  if (cx > 1e-9) room = Math.min(room, (width - m.x) / cx);
+  if (cx < -1e-9) room = Math.min(room, -m.x / cx);
+  if (cy > 1e-9) room = Math.min(room, (yMax - m.y) / cy);
+  if (cy < -1e-9) room = Math.min(room, (yMin - m.y) / cy);
+  return room;
 }
 
 export function aimAt(p: LauncherPlayer, x: number, y: number, width: number, height: number, twoPlayer: boolean) {
