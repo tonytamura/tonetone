@@ -322,8 +322,34 @@ function chooseTarget(p: LauncherPlayer, game: Game, width: number, height: numb
     const c: Choice = { key: Math.min(...live.map(m => m.id)), x: point.x, y: point.y, strength: v.strength, value: v.value };
     if (!best || c.value > best.value) best = c;
   }
-  if (best || prof.target !== 'value') return best;
-  return null;
+  if (best || prof.target === 'value') return best;
+  return singleTarget(p, game, mouth, prof, height);
+}
+
+/**
+ * A target when the table has no group of two or more: a single ball of the
+ * loaded colour, so the throw locks, or failing that the nearest single.
+ *
+ * Without it AI3 (and anything else aiming at groups) fell to its idle angle
+ * whenever the table was all singles — every match's opening, and after a big
+ * boom — and threw the same way at the same strength until a group formed:
+ * "AI3 stops playing and leaves it in one direction" (Tony, 2026-09-30). The
+ * pre-ladder AI already fell back to the nearest ball.
+ */
+function singleTarget(p: LauncherPlayer, game: Game, mouth: { x: number; y: number }, prof: AiProfile, height: number): Choice | null {
+  let best: Choice | null = null, bestD = Infinity;
+  const loadedKind = p.loaded && !p.loaded.special ? p.loaded.kind : null;
+  for (const g of game.groups) {
+    const b = g.members.find(m => !m.ghost);
+    if (!b) continue;
+    const d = Math.hypot(b.x - mouth.x, b.y - mouth.y);
+    // Same colour first, then nearness: a same-colour ball is always preferred.
+    const rank = (loadedKind !== null && b.kind === loadedKind && !b.special ? 0 : 1e6) + d;
+    if (rank >= bestD) continue;
+    bestD = rank;
+    best = { key: b.id, x: b.x, y: b.y, strength: valueOn(p.loaded, g, b, d, prof, height).strength, value: 1 };
+  }
+  return best;
 }
 
 /**

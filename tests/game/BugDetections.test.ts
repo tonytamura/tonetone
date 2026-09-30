@@ -608,4 +608,33 @@ describe('Bug Detection Test Suite', () => {
       expect(longest).toBeLessThanOrEqual(10);
     });
   });
+
+  describe('Bug 19: AI3 threw one way only while the table held no group', () => {
+    // AI3 aims at the biggest group of two or more. With only single balls on
+    // the table — every match's opening, and after a big boom — it found no
+    // target, fell to one fixed idle angle, and threw the same way at the same
+    // strength until a group formed: "AI3 stops playing and leaves it in one
+    // direction" (Tony, 2026-09-30). It now aims at a single of the loaded
+    // colour, or the nearest single.
+    it('always has a ball to aim at while there is one on the table', () => {
+      let throws = 0, idle = 0;
+      for (const seed of [1, 2, 3, 4]) {
+        let lastLoaded: unknown = null;
+        runSim({
+          mode: 'ai', aiLevel: levelIndex('ai3'), seconds: 120, invariants: false, knobs: { match: 120 }, seed,
+          onFrame: g => {
+            const p: any = g.players[1];
+            if (p.loaded === lastLoaded) return;
+            if (lastLoaded) {
+              throws++;
+              if (p._ai?.key === -1 && g.balls.some(b => !b.ghost)) idle++;
+            }
+            lastLoaded = p.loaded;
+          },
+        });
+      }
+      expect(throws).toBeGreaterThan(100);
+      expect(idle).toBe(0);
+    });
+  });
 });
