@@ -1,4 +1,4 @@
-import { AudioStore, isOptionsOpen } from '../../audio/SynthEngine';
+import { AudioStore, isOptionsOpen, isStopped } from '../../audio/SynthEngine';
 import { tList } from '../../i18n/I18n';
 import { playNote, playRandomGameBoom } from '../../audio/Voices';
 import { clickHz, initMenuAudio, playBinauralClick } from '../../audio/UiSounds';
@@ -213,7 +213,9 @@ function spawnMenuFlash(
   if (!AudioStore.soundOn) return;
   const normX = width > 0 ? (x / width) * 2 - 1 : 0;
   if (k === 'blocked') {
-    playBinauralClick(clickHz('cancel'), 0.2, normX, 'hover');
+    // A click only once the audio is playing: before the first tap it would sit
+    // queued on the stopped context and go off with everything else on the tap.
+    if (AudioStore.actx && !isStopped(AudioStore.actx)) playBinauralClick(clickHz('cancel'), 0.2, normX, 'hover');
     return;
   }
   initMenuAudio();

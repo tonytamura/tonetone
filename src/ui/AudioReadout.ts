@@ -12,13 +12,19 @@ import { AudioStore, MAX_VOICES, audioLog, audioRebuilds, isAudioAsleep } from '
 
 const TICK_MS = 500;
 
+/** Whether the page has had the user activation a browser wants before it plays sound. */
+const tapped = () => {
+  const ua = (navigator as any).userActivation;
+  return ua ? (ua.hasBeenActive ? 'yes' : 'no') : '?';
+};
+
 export function setupAudioReadout(): void {
   if (typeof location === 'undefined' || !new URLSearchParams(location.search).has('audiodebug')) return;
   const el = document.createElement('pre');
   el.id = 'audio-readout';
   el.setAttribute('aria-hidden', 'true');
   Object.assign(el.style, {
-    position: 'fixed', left: '4px', bottom: '4px', zIndex: '10000', margin: '0',
+    position: 'fixed', left: '4px', top: 'calc(env(safe-area-inset-top, 0px) + 4px)', zIndex: '10000', margin: '0',
     padding: '4px 6px', font: '10px/1.3 monospace', color: '#9ff',
     background: 'rgba(0,0,0,0.7)', pointerEvents: 'none', whiteSpace: 'pre',
   });
@@ -33,7 +39,7 @@ export function setupAudioReadout(): void {
     lastClock = clock;
     el.textContent = [
       head,
-      `sound ${AudioStore.soundOn ? 'on' : 'off'}  gain ${AudioStore.master?.gain.value.toFixed(2) ?? '-'}  voices ${AudioStore.activeVoices}/${MAX_VOICES}  thuds ${AudioStore.thuds}  rebuilds ${audioRebuilds()}`,
+      `tapped ${tapped()}  sound ${AudioStore.soundOn ? 'on' : 'off'}  gain ${AudioStore.master?.gain.value.toFixed(2) ?? '-'}  voices ${AudioStore.activeVoices}/${MAX_VOICES}  thuds ${AudioStore.thuds}  rebuilds ${audioRebuilds()}`,
       ...audioLog(),
     ].join('\n');
   }, TICK_MS);

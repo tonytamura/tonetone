@@ -153,6 +153,44 @@ describe('coming back', () => {
   });
 });
 
+describe('the first taps of a page', () => {
+  it('lets no voice queue up on a context the browser has not started yet', () => {
+    ctx().state = 'suspended';
+    const before = AudioStore.activeVoices;
+    playNote(0.5, 0, 'bond');
+    expect(AudioStore.activeVoices).toBe(before);
+  });
+
+  it('leaves a context that started on the tap alone', () => {
+    const first = ctx();
+    checkAudioOnGesture();
+    expect(ctx()).toBe(first);
+    expect(first.resume).not.toHaveBeenCalled();
+  });
+
+  it('rebuilds a context whose resume still has not landed a tap later', () => {
+    const first = ctx();
+    first.state = 'suspended';
+    first.resume.mockImplementation(() => new Promise(() => {})); // Chrome leaves it pending
+    checkAudioOnGesture();
+    expect(first.resume).toHaveBeenCalledTimes(1);
+    expect(ctx()).toBe(first);
+    wall += RETURN_GRACE_MS + 1;
+    checkAudioOnGesture();
+    expect(ctx()).not.toBe(first);
+    expect(ctx().state).toBe('running');
+  });
+
+  it('does not rebuild when the resume lands before the next tap', () => {
+    const first = ctx();
+    first.state = 'suspended';
+    checkAudioOnGesture(); // the resume runs, and the fake starts at once
+    wall += RETURN_GRACE_MS + 1;
+    checkAudioOnGesture();
+    expect(ctx()).toBe(first);
+  });
+});
+
 describe('rebuilding', () => {
   it('clears the counts and the clock readings the old context left behind', () => {
     const heard = vi.fn();

@@ -265,7 +265,7 @@ export function fadeDroneForOptions(duck: boolean) {
  * compare. WebKit uses it when a call or another app takes the audio, and a check
  * for `'suspended'` alone leaves such a context silent for good.
  */
-function isStopped(actx: AudioContext): boolean {
+export function isStopped(actx: AudioContext): boolean {
   const state: string = actx.state;
   return state === 'suspended' || state === 'interrupted';
 }
@@ -294,6 +294,7 @@ export function initAudio() {
   if (!AC) return;
   const actx = AudioStore.latency > 0 ? new AC({ latencyHint: AudioStore.latency }) : new AC();
   AudioStore.actx = actx;
+  audioLog(`created (${actx.state})`);
 
   const master = actx.createGain();
   master.gain.value = AudioStore.soundOn ? AudioStore.volume : 0;
@@ -399,6 +400,7 @@ export function rebuildAudio(reason: string) {
   AudioStore.swooshAt = -9;
   _asleep = false;
   _returnedAt = null;
+  _stuckSince = null;
   rebuilds++;
   try { Promise.resolve(old.close()).catch(() => {}); } catch (e) {}
   initAudio();
@@ -454,6 +456,8 @@ export function startDrone() {
 let _asleep = false;
 /** Where the page came back: the wall time and the audio clock at that moment. */
 let _returnedAt: { wall: number; clock: number } | null = null;
+/** Since when a gesture has found the context stopped, if it still is. */
+let _stuckSince: number | null = null;
 
 /** How long after coming back the context has to have got going. */
 export const RETURN_GRACE_MS = 250;
@@ -470,8 +474,13 @@ const log: string[] = [];
 /** A short log of what the context went through, for the `?audiodebug` readout. */
 export function audioLog(line?: string): readonly string[] {
   if (line) {
+    // The same event again, such as a resume the menu asks for every second or
+    // two before the first tap, counts up on its line instead of filling the log.
+    const last = log[log.length - 1];
+    const m = last && last.match(/^[\d.]+s (.*?)(?: ×(\d+))?$/);
     const s = (wallMs() / 1000).toFixed(1);
-    log.push(`${s}s ${line}`);
+    if (m && m[1] === line) log[log.length - 1] = `${s}s ${line} ×${Number(m[2] ?? 1) + 1}`;
+    else log.push(`${s}s ${line}`);
     if (log.length > LOG_LINES) log.shift();
   }
   return log;
@@ -512,32 +521,47 @@ export function audioReturned() {
   audioLog(`shown (${actx.state}, t ${actx.currentTime.toFixed(2)})`);
   wakeAudio();
   _returnedAt = { wall: wallMs(), clock: actx.currentTime };
+  _stuckSince = _returnedAt.wall;
 }
 
 /**
- * Every gesture calls this; it has work only in the first ones after coming back.
+ * Every gesture calls this. It checks the context is playing, and rebuilds it
+ * inside the gesture if it is not.
  *
- * Playing means running with its clock moving. A context that has had
- * `RETURN_GRACE_MS` and is still stopped, or reports running while its clock
- * stands still, is replaced. A gesture while still asleep means the return
- * event never arrived, which a WebView can do, so it counts as the return.
+ * - **Stopped.** A gesture that finds the context stopped wakes it and starts a
+ *   `RETURN_GRACE_MS` wait; a gesture after that wait finding it still stopped
+ *   rebuilds it. A resume asked for inside a gesture can still hang — Chrome
+ *   leaves the promise pending when it will not start the output — and that
+ *   happens on the first taps of a page as well as after a return.
+ * - **Running, after a return.** It must also be keeping time: a context that
+ *   reports running while its clock stands still past the wait is rebuilt too.
+ * - **Still asleep.** The return event never arrived, which a WebView can do,
+ *   so the gesture counts as the return.
  */
 export function checkAudioOnGesture() {
   const actx = AudioStore.actx;
   if (!actx) return;
   if (_asleep) audioReturned();
+  const now = wallMs();
+  if (isStopped(actx)) {
+    if (_stuckSince === null) {
+      audioLog(`tap: ${actx.state}`);
+      _stuckSince = now;
+    } else if (now - _stuckSince >= RETURN_GRACE_MS) {
+      rebuildAudio(`still ${actx.state}`);
+      return;
+    }
+    wakeAudio();
+    return;
+  }
+  _stuckSince = null;
   if (!_returnedAt) return;
-  const running = actx.state === 'running';
-  if (running && actx.currentTime > _returnedAt.clock) {
+  if (actx.currentTime > _returnedAt.clock) {
     audioLog(`playing (t ${actx.currentTime.toFixed(2)})`);
     _returnedAt = null;
     return;
   }
-  if (wallMs() - _returnedAt.wall < RETURN_GRACE_MS) {
-    wakeAudio();
-    return;
-  }
-  rebuildAudio(running ? 'clock stood still' : `still ${actx.state}`);
+  if (now - _returnedAt.wall >= RETURN_GRACE_MS) rebuildAudio('clock stood still');
 }
 
 export function applyGain() {

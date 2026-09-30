@@ -1,4 +1,4 @@
-import { AudioStore, BEAT, SILENCE, isOptionsOpen, isAudioAsleep, onAudioRebuild, loadAt_, MAX_THUDS, MAX_VOICES, triggerHaptic, inKey, scaleNote, SCALE_NOTES } from './SynthEngine';
+import { AudioStore, BEAT, SILENCE, isOptionsOpen, isAudioAsleep, isStopped, onAudioRebuild, loadAt_, MAX_THUDS, MAX_VOICES, triggerHaptic, inKey, scaleNote, SCALE_NOTES } from './SynthEngine';
 import { boomTierOf, BOOM_TIER_COUNT as RULES_BOOM_TIER_COUNT } from '../game/Rules';
 
 export const BREAK_VOICE = {
@@ -135,6 +135,9 @@ function voiceAllowed(ignoreOptionsGuard: boolean, needs: { noise?: boolean; vol
   // Out of view: a timer that fires meanwhile would only queue the voice up
   // behind the sleeping context, to play as a burst on the way back.
   if (isAudioAsleep()) return false;
+  // Nor while the browser holds the context stopped — before the first tap, the
+  // menu's ambience would otherwise queue a pile of voices to go off at once.
+  if (isStopped(AudioStore.actx)) return false;
   if (!ignoreOptionsGuard && isOptionsOpen()) return false;
   if (needs.noise && !AudioStore.noiseBuf) return false;
   if (needs.vol !== undefined && needs.vol <= 0) return false;
