@@ -1,4 +1,4 @@
-import { AudioStore, BEAT, SILENCE, initAudio, isOptionsOpen, scaleNote } from './SynthEngine';
+import { AudioStore, BEAT, SILENCE, initAudio, isOptionsOpen, onAudioRebuild, scaleNote } from './SynthEngine';
 
 /**
  * The interface's own voice: the binaural click every button makes.
@@ -88,6 +88,8 @@ let activeMenuVoices = 0;
 let lastClickTimestamp = 0;
 let lastSelectTimestamp = 0;
 let clickLockMs = MENU_CLICK_LOCK_MS;
+// Clicks in flight on a context that was rebuilt never report that they ended.
+onAudioRebuild(() => { activeMenuVoices = 0; });
 
 /** When a `'select'` click last played. The menu reads it to keep its hover
  *  blips from crowding a selection that has just been made. */

@@ -1,4 +1,4 @@
-import { AudioStore, BEAT, SILENCE, isOptionsOpen, loadAt_, MAX_THUDS, MAX_VOICES, triggerHaptic, inKey, scaleNote, SCALE_NOTES } from './SynthEngine';
+import { AudioStore, BEAT, SILENCE, isOptionsOpen, isAudioAsleep, onAudioRebuild, loadAt_, MAX_THUDS, MAX_VOICES, triggerHaptic, inKey, scaleNote, SCALE_NOTES } from './SynthEngine';
 import { boomTierOf, BOOM_TIER_COUNT as RULES_BOOM_TIER_COUNT } from '../game/Rules';
 
 export const BREAK_VOICE = {
@@ -132,6 +132,9 @@ type VoiceParts = (AudioNode & { stop?: () => void })[];
  */
 function voiceAllowed(ignoreOptionsGuard: boolean, needs: { noise?: boolean; vol?: number } = {}): boolean {
   if (!AudioStore.soundOn || !AudioStore.actx || !AudioStore.master) return false;
+  // Out of view: a timer that fires meanwhile would only queue the voice up
+  // behind the sleeping context, to play as a burst on the way back.
+  if (isAudioAsleep()) return false;
   if (!ignoreOptionsGuard && isOptionsOpen()) return false;
   if (needs.noise && !AudioStore.noiseBuf) return false;
   if (needs.vol !== undefined && needs.vol <= 0) return false;
@@ -729,6 +732,8 @@ let attractBoomEnds: number[] = [];
 export function resetAttractBooms() {
   attractBoomEnds = [];
 }
+// The ends are on the old context's clock, which a rebuild starts again at zero.
+onAudioRebuild(resetAttractBooms);
 
 /**
  * Play one boom the game could really have made, for the attract screens.

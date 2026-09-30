@@ -4,6 +4,7 @@ import { setupLanguagePicker } from './ui/LanguagePicker';
 import { setupRecordsScreen } from './ui/RecordsScreen';
 import { recordWords } from './ui/RecordsCelebration';
 import { isNativeApp } from './ui/Platform';
+import { setupAudioReadout } from './ui/AudioReadout';
 import { advanceFrame } from './sim/Frame';
 import { createRenderContext, resizeRenderer, drawGame, drawResultsCanvas, drawTutorialRing, drawTutorialHint } from './graphics/Renderer';
 import { clearSpriteCache } from './graphics/Sprites';
@@ -27,7 +28,7 @@ import { AI_LEVELS, ladderStep } from './game/AI';
 import { setPlannerBudget } from './game/AIPlanner';
 import { FORCED_AI_LEVEL } from './game/AIChoice';
 import { settingsLine } from './game/Settings';
-import { initAudio, wakeAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
+import { initAudio, audioReturned, checkAudioOnGesture, sleepAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
 import { uiClick } from './audio/UiSounds';
 import { initMenuScreen, showMenu, hideMenu, isMenuOccluding, slideOutRight, slideInFromRight } from './ui/menu/MenuScreen';
 
@@ -66,29 +67,24 @@ for (const c of [cv, renderCtx.resCv, renderCtx.bg]) {
   c?.addEventListener('contextrestored', recoverGraphics);
 }
 /**
- * Coming back to the page can also leave the sound stopped: the browser suspends
- * or interrupts the audio while the page is out of view, and may refuse to resume
- * it without a gesture. So wake it when the page is shown, and again on the first
- * gesture after that until the context reports it is running. Capture phase, so a
- * tap on the paused field or the menu counts as much as one on the game.
+ * Leaving the page puts the sound to sleep and coming back wakes it; the first
+ * gesture afterwards checks it is really playing and rebuilds it if not. See
+ * "Leaving the page and coming back" in `audio/SynthEngine.ts`. Capture phase,
+ * so a tap on the paused field or the menu counts as much as one on the game.
  */
-let audioNeedsWake = false;
 function onPageShown() {
   recoverGraphics();
-  wakeAudio();
-  audioNeedsWake = true;
-}
-function wakeAudioOnGesture() {
-  if (!audioNeedsWake) return;
-  wakeAudio();
-  if (!AudioStore.actx || AudioStore.actx.state === 'running') audioNeedsWake = false;
+  audioReturned();
 }
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) onPageShown();
+  if (document.hidden) sleepAudio();
+  else onPageShown();
 });
+window.addEventListener('pagehide', sleepAudio);
 window.addEventListener('pageshow', onPageShown);
-document.addEventListener('pointerup', wakeAudioOnGesture, true);
-document.addEventListener('keydown', wakeAudioOnGesture, true);
+document.addEventListener('pointerup', checkAudioOnGesture, true);
+document.addEventListener('keydown', checkAudioOnGesture, true);
+setupAudioReadout();
 
 const strip1 = createStrip(
   game.players[0],

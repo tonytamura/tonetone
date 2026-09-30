@@ -280,8 +280,13 @@ function isStopped(actx: AudioContext): boolean {
 export function initAudio() {
   const existing = AudioStore.actx;
   if (existing) {
-    if (isStopped(existing)) {
-      Promise.resolve(existing.resume()).then(applyGain, () => {});
+    // Asleep means the game put it to sleep itself, for the page being out of
+    // view; only coming back wakes it, not a timer that fires meanwhile.
+    if (isStopped(existing) && !_asleep) {
+      Promise.resolve(existing.resume()).then(
+        () => { audioLog('resumed'); applyGain(); },
+        () => audioLog('resume refused'),
+      );
     }
     return;
   }
@@ -345,8 +350,41 @@ export function initAudio() {
  */
 export function setLatencyHint(seconds: number) {
   AudioStore.latency = seconds;
+  rebuildAudio('latency');
+}
+
+const rebuildListeners: (() => void)[] = [];
+
+/**
+ * Called after every rebuild, for the modules that keep their own count or
+ * clock of the voices in flight (the menu clicks, the attract booms). Those
+ * voices went with the old context and never report that they ended, so a count
+ * left standing would hold the new context under its cap for good.
+ */
+export function onAudioRebuild(fn: () => void): void {
+  rebuildListeners.push(fn);
+}
+
+/** How many times the context has been rebuilt, for the audio readout. */
+let rebuilds = 0;
+export function audioRebuilds(): number {
+  return rebuilds;
+}
+
+/**
+ * Throw the context away and build a new one.
+ *
+ * Every time the voices read — the note cursor, the load, the thud and swoosh
+ * gaps — is on the old context's clock, and the new clock starts again at zero,
+ * so all of it is reset with the counts; left alone, a swoosh would wait out
+ * however many minutes the old clock had run. A no-op until audio has started,
+ * which keeps it safe for the headless harness.
+ */
+export function rebuildAudio(reason: string) {
   const old = AudioStore.actx;
   if (!old) return;
+  audioLog(`rebuild: ${reason}`);
+  stopAllVoices();
   AudioStore.actx = null;
   AudioStore.master = null;
   AudioStore.wetBus = null;
@@ -354,10 +392,17 @@ export function setLatencyHint(seconds: number) {
   AudioStore.droneOsc = null;
   AudioStore.noiseBuf = null;
   _dcBlockNode = null;
-  AudioStore.activeVoices = 0;
-  AudioStore.thuds = 0;
-  try { old.close(); } catch (e) {}
+  AudioStore.cursor = -9;
+  AudioStore.load = 0;
+  AudioStore.loadAt = 0;
+  AudioStore.thudAt = -9;
+  AudioStore.swooshAt = -9;
+  _asleep = false;
+  _returnedAt = null;
+  rebuilds++;
+  try { Promise.resolve(old.close()).catch(() => {}); } catch (e) {}
   initAudio();
+  for (const fn of rebuildListeners) fn();
 }
 
 export function startDrone() {
@@ -390,20 +435,109 @@ export function startDrone() {
   });
 }
 
+// --- Leaving the page and coming back ---
+//
+// Coming back to the game could leave the sound on but silent until the player
+// switched it off and on (Chrome on Android, 2026-09-19). Resuming the context on
+// return did not cure it, so the return path now does three things:
+//
+// 1. Leaving puts the audio to sleep: the context is suspended, and no voice
+//    starts while it sleeps. Nothing plays to an empty room, the timers that keep
+//    running out of view cannot queue a burst of stale booms for the return, and
+//    every return is a suspend-then-resume, which is what recovers an Android
+//    output that another app's audio took over.
+// 2. Coming back resumes it, as before.
+// 3. The first gesture after coming back checks the context really is playing —
+//    running, with its clock moving — and if not, builds a new one there and then,
+//    inside the gesture, where a browser always lets a context start.
+
+let _asleep = false;
+/** Where the page came back: the wall time and the audio clock at that moment. */
+let _returnedAt: { wall: number; clock: number } | null = null;
+
+/** How long after coming back the context has to have got going. */
+export const RETURN_GRACE_MS = 250;
+
+const wallMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+/** Whether the game has put the audio to sleep for the page being out of view. */
+export function isAudioAsleep(): boolean {
+  return _asleep;
+}
+
+const LOG_LINES = 8;
+const log: string[] = [];
+/** A short log of what the context went through, for the `?audiodebug` readout. */
+export function audioLog(line?: string): readonly string[] {
+  if (line) {
+    const s = (wallMs() / 1000).toFixed(1);
+    log.push(`${s}s ${line}`);
+    if (log.length > LOG_LINES) log.shift();
+  }
+  return log;
+}
+
+/** The page went out of view. */
+export function sleepAudio() {
+  const actx = AudioStore.actx;
+  if (!actx) return;
+  _asleep = true;
+  _returnedAt = null;
+  audioLog(`hidden (${actx.state})`);
+  if (actx.state === 'running') {
+    try { Promise.resolve(actx.suspend()).catch(() => {}); } catch (e) {}
+  }
+}
+
 /**
- * Bring the sound back after the page has been out of view.
- *
- * A player who came back to a silent game could restore it by switching sound
- * off and on, and this does what that toggle does — resume the context, then set
- * the output level again — without their having to find it. A browser may refuse
- * the resume until the player touches the page, so `main.ts` calls this both when
- * the page is shown and again on the first gesture afterwards. It does nothing
- * until audio has started, so it cannot create a context outside a gesture.
+ * Bring the sound back: resume the context, then set the output level again —
+ * what the sound toggle does. It does nothing until audio has started, so it
+ * cannot create a context outside a gesture.
  */
 export function wakeAudio() {
   if (!AudioStore.actx) return;
+  _asleep = false;
   initAudio();
   applyGain();
+}
+
+/**
+ * The page came back into view. Only a page that was put to sleep has come
+ * back: the `pageshow` of the first load is not a return, and neither is the
+ * second of the two events a return can raise.
+ */
+export function audioReturned() {
+  const actx = AudioStore.actx;
+  if (!actx || !_asleep) return;
+  audioLog(`shown (${actx.state}, t ${actx.currentTime.toFixed(2)})`);
+  wakeAudio();
+  _returnedAt = { wall: wallMs(), clock: actx.currentTime };
+}
+
+/**
+ * Every gesture calls this; it has work only in the first ones after coming back.
+ *
+ * Playing means running with its clock moving. A context that has had
+ * `RETURN_GRACE_MS` and is still stopped, or reports running while its clock
+ * stands still, is replaced. A gesture while still asleep means the return
+ * event never arrived, which a WebView can do, so it counts as the return.
+ */
+export function checkAudioOnGesture() {
+  const actx = AudioStore.actx;
+  if (!actx) return;
+  if (_asleep) audioReturned();
+  if (!_returnedAt) return;
+  const running = actx.state === 'running';
+  if (running && actx.currentTime > _returnedAt.clock) {
+    audioLog(`playing (t ${actx.currentTime.toFixed(2)})`);
+    _returnedAt = null;
+    return;
+  }
+  if (wallMs() - _returnedAt.wall < RETURN_GRACE_MS) {
+    wakeAudio();
+    return;
+  }
+  rebuildAudio(running ? 'clock stood still' : `still ${actx.state}`);
 }
 
 export function applyGain() {
