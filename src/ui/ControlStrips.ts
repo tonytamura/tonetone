@@ -40,6 +40,7 @@ export function createStrip(
     const g = cv2.getContext('2d')!;
     const w = cv2.width, h = cv2.height;
     g.clearRect(0, 0, w, h);
+    cv2.classList.toggle('empty', !ball);
     if (!ball) return;
     g.drawImage(ballSprite(ball.color, false), 0, 0, w, h);
     const game = getGame();

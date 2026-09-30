@@ -410,11 +410,13 @@ input[type=range] {
   --seat: var(--cyan);
   --seat-soft: rgba(79, 240, 255, 0.14);
   --seat-glow: rgba(79, 240, 255, 0.55);
+  --seat-dim: rgba(79, 240, 255, 0.3);
 }
 #cue2 {
   --seat: var(--pink);
   --seat-soft: rgba(255, 26, 217, 0.14);
   --seat-glow: rgba(255, 26, 217, 0.55);
+  --seat-dim: rgba(255, 26, 217, 0.3);
 }
 #cue, #cue2 {
   display: grid;
@@ -532,10 +534,19 @@ input[type=range] {
   gap: 10px;
   min-height: 0;
 }
+/* Each chip is ringed in its player's colour, lit while it holds a ball and
+   dimmed while it is empty (a short bank under continuous fire). The ring is a
+   box-shadow so it takes no room; the ball fills 7/8 of the canvas, which
+   leaves a hair of gap between ball and ring. It replaced a white glow that
+   followed the ball's own outline (Tony, 2026-09-30). */
 .chip {
   display: block;
   border-radius: 50%;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 7px rgba(255, 255, 255, 0.75));
+  box-shadow: 0 0 0 2px var(--seat, var(--cyan)), 0 0 7px var(--seat-glow, transparent);
+  transition: box-shadow 0.15s;
+}
+.chip.empty {
+  box-shadow: 0 0 0 1.5px var(--seat-dim, rgba(255, 255, 255, 0.3));
 }
 .chip.next {
   opacity: 0.85;

@@ -177,6 +177,7 @@ describe('Bug Detection Test Suite', () => {
         width: 76,
         height: 76,
         style: {} as Record<string, string>,
+        classList: { toggle: () => {} },
         getContext: () => ({
           clearRect: () => {},
           drawImage: (img: any) => painted.push(img.__color),
@@ -352,7 +353,7 @@ describe('Bug Detection Test Suite', () => {
     it('repaints the next-ball chips once the sprite cache is rebuilt', () => {
       let paints = 0;
       const canvas = {
-        width: 76, height: 76, style: {} as Record<string, string>,
+        width: 76, height: 76, style: {} as Record<string, string>, classList: { toggle: () => {} },
         getContext: () => ({
           clearRect: () => {}, drawImage: () => { paints++; }, fillText: () => {},
           textAlign: '', textBaseline: '', font: '', fillStyle: '',
