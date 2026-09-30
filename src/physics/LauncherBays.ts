@@ -44,10 +44,13 @@ export function aimMaxReach(width: number, height: number, twoPlayer: boolean): 
 }
 
 /**
- * How far past the finger the aim arrow's tip sits, in CSS px: about a
- * fingertip, so the finger aiming never covers the arrow's head.
+ * How far past the finger the aim arrow's tip sits, in CSS px, so the finger
+ * aiming never covers the arrow's head: a fingertip's reach past the touch
+ * point (~25 px), the head's full length behind the tip (up to 29 px), and room
+ * to see both. 48 was tried first and still left the head under the finger on
+ * a phone (Tony, 2026-09-30); 100 is about 16 mm.
  */
-export const FINGER_CLEARANCE = 48;
+export const FINGER_CLEARANCE = 100;
 
 /**
  * How long to draw the aim arrow: to where the finger is, plus
