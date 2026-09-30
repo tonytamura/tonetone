@@ -206,7 +206,7 @@ describe('preset controls', () => {
   });
 
   it('never lets a preset touch an audio or cosmetic knob', () => {
-    // Picking Chaos must not reset someone's volume or their ball numbers.
+    // Picking Chaos must not reset someone's volume or their ball shapes.
     for (const id of PRESET_SPAN) {
       expect(KNOBS[id].cosmetic ?? false, `${id} is cosmetic`).toBe(false);
       expect(KNOBS[id].group, `${id} group`).not.toBe('audio');

@@ -223,8 +223,8 @@ export const EN = {
   'panel.copied': 'Copied',
   // Each knob: a label beside its slider (a narrow column: two short words at
   // most), then what it does, under it.
-  'knob.labels.label': 'ball numbers',
-  'knob.labels.hint': 'Prints a number on every ball, one per colour, so colours can be told apart without relying on their hue.',
+  'knob.labels.label': 'ball shapes',
+  'knob.labels.hint': 'Draws a shape on every ball, one per colour, so colours can be told apart without relying on their hue. With 5 or more colours the shapes are always on.',
   'knob.vol.label': 'volume',
   'knob.vol.hint': 'Loudness of the whole game. Above 100% boosts it, for a quiet phone speaker.',
   'knob.haptics.label': 'haptics',

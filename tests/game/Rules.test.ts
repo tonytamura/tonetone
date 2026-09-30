@@ -6,7 +6,7 @@ import {
   setSpecialsToggle,
   colorOfKind,
   toneOfKind,
-  kindLabel,
+  slotOfKind,
   drawFor,
   WHITE_ODDS,
   setWhiteOdds,
@@ -117,6 +117,16 @@ describe('Rules module', () => {
     });
   });
 
+  describe('slotOfKind', () => {
+    it('gives the black and white specials no slot, and wraps the rest like their colour', () => {
+      setColorsCount(4);
+      expect(slotOfKind(-1)).toBe(-1);
+      expect([0, 1, 2, 3, 4].map(slotOfKind)).toEqual([0, 1, 2, 3, 0]);
+      for (const k of [0, 1, 2, 3]) expect(colorOfKind(k)).toBe(BALL_COLORS[slotOfKind(k)]);
+      setColorsCount(3);
+    });
+  });
+
   describe('toneOfKind', () => {
     it('calculates tone normalized between 0 and 1', () => {
       setColorsCount(3); // (COLORS - 1) = 2
@@ -133,20 +143,6 @@ describe('Rules module', () => {
     });
   });
 
-  describe('kindLabel', () => {
-    it('returns star icon for kind < 0', () => {
-      expect(kindLabel(-1)).toBe('\u2605');
-    });
-
-    it('returns 1-based string index for valid kinds', () => {
-      setColorsCount(4);
-      expect(kindLabel(0)).toBe('1');
-      expect(kindLabel(1)).toBe('2');
-      expect(kindLabel(2)).toBe('3');
-      expect(kindLabel(3)).toBe('4');
-      expect(kindLabel(4)).toBe('1'); // wrap
-    });
-  });
 
   describe('drawFor', () => {
     it('generates a valid regular ball deck item', () => {

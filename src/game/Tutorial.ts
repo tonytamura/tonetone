@@ -484,7 +484,7 @@ export function beginStep(tut: Tutorial, game: Game, step: TutorialStep, width: 
  *
  * Gameplay knobs are forced because a player who has moved them in Options
  * could make a step impossible — with `boom` at 100% nothing booms at all. Knobs
- * marked `cosmetic` (sound, ball numbers, the damage panel) are left alone: they
+ * marked `cosmetic` (sound, ball shapes, the damage panel) are left alone: they
  * cannot break a step, and resetting someone's volume to teach them is rude.
  * `endTutorial` restores all of it.
  */

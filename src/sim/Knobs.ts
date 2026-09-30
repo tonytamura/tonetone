@@ -414,7 +414,7 @@ export function knobById(id: string): KnobDef | undefined {
  * 2.88) and nothing else measurable.
  *
  * Only gameplay knobs appear. Picking a preset must not move a player's volume
- * or their colour-blind ball numbers, so the audio and cosmetic knobs are
+ * or their colour-blind ball shapes, so the audio and cosmetic knobs are
  * deliberately outside every preset, and `PRESET_SPAN` below is exactly the set
  * of knobs a preset is allowed to touch.
  */

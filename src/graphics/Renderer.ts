@@ -1,7 +1,7 @@
 import { Game, getRainBallAlpha } from '../game/GameState';
 import { PhysicsConfig, recalcThresholds } from '../physics/Config';
 import { uiFont } from './Fonts';
-import { ballSprite, inkOn, SP_R, SPRITE } from './Sprites';
+import { ballSprite, SP_R, SPRITE } from './Sprites';
 import { BG_SCALE, FIELD_RING, FLASH_SPECS, RESULTS_RING, drawLiquid, drawRippleRing } from './VisualFX';
 import { AIM_HOT, BLACK_HEX, CYAN, FIELD_BG, MENU_CYAN, PINK, Rgb, VOID, WHITE, WHITE_HEX, hex, mix, rgba } from './Palette';
 import { FLASH_LIFE, POP_LIFE } from '../physics/Types';
@@ -9,15 +9,12 @@ import { setHidden } from '../ui/Dom';
 import { popScale, popText } from './PopText';
 import { aimDirOf, aimReachOf, boomHeatOf, boomsOnImpact, launchPointOf, mouthRadius } from '../physics/LauncherBays';
 import { LauncherPlayer } from '../physics/Types';
-import { kindLabel } from '../game/Rules';
+import { drawBallMark, marksShown } from './BallMarks';
 import { TAU } from '../math';
 
 /** The player colours, indexed by player. */
 export const P_RGB: Rgb[] = [CYAN, PINK];
 export const P_COLOR: string[] = P_RGB.map(hex);
-
-/** Ball labels are unreadable below this radius, so they are not drawn. */
-export const MIN_LABEL_RADIUS = 11;
 
 /** Clearance a score pop keeps from the left and right edges of the canvas. */
 export const POP_EDGE_PAD = 6;
@@ -163,18 +160,12 @@ export function drawGame(rc: RenderContext, game: Game, time: number) {
     ctx.globalAlpha = 1;
   }
 
-  if (game.showLabels && R >= MIN_LABEL_RADIUS) {
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = uiFont(600, Math.round(R * 0.66));
+  if (marksShown(game.showLabels)) {
     for (const b of game.balls) {
-      const ra = getRainBallAlpha(b.rainTime);
-      if (b.ghost) ctx.globalAlpha = 0.5;
-      else ctx.globalAlpha = ra;
-      ctx.fillStyle = inkOn(b.color);
-      ctx.fillText(kindLabel(b.kind), b.x, b.y + 0.5);
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = b.ghost ? 0.5 : getRainBallAlpha(b.rainTime);
+      drawBallMark(ctx, b.kind, b.x, b.y, R, b.color);
     }
+    ctx.globalAlpha = 1;
   }
 
   if (game.twoPlayer) {
@@ -485,15 +476,11 @@ function drawLoadedBall(
   const bob = ready ? 1 + 0.04 * Math.sin(time * 2.6) : 1;
   const d = 2 * R * (SPRITE / (2 * SP_R)) * bob;
   ctx.drawImage(ballSprite(p.loaded.color, false), m.x - d / 2, m.y - d / 2, d, d);
-  if (!game.showLabels || R < MIN_LABEL_RADIUS) return;
+  if (!marksShown(game.showLabels)) return;
   ctx.save();
   ctx.translate(m.x, m.y);
   if (p.side < 0) ctx.rotate(Math.PI);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = uiFont(600, Math.round(R * 0.66));
-  ctx.fillStyle = inkOn(p.loaded.color);
-  ctx.fillText(kindLabel(p.loaded.kind), 0, 0.5);
+  drawBallMark(ctx, p.loaded.kind, 0, 0, R * bob, p.loaded.color);
   ctx.restore();
 }
 

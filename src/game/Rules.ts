@@ -169,6 +169,17 @@ export function setWhiteOdds(odds: number) {
   WHITE_ODDS = Math.max(0, Math.min(1, odds));
 }
 
+/**
+ * The palette slot a ball of kind `k` takes: its colour and its shape
+ * (`graphics/BallMarks.ts`) both come from it. -1 for the black and white
+ * specials, which carry kind -1 and a colour of their own.
+ */
+export function slotOfKind(k: number): number {
+  if (k < 0) return -1;
+  const set = PALETTES[COLORS] || PALETTES[MAX_COLORS];
+  return set[((k % set.length) + set.length) % set.length];
+}
+
 export function colorOfKind(k: number): string {
   const set = PALETTES[COLORS] || PALETTES[MAX_COLORS];
   return BALL_COLORS[set[((k % set.length) + set.length) % set.length]];
@@ -180,10 +191,6 @@ export function randomKind(): number {
 
 export function toneOfKind(k: number): number {
   return COLORS > 1 ? (k % COLORS) / (COLORS - 1) : 0.5;
-}
-
-export function kindLabel(k: number): string {
-  return k < 0 ? '\u2605' : String((k % COLORS) + 1);
 }
 
 /**

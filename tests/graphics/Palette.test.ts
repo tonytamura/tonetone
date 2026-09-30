@@ -80,9 +80,10 @@ describe('Palette', () => {
       expect(BALL_COLORS).toHaveLength(6);
     });
 
-    it('still names the six colours the game shipped with', () => {
+    it('names the vaporwave six, in slot order', () => {
+      // Amber, violet, mint, lavender, azure, peach: set 2026-09-30, measured in BallPalette.test.ts.
       expect(BALL_COLORS).toEqual([
-        '#fdbe4e', '#9744ee', '#5dd478', '#4363d8', '#911eb4', '#42d4f4',
+        '#efb207', '#9c04ef', '#6efdc0', '#e8b0ff', '#0d8cef', '#ffb38a',
       ]);
     });
   });

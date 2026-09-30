@@ -1,9 +1,8 @@
 import { Game } from '../game/GameState';
 import { LauncherPlayer } from '../physics/Types';
 import { PhysicsConfig } from '../physics/Config';
-import { uiFont } from '../graphics/Fonts';
-import { ballSprite, getSpriteEpoch, inkOn } from '../graphics/Sprites';
-import { kindLabel } from '../game/Rules';
+import { ballSprite, getSpriteEpoch, SP_R, SPRITE } from '../graphics/Sprites';
+import { drawBallMark, marksShown } from '../graphics/BallMarks';
 import { PlayMode } from '../game/GameState';
 
 /**
@@ -41,13 +40,8 @@ export function createStrip(
     g.clearRect(0, 0, w, h);
     g.drawImage(ballSprite(ball.color, false), 0, 0, w, h);
     const game = getGame();
-    if (game.showLabels) {
-      g.textAlign = 'center';
-      g.textBaseline = 'middle';
-      g.font = uiFont(600, Math.round(w * 0.34));
-      g.fillStyle = inkOn(ball.color);
-      g.fillText(kindLabel(ball.kind), w / 2, h / 2);
-    }
+    // The sprite's ball spans SP_R of its SPRITE/2 half-width.
+    if (marksShown(game.showLabels)) drawBallMark(g, ball.kind, w / 2, h / 2, (w / 2) * (2 * SP_R / SPRITE), ball.color);
   }
 
   let sizeKey = 0;
@@ -69,7 +63,7 @@ export function createStrip(
       // swap in a slot keep repainting the previous special's colour.
       const key = p.nextUp.kind + ':' + p.nextUp.special +
                   '|' + p.then.kind + ':' + p.then.special +
-                  '|' + game.showLabels +
+                  '|' + marksShown(game.showLabels) +
                   '|' + getSpriteEpoch();
       if (key !== chipKey) {
         chipKey = key;

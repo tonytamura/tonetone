@@ -132,18 +132,31 @@ export const BLACK: Rgb = [0x00, 0x00, 0x00];
 
 // ── Ball colours ───────────────────────────────────────────────────────────
 /**
- * Which colours the balls are is decided by the "Tune the ball colours for
- * better separation" task, which carries the colour-blindness and CIEDE2000
- * measurements behind them. They moved here from `game/Rules.ts` unchanged;
- * do not retune them from this file.
+ * The ball colours, in slot order: vaporwave, tuned for separation
+ * (2026-09-30, the "Tune the ball colours for better separation" task).
+ *
+ * Vaporwave cannot be told apart by colour alone for a colour-blind player —
+ * its yellow and mint collapse under protanopia, its violet and blue under
+ * protanopia and deuteranopia — so the palette works in two parts:
+ *
+ * - **Slots 1–4 are separated by colour.** Each was moved at most CIEDE2000 10
+ *   from its vaporwave original to push the closest pair apart for normal,
+ *   protan and deutan vision: 20.8 at worst with three or four colours in play,
+ *   where the palette before this measured 6.1 and 3.4.
+ * - **Slots 5–6 lean on shape.** From five colours every ball carries its shape
+ *   (`graphics/BallMarks.ts`), so violet and azure may share a hue family.
+ *
+ * Every colour is also kept clear of the players' cyan and pink, of the aim
+ * arrow's red and of the board. `tests/graphics/BallPalette.test.ts` holds all
+ * of it, so a later edit cannot quietly undo it.
  */
 export const BALL_RGB: Rgb[] = [
-  [0xfd, 0xbe, 0x4e], // Gold / Warm Yellow
-  [0x97, 0x44, 0xee], // Purple / Violet
-  [0x5d, 0xd4, 0x78], // Soft Green
-  [0x43, 0x63, 0xd8], // Blue
-  [0x91, 0x1e, 0xb4], // Deep Purple
-  [0x42, 0xd4, 0xf4], // Cyan
+  [0xef, 0xb2, 0x07], // Amber
+  [0x9c, 0x04, 0xef], // Violet
+  [0x6e, 0xfd, 0xc0], // Mint
+  [0xe8, 0xb0, 0xff], // Lavender
+  [0x0d, 0x8c, 0xef], // Azure
+  [0xff, 0xb3, 0x8a], // Peach
 ];
 
 /**

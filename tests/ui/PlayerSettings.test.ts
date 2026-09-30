@@ -21,7 +21,7 @@ describe('the preset picker', () => {
     for (const { id } of CUSTOM_SLOTS) expect(namedPresetValues(id)).toEqual(namedPresetValues('normal'));
   });
 
-  it('keeps ball numbers, volume, haptics and the AI opponent outside Custom, and everything else in it', () => {
+  it('keeps ball shapes, volume, haptics and the AI opponent outside Custom, and everything else in it', () => {
     expect(EVERYDAY_KNOBS).toContain('labels'); // the colour-blind option never hides
     expect(EVERYDAY_KNOBS).toContain('ailevel'); // who to play is not a rule, so no preset resets it
     expect(new Set([...EVERYDAY_KNOBS, ...advancedKnobs()]).size).toBe(Object.keys(KNOBS).length);
