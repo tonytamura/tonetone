@@ -26,7 +26,8 @@ export function setupAudioReadout(): void {
   Object.assign(el.style, {
     position: 'fixed', left: '4px', top: 'calc(env(safe-area-inset-top, 0px) + 4px)', zIndex: '10000', margin: '0',
     padding: '4px 6px', font: '10px/1.3 monospace', color: '#9ff',
-    background: 'rgba(0,0,0,0.7)', pointerEvents: 'none', whiteSpace: 'pre',
+    background: 'rgba(0,0,0,0.7)', pointerEvents: 'none', whiteSpace: 'pre-wrap',
+    maxWidth: 'calc(100vw - 8px)', boxSizing: 'border-box',
   });
   document.body.appendChild(el);
   let lastClock = 0;
