@@ -95,11 +95,23 @@ function escapeHtml(t: string): string {
 /**
  * The next match's mode, offered on a duel's results card. Only the winner gets
  * it, with Play again; on a draw both players do.
+ *
+ * Stepping only names the mode; it is applied when Play again is pressed. It
+ * used to be applied on every step, and applying a mode sets its knobs, so the
+ * field behind the card resized its balls and the next-ball chips jumped with
+ * each tap (Tony, 2026-09-30).
  */
 export interface ModePicker {
   choices: { id: string; label: string }[];
   current(): string;
   pick(id: string): void;
+}
+
+/** The mode `step` places along from `currentId`, wrapping round the list. */
+export function stepMode(choices: { id: string; label: string }[], currentId: string, step: number) {
+  const i = Math.max(0, choices.findIndex(c => c.id === currentId));
+  const n = choices.length;
+  return choices[(((i + step) % n) + n) % n];
 }
 
 export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNotes, modes?: ModePicker) {
@@ -202,6 +214,7 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
     // The listener is bound once; what it calls is refreshed on every result.
     (overEl as any)._restart = onRestart;
     (overEl as any)._modes = modes;
+    (overEl as any)._pending = modes?.current();
     if (!(overEl as any)._boundRestart && overEl.addEventListener) {
       (overEl as any)._boundRestart = true;
       overEl.addEventListener('click', e => {
@@ -210,14 +223,14 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
         const m = (overEl as any)._modes as ModePicker | undefined;
         if (step && m) {
           initAudio();
-          const i = m.choices.findIndex(c => c.id === m.current());
-          const n = m.choices.length;
-          const next = m.choices[(i + Number(step.dataset.step) + n) % n];
-          m.pick(next.id);
+          const next = stepMode(m.choices, (overEl as any)._pending, Number(step.dataset.step));
+          (overEl as any)._pending = next.id;
           // On a draw both cards show the mode; keep them saying the same thing.
           for (const el of overEl.querySelectorAll('.mode-name')) el.textContent = next.label;
         } else if (target?.closest('.again')) {
           initAudio();
+          const pending = (overEl as any)._pending;
+          if (m && pending && pending !== m.current()) m.pick(pending);
           (overEl as any)._restart();
         }
       });

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createGame } from '../../src/game/GameState';
-import { updateHUD, endMatchUI } from '../../src/ui/HUD';
+import { updateHUD, endMatchUI, stepMode } from '../../src/ui/HUD';
 import { P_COLOR } from '../../src/graphics/Renderer';
 import { AI_LEVELS } from '../../src/game/AI';
 
@@ -234,6 +234,44 @@ describe('endMatchUI', () => {
         expect(card.innerHTML).toContain('class="mode-pick"');
         expect(card.innerHTML).toContain('class="again"');
       }
+    });
+
+    it('only names the mode when stepped, and applies it on Play again', () => {
+      // Applying a mode sets its knobs, so doing it on every step resized the
+      // balls behind the card and the next-ball chips jumped with each tap.
+      let listener: any = null;
+      const names = [{ textContent: '' }, { textContent: '' }];
+      const over: any = Object.assign(new MockElement(), {
+        addEventListener: (_t: string, fn: any) => { listener = fn; },
+        querySelectorAll: () => names,
+      });
+      elements.over = over;
+      (globalThis as any).window = {}; // the taps wake the audio, which looks for an AudioContext
+      const picked: string[] = [];
+      let restarts = 0;
+      const game = createGame();
+      game.twoPlayer = true;
+      game.aiOn = false;
+      game.players[0].score = 250;
+      game.players[1].score = 250;
+      endMatchUI(game, () => { restarts++; }, undefined, { ...modes, pick: id => { picked.push(id); } });
+      const click = (cls: string, step?: number) => listener({
+        target: { closest: (sel: string) => (sel === cls ? { dataset: { step: String(step) } } : null) },
+      });
+      click('.mode-step', 1);
+      expect(picked).toEqual([]);
+      expect(names.map(n => n.textContent)).toEqual(['Normal', 'Normal']);
+      click('.again');
+      expect(picked).toEqual(['normal']);
+      expect(restarts).toBe(1);
+      delete (globalThis as any).window;
+    });
+
+    it('steps round the list both ways', () => {
+      const list = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }];
+      expect(stepMode(list, 'a', -1).id).toBe('c');
+      expect(stepMode(list, 'c', 1).id).toBe('a');
+      expect(stepMode(list, 'b', 1).id).toBe('c');
     });
 
     it('offers no mode outside a duel', () => {
