@@ -151,8 +151,12 @@ export function advanceFrame(
   }
   syncFromCollisionState(game, colState);
 
-  for (const p of game.players) if (p.reload > 0) p.reload = Math.max(0, p.reload - dt);
-  if (FIRE_ON_RELEASE) for (const p of game.players) refillBank(p, game.reloadTime, dt);
+  // Once the match is over the launchers rest: no ring filling and, under
+  // continuous fire, no bank refilling behind the results (Tony, 2026-09-30).
+  if (!game.matchOver) {
+    for (const p of game.players) if (p.reload > 0) p.reload = Math.max(0, p.reload - dt);
+    if (FIRE_ON_RELEASE) for (const p of game.players) refillBank(p, game.reloadTime, dt);
+  }
 
   let aiSettled = false;
   if (game.aiOn && !game.matchOver) {

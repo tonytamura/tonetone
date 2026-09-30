@@ -111,4 +111,16 @@ describe('continuous fire', () => {
       expect(r.throws, id).toBeGreaterThan(4);
     }
   });
+
+  it('stops refilling once the match is over', () => {
+    const game = solo();
+    const p = game.players[0];
+    p.releases = 3;
+    run(game, FALLBACK_DT);
+    game.matchOver = true;
+    const reload = p.reload;
+    run(game, game.reloadTime * 3);
+    expect(p.bank).toBe(0);
+    expect(p.reload).toBe(reload);
+  });
 });
