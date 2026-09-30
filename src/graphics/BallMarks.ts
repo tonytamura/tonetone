@@ -20,10 +20,17 @@ import { TAU } from '../math';
 /** From this many colours in play, every ball carries its shape. */
 export const AUTO_MARK_COLORS = 5;
 
-/** The shape each colour slot carries, in slot order. */
-// A diamond was the sixth until Tony found it too close to the square at a
-// glance: a square turned 45° is the same outline. A bar has none of the others' outline.
-export const MARK_SHAPES = ['dot', 'triangle', 'square', 'ring', 'plus', 'bar'] as const;
+/**
+ * The shape each colour slot carries, in slot order.
+ *
+ * Each differs from every other in something that survives a small ball: a
+ * filled triangle, a bar, a hollow ring, a cross of two strokes, two dots, and
+ * the plain ball. Tony found a diamond too like the square (the same outline
+ * turned 45°), and then the square too like a dot: at radius 8 both are a
+ * filled blob. The first slot, the commonest colour, carries no shape at all,
+ * which is itself the easiest mark to tell from the rest.
+ */
+export const MARK_SHAPES = ['none', 'triangle', 'bar', 'ring', 'plus', 'dots'] as const;
 export type MarkShape = (typeof MARK_SHAPES)[number];
 
 /** Whether the balls carry their shapes: asked for, or enough colours to need them. */
@@ -52,12 +59,12 @@ export function drawBallMark(ctx: CanvasRenderingContext2D, kind: number, x: num
   ctx.lineJoin = 'round';
   ctx.beginPath();
   switch (shape) {
-    case 'dot': ctx.arc(0, 0, s * 0.55, 0, TAU); ctx.fill(); break;
+    case 'none': break;
     case 'triangle': ctx.moveTo(0, -s); ctx.lineTo(s * 0.95, s * 0.72); ctx.lineTo(-s * 0.95, s * 0.72); ctx.closePath(); ctx.fill(); break;
-    case 'square': ctx.rect(-s * 0.72, -s * 0.72, s * 1.44, s * 1.44); ctx.fill(); break;
+    case 'bar': ctx.rect(-s, -s * 0.3, s * 2, s * 0.6); ctx.fill(); break;
     case 'ring': ctx.arc(0, 0, s * 0.78, 0, TAU); ctx.stroke(); break;
     case 'plus': ctx.moveTo(-s, 0); ctx.lineTo(s, 0); ctx.moveTo(0, -s); ctx.lineTo(0, s); ctx.stroke(); break;
-    case 'bar': ctx.rect(-s, -s * 0.3, s * 2, s * 0.6); ctx.fill(); break;
+    case 'dots': ctx.arc(-s * 0.55, 0, s * 0.36, 0, TAU); ctx.moveTo(s * 0.91, 0); ctx.arc(s * 0.55, 0, s * 0.36, 0, TAU); ctx.fill(); break;
   }
   ctx.restore();
 }
