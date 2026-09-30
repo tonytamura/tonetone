@@ -637,4 +637,24 @@ describe('Bug Detection Test Suite', () => {
       expect(idle).toBe(0);
     });
   });
+
+  describe('Guard: an AI aim that is not a number would stand the launcher still for good', () => {
+    // Tony saw AI3 stop on 2026-09-30 and 432 harness runs never did. A NaN aim
+    // is the one way it could stop for the rest of a match: easing from NaN stays
+    // NaN, and a throw in a NaN direction finds no clear spot. It is reset now.
+    it('recovers its aim, and never puts a ball where it cannot be', () => {
+      let aimAtEnd = NaN, badBalls = 0;
+      runSim({
+        mode: 'ai', aiLevel: levelIndex('ai3'), seconds: 20, invariants: false, knobs: { match: 20 },
+        onFrame: (g, f) => {
+          const p: any = g.players[1];
+          if (f === 300) { p.aimDeg = NaN; p.strength = NaN; }
+          if (f > 300) badBalls += g.balls.filter(b => !Number.isFinite(b.x) || !Number.isFinite(b.y)).length;
+          aimAtEnd = p.aimDeg;
+        },
+      });
+      expect(Number.isFinite(aimAtEnd)).toBe(true);
+      expect(badBalls).toBe(0);
+    });
+  });
 });

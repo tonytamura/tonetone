@@ -264,7 +264,9 @@ export function spawnRainBall(game: Game, width: number, height: number): boolea
 
 export function fits(x: number, y: number, allowBay: boolean, game: Game, width: number, height: number): boolean {
   const R = PhysicsConfig.R;
-  if (x < R || y < R || x > width - R || y > height - R) return false;
+  // Written as "not inside" so a NaN, which fails every comparison, fails here
+  // too: `x < R || ...` let a NaN spot through as clear.
+  if (!(x >= R && y >= R && x <= width - R && y <= height - R)) return false;
   if (!allowBay) {
     const keep = R * 2 + R;
     const activePlayers = game.twoPlayer ? game.players : [game.players[0]];

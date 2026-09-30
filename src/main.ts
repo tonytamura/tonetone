@@ -5,6 +5,7 @@ import { setupRecordsScreen } from './ui/RecordsScreen';
 import { recordWords } from './ui/RecordsCelebration';
 import { isNativeApp } from './ui/Platform';
 import { setupAudioReadout } from './ui/AudioReadout';
+import { setupAiReadout } from './ui/AiReadout';
 import { advanceFrame } from './sim/Frame';
 import { createRenderContext, resizeRenderer, drawGame, drawResultsCanvas, drawTutorialRing, drawTutorialHint } from './graphics/Renderer';
 import { clearSpriteCache } from './graphics/Sprites';
@@ -85,6 +86,7 @@ window.addEventListener('pageshow', onPageShown);
 document.addEventListener('pointerup', checkAudioOnGesture, true);
 document.addEventListener('keydown', checkAudioOnGesture, true);
 setupAudioReadout();
+setupAiReadout(() => game, () => ({ W: renderCtx.W || window.innerWidth, H: renderCtx.H || window.innerHeight }));
 
 const strip1 = createStrip(
   game.players[0],

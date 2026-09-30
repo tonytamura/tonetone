@@ -297,7 +297,7 @@ function chooseTarget(p: LauncherPlayer, game: Game, width: number, height: numb
   let best: Choice | null = null;
   for (const g of game.groups) {
     const live = g.members.filter(m => !m.ghost);
-    if (!live.length) continue;
+    if (!live.length || !Number.isFinite(g.com.x) || !Number.isFinite(g.com.y)) continue;
     if (prof.target === 'biggest' || prof.target === 'nearest') {
       if (live.length < 2) continue;
       const d = Math.hypot(g.com.x - mouth.x, g.com.y - mouth.y);
@@ -341,7 +341,7 @@ function singleTarget(p: LauncherPlayer, game: Game, mouth: { x: number; y: numb
   const loadedKind = p.loaded && !p.loaded.special ? p.loaded.kind : null;
   for (const g of game.groups) {
     const b = g.members.find(m => !m.ghost);
-    if (!b) continue;
+    if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.y)) continue;
     const d = Math.hypot(b.x - mouth.x, b.y - mouth.y);
     // Same colour first, then nearness: a same-colour ball is always preferred.
     const rank = (loadedKind !== null && b.kind === loadedKind && !b.special ? 0 : 1e6) + d;
@@ -379,9 +379,31 @@ export function aiAimLevel(p: LauncherPlayer, game: Game, width: number, height:
   aiAimProfile(p, game, width, height, level < 0 ? AI_STRATEGIES.current : AI_LEVELS[Math.min(AI_LEVELS.length - 1, level)]);
 }
 
+let aimRecoveries = 0;
+/** How many times an AI's aim was found not to be a number and reset, for the `?aidebug` readout. */
+export function aiAimRecoveries(): number {
+  return aimRecoveries;
+}
+
+/**
+ * An aim that is not a number never recovers: every frame eases towards the
+ * target from NaN and stays NaN, and a throw in a NaN direction finds no clear
+ * spot, so the launcher stands still for the rest of the match. Nothing is known
+ * to produce one — this guards the one way AI3 could stop for good, which Tony
+ * saw on 2026-09-30 and the harness could not reproduce in 432 runs.
+ */
+function guardAim(p: LauncherPlayer) {
+  if (Number.isFinite(p.aimDeg) && Number.isFinite(p.strength)) return;
+  aimRecoveries++;
+  p.aimDeg = 0;
+  p.strength = 0.7;
+  (p as any)._ai = undefined;
+}
+
 /** Aim player `p` the way `prof` plays. */
 export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, height: number, prof: AiProfile) {
   p.holdFire = false;
+  guardAim(p);
   if (prof.classic) {
     aiAim(p, game.groups, game.balls, width, height, game.twoPlayer);
     return;
