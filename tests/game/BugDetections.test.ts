@@ -639,6 +639,63 @@ describe('Bug Detection Test Suite', () => {
     });
   });
 
+  describe('Bug 20: AI3 kept the last careless angle of an AI2 match, and threw one way for good', () => {
+    // The AI's working state lives on the launcher, and the launcher outlives
+    // the match. AI2 stores a careless throw's angle and strength there; AI3,
+    // which never throws carelessly, never cleared them, so after a ladder match
+    // against AI2 a match against AI3 threw every ball at that one angle and
+    // strength: "AI3 stops playing and leaves it in one direction". Tony found
+    // the steps on 2026-10-08: play the ladder once, leave, force AI3.
+    it('starts every match with a fresh mind, whatever played the seat before', () => {
+      const W = 390, H = 780;
+      withSeed(7, () => {
+        const game = createGame();
+        game.twoPlayer = true; game.aiOn = true; game.matchLen = 0;
+        game.aiLevel = levelIndex('ai2');
+        resetField(game, W, H);
+        startMatch(game, 0);
+        const p: any = game.players[1];
+        let clock = 0;
+        for (let f = 0; f < 60 * 120 && p._ai?.wildDeg === undefined; f++) clock = advanceFrame(game, 1 / 60, W, H, clock).clock;
+        expect(p._ai?.wildDeg).toBeDefined(); // a careless throw is in hand when the player leaves
+
+        game.aiLevel = levelIndex('ai3');
+        resetField(game, W, H);
+        startMatch(game, 0);
+        const aims = new Set<number>();
+        let lastLoaded: unknown = p.loaded;
+        for (let f = 0; f < 60 * 60; f++) {
+          clock = advanceFrame(game, 1 / 60, W, H, clock).clock;
+          if (p.loaded !== lastLoaded) { aims.add(Math.round(p.aimDeg)); lastLoaded = p.loaded; }
+        }
+        expect(p._ai?.wildDeg).toBeUndefined();
+        expect(aims.size).toBeGreaterThan(3); // it follows the table, not one angle
+      });
+    });
+
+    it('ignores a careless angle another level left, when the level changes mid-match', () => {
+      const W = 390, H = 780;
+      withSeed(7, () => {
+        const game = createGame();
+        game.twoPlayer = true; game.aiOn = true; game.matchLen = 0;
+        game.aiLevel = levelIndex('ai2');
+        resetField(game, W, H);
+        startMatch(game, 0);
+        const p: any = game.players[1];
+        let clock = 0;
+        for (let f = 0; f < 60 * 120 && p._ai?.wildDeg === undefined; f++) clock = advanceFrame(game, 1 / 60, W, H, clock).clock;
+        game.aiLevel = levelIndex('ai3'); // the AI knob, turned with no new match
+        const aims = new Set<number>();
+        let lastLoaded: unknown = p.loaded;
+        for (let f = 0; f < 60 * 60; f++) {
+          clock = advanceFrame(game, 1 / 60, W, H, clock).clock;
+          if (p.loaded !== lastLoaded) { aims.add(Math.round(p.aimDeg)); lastLoaded = p.loaded; }
+        }
+        expect(aims.size).toBeGreaterThan(3);
+      });
+    });
+  });
+
   describe('Guard: an AI aim that is not a number would stand the launcher still for good', () => {
     // Tony saw AI3 stop on 2026-09-30 and 432 harness runs never did. A NaN aim
     // is the one way it could stop for the rest of a match: easing from NaN stays

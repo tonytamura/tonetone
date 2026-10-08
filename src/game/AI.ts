@@ -456,10 +456,13 @@ export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, heigh
       st.wildDeg = Math.random() < prof.wild ? Math.random() * 170 - 85 : undefined;
       st.wildPow = 0.35 + Math.random() * 0.65;
     }
+    // Only a profile that throws carelessly reads a careless angle: one left by
+    // another level (the AI knob changed mid-match) must not steer this one.
+    const wildDeg = prof.wild ? st.wildDeg : undefined;
     aimAt(want, choice.x, choice.y, width, height, game.twoPlayer);
-    want.aimDeg = st.wildDeg ?? Math.max(-90, Math.min(90, want.aimDeg + st.errDeg));
+    want.aimDeg = wildDeg ?? Math.max(-90, Math.min(90, want.aimDeg + st.errDeg));
     const base = prof.power === 'max' ? 1 : prof.power === 'random' ? 0 : choice.strength;
-    want.strength = st.wildDeg !== undefined ? st.wildPow! : Math.max(0, Math.min(1, base + st.errPow));
+    want.strength = wildDeg !== undefined ? st.wildPow! : Math.max(0, Math.min(1, base + st.errPow));
     st.idleDeg = undefined;
   } else {
     // Nothing worth a throw: settle on one idle angle rather than wander.

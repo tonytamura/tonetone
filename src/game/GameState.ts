@@ -206,6 +206,11 @@ export function resetField(game: Game, width?: number, height?: number) {
     p.reload = 0; p.bank = BANK_MAX; p.releases = 0; p.hold = 0; p.destroyed = 0; p.booms = 0;
     p.locks = 0; p.peels = 0; p.score = 0; p.best = 0;
     p.lockPts = 0; p.boomPts = 0; p.peelPts = 0;
+    // The AI's working state rides on the launcher, which outlives the match:
+    // a fresh match starts it afresh, or a careless angle drawn by AI2 stayed in
+    // the seat and AI3 threw every ball that way (Bug 20).
+    (p as any)._ai = undefined;
+    p.holdFire = false;
   }
 
   if (width && height) {

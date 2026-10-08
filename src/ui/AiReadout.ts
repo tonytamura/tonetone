@@ -38,8 +38,11 @@ export function setupAiReadout(getGame: () => Game, size: () => { W: number; H: 
     // A throw shows as the ring restarting (automatic) or the bank dropping (on release).
     const threw = FIRE_ON_RELEASE ? p.bank < prevBank : p.reload > prevReload + 0.2;
     prevReload = p.reload; prevBank = p.bank;
-    if (threw) lastThrow = now;
-    const since = game.matchRunning && !game.paused ? (now - lastThrow) / 1000 : 0;
+    // Time in the menu, the countdown's hold or a pause is not time without a
+    // throw: the clock restarts whenever the match is not running.
+    const live = game.matchRunning && !game.paused;
+    if (threw || !live) lastThrow = now;
+    const since = (now - lastThrow) / 1000;
     longest = Math.max(longest, since);
     const { W, H } = size();
     const m = launchPointOf(p, W, H);
