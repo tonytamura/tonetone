@@ -73,15 +73,17 @@ export function beatAgi(game: Game): boolean {
 /**
  * Which player the results celebration belongs to, or -1 for nobody.
  *
- * A draw is credited to player 1, the same way the results card calls it. The
- * AI is player 2 and never gets a celebration: losing to it is not an occasion
- * for fireworks, so when it wins nothing new is spawned. Solo gets none either.
+ * A draw celebrates nobody, as both results cards say "Draw" (it used to credit
+ * player 1 with fireworks and "WINNER!"). The AI is player 2 and never gets a
+ * celebration: losing to it is not an occasion for fireworks, so when it wins
+ * nothing new is spawned. Solo gets none either.
  */
 export function celebrationWinner(game: Game): number {
   if (!game.twoPlayer) return -1;
   const p0 = game.players[0]?.score || 0;
   const p1 = game.players[1]?.score || 0;
-  const winnerIdx = p0 >= p1 ? 0 : 1;
+  if (p0 === p1) return -1;
+  const winnerIdx = p0 > p1 ? 0 : 1;
   if (game.aiOn && winnerIdx === 1) return -1;
   return winnerIdx;
 }

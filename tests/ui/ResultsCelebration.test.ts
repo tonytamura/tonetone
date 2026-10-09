@@ -46,6 +46,14 @@ describe('results celebration', () => {
     expect(r.flashes + r.pops).toBe(0);
   });
 
+  it('celebrates nobody on a draw, as both result cards say Draw', () => {
+    const duel = results(g => { g.twoPlayer = true; g.aiOn = false; g.players[0].score = 300; g.players[1].score = 300; });
+    expect(celebrationWinner(duel.game)).toBe(-1);
+    expect(duel.flashes + duel.pops).toBe(0);
+    const ai = results(vsAi(AGI, 300, 300));
+    expect(celebrationWinner(ai.game)).toBe(-1);
+  });
+
   it('celebrates nothing when the AI wins, AGI included', () => {
     const r = results(vsAi(AGI, 100, 900));
     expect(r.flashes + r.pops).toBe(0);

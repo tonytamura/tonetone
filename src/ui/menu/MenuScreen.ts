@@ -479,6 +479,12 @@ export function initMenuScreen(onSelectMode: (mode: PlayMode) => void, onOptions
     // these replace could both fire for one tap, because a browser follows a
     // touch with a synthesised mousedown, and the menu had only its 180ms
     // debounce standing between that and a second selection.
+    // The icon row (help, records, language) is DOM over the canvas. Its buttons
+    // act on click, but the menu acts on press and lift at the window, so a tap
+    // on an icon that overlaps a drawn button — Options, in landscape — did both.
+    const iconRow = document.querySelector?.('.menu-bottom-controls');
+    for (const type of ['pointerdown', 'pointerup'] as const) iconRow?.addEventListener(type, e => e.stopPropagation());
+
     window.addEventListener('pointerdown', (e) => {
       if (!menuActive) return;
       const p = getCanvasPointer(e);

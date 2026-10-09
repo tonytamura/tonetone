@@ -48,6 +48,14 @@ window.addEventListener('orientationchange', () => setTimeout(handleResize, 60))
 if (window.ResizeObserver) {
   new ResizeObserver(() => handleResize()).observe(stageEl);
 }
+// Moving the window to a screen of another pixel density, or zooming, changes
+// the ratio at the same CSS size: no resize fires, and the field went blurry.
+function watchPixelRatio() {
+  if (!window.matchMedia) return;
+  window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`)
+    .addEventListener?.('change', () => { handleResize(); watchPixelRatio(); }, { once: true });
+}
+watchPixelRatio();
 if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
   document.fonts.ready.then(handleResize);
 }
@@ -270,7 +278,12 @@ soundBtn?.addEventListener('click', () => { initAudio(); setSound(!AudioStore.so
 
 const panelEl = document.getElementById('panel');
 const panelCloseBtn = document.getElementById('panel-close');
+// The panel hides 550ms after Back, once the menu has slid in over it. Opening
+// Options again inside that window left the old timer to hide the new panel,
+// with the menu slid away: a blank screen nothing could leave.
+let panelHideTimer: ReturnType<typeof setTimeout> | undefined;
 function showOptionsPanel() {
+  clearTimeout(panelHideTimer);
   setOptionsOpenState(true);
   fadeDroneForOptions(true);
   setHidden(panelEl, false);
@@ -283,9 +296,8 @@ function hideOptionsPanel() {
 panelCloseBtn?.addEventListener('click', () => {
   uiClick('cancel');
   slideInFromRight();
-  setTimeout(() => {
-    hideOptionsPanel();
-  }, 550);
+  clearTimeout(panelHideTimer);
+  panelHideTimer = setTimeout(hideOptionsPanel, 550);
 });
 
 const copyBtn = document.getElementById('copy') as HTMLButtonElement;

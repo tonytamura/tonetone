@@ -2,7 +2,7 @@ import { Game } from '../game/GameState';
 import { t } from '../i18n/I18n';
 import { uiClick } from '../audio/UiSounds';
 import { fadeDroneForResults } from '../audio/SynthEngine';
-import { showMenu } from './menu/MenuScreen';
+import { isMenuOccluding, showMenu } from './menu/MenuScreen';
 import { setHidden } from './Dom';
 
 /**
@@ -89,7 +89,13 @@ export function setupMatchControls(game: Game) {
   });
 
   window.addEventListener('keydown', e => {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    // Only a match in play pauses. On the menu or in Options the key used to
+    // toggle a pause overlay hidden behind them, and Space on a focused select
+    // or button belongs to that control. A held key pauses once.
+    const t = e.target;
+    if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement || t instanceof HTMLButtonElement) return;
+    const panel = el('panel');
+    if (e.repeat || isMenuOccluding() || (panel && !panel.hidden) || !game.matchRunning) return;
     if (e.key === 'p' || e.key === 'P' || e.key === ' ') {
       if (e.key === ' ') e.preventDefault();
       togglePause(game);

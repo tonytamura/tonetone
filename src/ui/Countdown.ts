@@ -17,16 +17,26 @@ import { setHidden } from './Dom';
 let lastText = '';
 /** Seconds since match reset; -1 = inactive. */
 let startElapsed = -1;
+/**
+ * What the strip shows now. This runs every frame, and rewriting the same
+ * classes each time stripped `pop` one frame after it was added, cutting the
+ * 0.9s pop animation short, and cost five DOM writes a frame all match long.
+ */
+let shown = '';
 
 /** Start the run-in countdown over, as a new match does. */
 export function resetStartCountdown() {
   startElapsed = 0;
   lastText = '';
+  shown = '';
 }
 
 /** Apply text + classes to both countdown bar elements (hiding the time display
  *  when active, and only driving cd2El when in two-player mode). */
 function setCdText(game: Game, text: string, cls: 'start' | 'go' | 'end') {
+  const key = text + '|' + cls + '|' + game.twoPlayer;
+  if (key === shown) return;
+  shown = key;
   const cd1El = document.getElementById('countdown1');
   const cd2El = document.getElementById('countdown2');
   const els = game.twoPlayer ? [cd1El, cd2El] : [cd1El];

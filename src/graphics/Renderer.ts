@@ -31,6 +31,10 @@ export interface RenderContext {
   H: number;
   bgW: number;
   bgH: number;
+  /** The device pixel ratio the canvases were sized for: a change of screen or zoom changes it at the same CSS size. */
+  dpr: number;
+  /** Whether the results canvas is showing, so a match in play does not clear and hide it every frame. */
+  resultsShown: boolean;
 }
 
 export function createRenderContext(canvas: HTMLCanvasElement): RenderContext {
@@ -50,6 +54,8 @@ export function createRenderContext(canvas: HTMLCanvasElement): RenderContext {
     H: 0,
     bgW: 1,
     bgH: 1,
+    dpr: 0,
+    resultsShown: true,
   };
 }
 
@@ -63,8 +69,9 @@ export function resizeRenderer(rc: RenderContext, stageEl: HTMLElement, force = 
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   const r = stageEl.getBoundingClientRect();
   if (!r.width || !r.height) return;
-  if (!force && r.width === rc.W && r.height === rc.H && rc.cv.width) return;
+  if (!force && r.width === rc.W && r.height === rc.H && dpr === rc.dpr && rc.cv.width) return;
 
+  rc.dpr = dpr;
   rc.W = r.width;
   rc.H = r.height;
   rc.cv.width = Math.round(rc.W * dpr);
@@ -593,12 +600,17 @@ export function drawResultsCanvas(rc: RenderContext, game: Game) {
   if (!rc.resCv || !rc.resCtx) return;
   const { resCtx: ctx, W, H } = rc;
 
-  ctx.clearRect(0, 0, W, H);
   if (!game.matchOver) {
-    setHidden(rc.resCv, true);
+    if (rc.resultsShown) {
+      ctx.clearRect(0, 0, W, H);
+      setHidden(rc.resCv, true);
+      rc.resultsShown = false;
+    }
     return;
   }
-  setHidden(rc.resCv, false);
+  ctx.clearRect(0, 0, W, H);
+  if (!rc.resultsShown) setHidden(rc.resCv, false);
+  rc.resultsShown = true;
 
   const R = PhysicsConfig.R;
 
