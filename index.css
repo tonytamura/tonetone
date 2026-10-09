@@ -102,6 +102,17 @@
    in MenuScreen.drawMenu — a change to one belongs in both. The gradient border
    is painted as two backgrounds so it can follow the rounded corner, which
    border-image cannot do. */
+/* The X that closes the game (Android only): the bottom left corner, on the
+   icons' line, as far as it can be from the buttons that start a match. */
+.menu-close {
+  position: absolute;
+  bottom: 24px;
+  bottom: max(24px, calc(16px + env(safe-area-inset-bottom)));
+  left: 20px;
+  left: max(20px, env(safe-area-inset-left));
+  z-index: 1010;
+}
+
 .menu-bottom-controls {
   position: absolute;
   bottom: 24px;

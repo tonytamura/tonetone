@@ -25,6 +25,12 @@
 
 <div id="menu-screen">
   <canvas id="gameMenu"></canvas>
+  <!-- Closes the game: Android only, in the app or the installed website
+       (Platform.closeApp). iOS has no way to, and in a tab a page cannot.
+       On its own at the bottom left, level with the icons on the right. -->
+  <button id="closeBtn" class="menu-control-btn icon-btn menu-close" aria-label="Close" data-i18n-aria="menu.close" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
+  </button>
   <div class="menu-bottom-controls">
     <!-- Icons, not words: they read the same in every language, and five of
          them fit one row on a 320px phone. Each has its name for screen
@@ -43,11 +49,6 @@
     <!-- A speaker; switched off, the "no" sign over it. -->
     <button id="audioToggle" class="menu-control-btn icon-btn audio-toggle-btn" aria-label="Sound" aria-pressed="true" data-i18n-aria="panel.sound">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path class="speaker" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><g class="no"><circle cx="12" cy="12" r="9.5"/><path d="M5.3 5.3l13.4 13.4"/></g></svg>
-    </button>
-    <!-- Closes the game: Android only, in the app or the installed website
-         (Platform.closeApp). iOS has no way to, and in a tab a page cannot. -->
-    <button id="closeBtn" class="menu-control-btn icon-btn" aria-label="Close" data-i18n-aria="menu.close" hidden>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
     </button>
     <!-- The language's flag, and nothing else: it has to be found by someone who cannot read the rest. -->
     <button id="langBtn" class="menu-control-btn lang-btn" aria-label="Language" data-i18n-aria="menu.language"></button>
