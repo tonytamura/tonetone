@@ -9,6 +9,7 @@ const M: Messages = {
   'menu.help': 'Ajuda',
   'menu.fullScreen': 'Tela cheia',
   'menu.exitFullScreen': 'Tela normal',
+  'menu.close': 'Fechar',
   'menu.audioOn': 'Som ligado',
   'menu.audioOff': 'Som desligado',
   'menu.language': 'Idioma',

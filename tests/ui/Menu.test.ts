@@ -4,10 +4,11 @@ import { computeMenuLayout } from '../../src/ui/menu/MenuLayout';
 import { MAX_MENU_VOICES, playBinauralClick, resetUiSoundsForTesting, setClickLockMs } from '../../src/audio/UiSounds';
 import { AudioStore } from '../../src/audio/SynthEngine';
 import type { PlayMode } from '../../src/game/GameState';
-import { isNativeApp } from '../../src/ui/Platform';
+import { closeApp, isAppWindow } from '../../src/ui/Platform';
 
-// Where the game runs: a browser unless a test says it is the Android or iOS app.
-vi.mock('../../src/ui/Platform', () => ({ isNativeApp: vi.fn(() => false) }));
+// Where the game runs: a browser tab unless a test says it is an app window
+// (the Android or iOS app, or the installed website), and nowhere it can close.
+vi.mock('../../src/ui/Platform', () => ({ isAppWindow: vi.fn(() => false), closeApp: vi.fn(() => null) }));
 
 /**
  * A 2D context that accepts anything drawn on it.
@@ -77,6 +78,7 @@ describe('MenuScreen', () => {
   let canvasEl: MockElement;
   let audioBtnEl: MockElement;
   let fsBtnEl: MockElement;
+  let closeBtnEl: MockElement;
   /** Every listener `initMenuScreen` put on the window, by event name. */
   let listeners: Record<string, Function[]>;
   /** Frames the menu has asked for and not yet been given. */
@@ -97,6 +99,8 @@ describe('MenuScreen', () => {
     canvasEl = new MockElement();
     audioBtnEl = new MockElement();
     fsBtnEl = new MockElement();
+    closeBtnEl = new MockElement();
+    closeBtnEl.setAttribute('hidden', '');
     listeners = {};
     frames = [];
     // The menu asks the global, not the window. Holding the callbacks here
@@ -117,6 +121,7 @@ describe('MenuScreen', () => {
         if (id === 'gameMenu') return canvasEl;
         if (id === 'audioToggle') return audioBtnEl;
         if (id === 'fsToggle') return fsBtnEl;
+        if (id === 'closeBtn') return closeBtnEl;
         return null;
       },
       addEventListener: () => {},
@@ -184,13 +189,28 @@ describe('MenuScreen', () => {
     hideMenu();
   });
 
-  it('hides the full screen button in the Android and iOS apps, which are full screen already', () => {
-    vi.mocked(isNativeApp).mockReturnValue(true);
+  it('hides the full screen button in the apps and the installed website, which are full screen already', () => {
+    vi.mocked(isAppWindow).mockReturnValue(true);
     initMenuScreen(() => {});
     showMenu();
     expect(fsBtnEl.hasAttribute('hidden')).toBe(true);
     hideMenu();
-    vi.mocked(isNativeApp).mockReturnValue(false);
+    vi.mocked(isAppWindow).mockReturnValue(false);
+  });
+
+  it('shows the X only where the game can close itself, and closes it', () => {
+    initMenuScreen(() => {});
+    expect(closeBtnEl.hasAttribute('hidden')).toBe(true);
+
+    const close = vi.fn();
+    vi.mocked(closeApp).mockReturnValue(close);
+    let onClick: ((e: any) => void) | null = null;
+    closeBtnEl.addEventListener = (type: string, fn: any) => { if (type === 'click') onClick = fn; };
+    initMenuScreen(() => {});
+    expect(closeBtnEl.hasAttribute('hidden')).toBe(false);
+    onClick!({ stopPropagation() {} });
+    expect(close).toHaveBeenCalledOnce();
+    vi.mocked(closeApp).mockReturnValue(null);
   });
 
   it('accepts onOptions callback on initMenuScreen', () => {

@@ -24,6 +24,8 @@ export const EN = {
   'menu.help': 'Help',
   'menu.fullScreen': 'Full screen',
   'menu.exitFullScreen': 'Exit full screen',
+  // The X on the menu that closes the game (Android only); its name for screen readers.
+  'menu.close': 'Close',
   'menu.audioOn': 'Audio on',
   'menu.audioOff': 'Audio off',
   // The flag button's name for screen readers, and the title of its screen.

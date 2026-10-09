@@ -9,6 +9,7 @@ const M: Messages = {
   'menu.help': 'Trợ giúp',
   'menu.fullScreen': 'Toàn màn hình',
   'menu.exitFullScreen': 'Thoát toàn MH',
+  'menu.close': 'Đóng',
   'menu.audioOn': 'Bật âm',
   'menu.audioOff': 'Tắt âm',
   'menu.language': 'Ngôn ngữ',

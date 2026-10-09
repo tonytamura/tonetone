@@ -9,6 +9,7 @@ const M: Messages = {
   'menu.help': 'Bantuan',
   'menu.fullScreen': 'Layar penuh',
   'menu.exitFullScreen': 'Layar biasa',
+  'menu.close': 'Tutup',
   'menu.audioOn': 'Suara nyala',
   'menu.audioOff': 'Suara mati',
   'menu.language': 'Bahasa',

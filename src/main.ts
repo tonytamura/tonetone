@@ -4,7 +4,7 @@ import { isLangId, onLanguageChange, setLanguage, startingLanguage, t } from './
 import { setupLanguagePicker } from './ui/LanguagePicker';
 import { setupRecordsScreen } from './ui/RecordsScreen';
 import { recordWords } from './ui/RecordsCelebration';
-import { isNativeApp } from './ui/Platform';
+import { isAppWindow } from './ui/Platform';
 import { setupAudioReadout } from './ui/AudioReadout';
 import { setupAiReadout } from './ui/AiReadout';
 import { advanceFrame } from './sim/Frame';
@@ -333,8 +333,8 @@ copyBtn?.addEventListener('click', () => {
 // Fullscreen API fallback
 const fsBtn = document.getElementById('fs');
 const docEl = document.documentElement as any;
-// Web only: the Android and iOS apps are full screen already.
-const fsRequest = isNativeApp() ? null : docEl.requestFullscreen || docEl.webkitRequestFullscreen || null;
+// Browser tabs only: the Android and iOS apps and the installed website are full screen already.
+const fsRequest = isAppWindow() ? null : docEl.requestFullscreen || docEl.webkitRequestFullscreen || null;
 const fsExit = document.exitFullscreen || (document as any).webkitExitFullscreen || null;
 function fsActive() { return document.fullscreenElement || (document as any).webkitFullscreenElement || null; }
 function fsLabel() { if (fsBtn) fsBtn.textContent = fsActive() ? t('menu.exitFullScreen') : t('menu.fullScreen'); }

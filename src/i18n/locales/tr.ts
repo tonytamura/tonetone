@@ -9,6 +9,7 @@ const M: Messages = {
   'menu.help': 'Yardım',
   'menu.fullScreen': 'Tam ekran',
   'menu.exitFullScreen': 'Normal ekran',
+  'menu.close': 'Kapat',
   'menu.audioOn': 'Ses açık',
   'menu.audioOff': 'Ses kapalı',
   'menu.language': 'Dil',

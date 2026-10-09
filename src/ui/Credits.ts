@@ -40,8 +40,8 @@ export const LICENSES: LicenseEntry[] = [
   { name: 'Outfit (typeface)', packages: [], text: outfit },
   { name: 'Capacitor', packages: ['@capacitor/core', '@capacitor/android', '@capacitor/ios'], text: capacitorCore },
   {
-    name: 'Capacitor plugins: Haptics, Status Bar',
-    packages: ['@capacitor/haptics', '@capacitor/status-bar'],
+    name: 'Capacitor plugins: App, Haptics, Status Bar',
+    packages: ['@capacitor/app', '@capacitor/haptics', '@capacitor/status-bar'],
     text: capacitorPlugins,
   },
 ];

@@ -9,6 +9,7 @@ const M: Messages = {
   'menu.help': 'ヘルプ',
   'menu.fullScreen': '全画面',
   'menu.exitFullScreen': '全画面を解除',
+  'menu.close': '閉じる',
   'menu.audioOn': 'サウンドON',
   'menu.audioOff': 'サウンドOFF',
   'menu.language': '言語',

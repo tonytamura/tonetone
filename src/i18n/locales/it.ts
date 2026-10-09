@@ -9,6 +9,7 @@ const M: Messages = {
   'menu.help': 'Aiuto',
   'menu.fullScreen': 'Schermo intero',
   'menu.exitFullScreen': 'Riduci schermo',
+  'menu.close': 'Chiudi',
   'menu.audioOn': 'Audio sì',
   'menu.audioOff': 'Audio no',
   'menu.language': 'Lingua',

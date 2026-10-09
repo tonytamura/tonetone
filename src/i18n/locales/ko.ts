@@ -9,6 +9,7 @@ const M: Messages = {
   'menu.help': '도움말',
   'menu.fullScreen': '전체 화면',
   'menu.exitFullScreen': '전체 화면 끄기',
+  'menu.close': '닫기',
   'menu.audioOn': '소리 켬',
   'menu.audioOff': '소리 끔',
   'menu.language': '언어',

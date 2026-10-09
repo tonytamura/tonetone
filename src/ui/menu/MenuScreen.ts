@@ -1,6 +1,6 @@
 import { AudioStore, isOptionsOpen, onSoundChange, setSoundOn } from '../../audio/SynthEngine';
 import { onLanguageChange, t } from '../../i18n/I18n';
-import { isNativeApp } from '../Platform';
+import { closeApp, isAppWindow } from '../Platform';
 import { clickHz, initMenuAudio, lastSelectAt, playBinauralClick, playHoverClick } from '../../audio/UiSounds';
 import { PlayMode } from '../../game/GameState';
 import { clearSpriteCache } from '../../graphics/Sprites';
@@ -396,8 +396,9 @@ function fullscreenApi() {
   const docEl = typeof document !== 'undefined' ? (document.documentElement as any) : null;
   return {
     docEl,
-    // The Android and iOS apps are full screen already: no button there.
-    request: docEl && !isNativeApp() ? (docEl.requestFullscreen || docEl.webkitRequestFullscreen || null) : null,
+    // The Android and iOS apps, and the website installed to the home screen,
+    // are full screen already: no button there.
+    request: docEl && !isAppWindow() ? (docEl.requestFullscreen || docEl.webkitRequestFullscreen || null) : null,
     exit: typeof document !== 'undefined' ? (document.exitFullscreen || (document as any).webkitExitFullscreen || null) : null,
     isOn: typeof document !== 'undefined' && !!(document.fullscreenElement || (document as any).webkitFullscreenElement),
   };
@@ -491,6 +492,13 @@ export function initMenuScreen(onSelectMode: (mode: PlayMode) => void, onOptions
   canvas = document.getElementById('gameMenu') as HTMLCanvasElement;
   audioBtn = document.getElementById('audioToggle') as HTMLButtonElement;
   fsBtn = document.getElementById('fsToggle') as HTMLButtonElement;
+  // The X: on Android only, app or installed website (Platform.closeApp).
+  const close = closeApp();
+  const closeBtn = document.getElementById('closeBtn');
+  if (closeBtn && close) {
+    setHidden(closeBtn, false);
+    closeBtn.addEventListener('click', e => { e.stopPropagation(); close(); });
+  }
   onLanguageChange(() => { updateAudioBtnLabel(); updateFsBtnLabel(); clearMenuPops(); });
   onSoundChange(updateAudioBtnLabel);
 
