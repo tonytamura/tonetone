@@ -203,17 +203,6 @@ export function makeReverbIR(actx: AudioContext, seconds: number, decay: number)
   return buf;
 }
 
-// --- Active node tracking for clean teardown ---
-const _activeNodes = new Set<AudioNode & { stop?: () => void }>();
-
-export function registerActiveNode(node: AudioNode & { stop?: () => void }) {
-  _activeNodes.add(node);
-}
-
-export function unregisterActiveNode(node: AudioNode & { stop?: () => void }) {
-  _activeNodes.delete(node);
-}
-
 let _dcBlockNode: BiquadFilterNode | null = null;
 let _isResultsDucked = false;
 let _isOptionsDucked = false;
@@ -308,9 +297,17 @@ export function initAudio() {
   dcBlock.frequency.value = 22;
   dcBlock.Q.value = 0.7;
 
+  // A brick-wall limiter last. The 2:1 compressor above reacts in 50ms, slower
+  // than a boom's 14ms attack, and the volume knob goes to 2.0: one 20+ boom
+  // alone measured -0.2 dBFS at 1.5, so a pile-up went over and crackled.
+  const limiter = actx.createDynamicsCompressor();
+  limiter.threshold.value = -1; limiter.knee.value = 0; limiter.ratio.value = 20;
+  limiter.attack.value = 0.001; limiter.release.value = 0.1;
+
   master.connect(comp);
   comp.connect(dcBlock);
-  dcBlock.connect(actx.destination);
+  dcBlock.connect(limiter);
+  limiter.connect(actx.destination);
   AudioStore.master = master;
   _dcBlockNode = dcBlock;
 
@@ -350,6 +347,10 @@ export function initAudio() {
  * and no `window` for `initAudio` to read.
  */
 export function setLatencyHint(seconds: number) {
+  // Every preset re-applies its knobs, latency among them: rebuilding on an
+  // unchanged value tore the whole context down (new reverb, new noise, the
+  // drone restarting) on every preset switch and every Play again.
+  if (seconds === AudioStore.latency) return;
   AudioStore.latency = seconds;
   rebuildAudio('latency');
 }
@@ -385,7 +386,7 @@ export function rebuildAudio(reason: string) {
   const old = AudioStore.actx;
   if (!old) return;
   audioLog(`rebuild: ${reason}`);
-  stopAllVoices();
+  resetVoiceCounts();
   AudioStore.actx = null;
   AudioStore.master = null;
   AudioStore.wetBus = null;
@@ -575,13 +576,13 @@ export function applyGain() {
   }
 }
 
-/** Stop and disconnect all actively tracked audio nodes, reset voice counters. */
-export function stopAllVoices() {
-  for (const node of _activeNodes) {
-    try { (node as any).stop?.(); } catch (_) {}
-    try { node.disconnect(); } catch (_) {}
-  }
-  _activeNodes.clear();
+/**
+ * Zero the voice counts, for a context being thrown away. Only then: the counts
+ * come down by themselves as each voice ends, and zeroing them while voices still
+ * rang (it used to run on every new match, under the name stopAllVoices, while
+ * stopping nothing) let the caps be exceeded until those voices ended.
+ */
+export function resetVoiceCounts() {
   AudioStore.activeVoices = 0;
   AudioStore.thuds = 0;
   AudioStore.cursor = 0;

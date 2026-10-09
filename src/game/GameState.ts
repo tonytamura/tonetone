@@ -7,7 +7,6 @@ import { aimDirOf, launchPointOf, throwSpeedOf } from '../physics/LauncherBays';
 import { playSwoosh } from '../audio/Voices';
 import { panOf } from '../audio/SoundEvents';
 import { CollisionState, RAIN_BLINK, RAIN_GRACE } from '../physics/CollisionSolver';
-import { stopAllVoices } from '../audio/SynthEngine';
 import { TAU } from '../math';
 import { CLASSIC_LEVEL } from './AI';
 
@@ -182,7 +181,6 @@ export function spawnBallGroup(game: Game, width: number, height: number) {
 }
 
 export function resetField(game: Game, width?: number, height?: number) {
-  stopAllVoices();
   game.balls = [];
   game.groups = [];
   game.flashes = [];

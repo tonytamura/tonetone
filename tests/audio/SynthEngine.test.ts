@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { SCALE_NOTES, loadAt_, applyDrone, fadeDroneForResults, stopAllVoices, registerActiveNode, AudioStore, initAudio, wakeAudio, inKey, scaleNote, SCALE_ROOT } from '../../src/audio/SynthEngine';
+import { SCALE_NOTES, loadAt_, applyDrone, fadeDroneForResults, resetVoiceCounts, setLatencyHint, audioRebuilds, AudioStore, initAudio, wakeAudio, inKey, scaleNote, SCALE_ROOT } from '../../src/audio/SynthEngine';
 
 describe('SynthEngine module', () => {
   describe('SCALE_NOTES', () => {
@@ -45,20 +45,26 @@ describe('SynthEngine module', () => {
     });
   });
 
-  describe('stopAllVoices', () => {
-    it('stops and disconnects all registered nodes and resets counters', () => {
-      const nodeMock1 = { stop: vi.fn(), disconnect: vi.fn() };
-      const nodeMock2 = { disconnect: vi.fn() };
-      registerActiveNode(nodeMock1);
-      registerActiveNode(nodeMock2);
+  describe('setLatencyHint', () => {
+    it('leaves the context alone when the value does not change', () => {
+      // Every preset switch re-applies latency; each used to rebuild the context.
+      const was = { actx: AudioStore.actx, latency: AudioStore.latency };
+      try {
+        AudioStore.actx = { state: 'running', currentTime: 0 } as any;
+        AudioStore.latency = 0.05;
+        const before = audioRebuilds();
+        setLatencyHint(0.05);
+        expect(audioRebuilds()).toBe(before);
+        expect(AudioStore.actx).not.toBeNull();
+      } finally { AudioStore.actx = was.actx; AudioStore.latency = was.latency; }
+    });
+  });
+
+  describe('resetVoiceCounts', () => {
+    it('zeroes the voice counts, for a context being thrown away', () => {
       AudioStore.activeVoices = 5;
       AudioStore.thuds = 3;
-
-      stopAllVoices();
-
-      expect(nodeMock1.stop).toHaveBeenCalled();
-      expect(nodeMock1.disconnect).toHaveBeenCalled();
-      expect(nodeMock2.disconnect).toHaveBeenCalled();
+      resetVoiceCounts();
       expect(AudioStore.activeVoices).toBe(0);
       expect(AudioStore.thuds).toBe(0);
     });

@@ -419,15 +419,21 @@ const WHITE_BLACK_RING = [
  * soft dynamics compressor to prevent crackle, and scaling by chain size.
  * `whiteBlack` selects the lifted, ringing variant described above.
  */
-export function playBoom(boomSize: number = 3, xNorm: number = 0, opts: BoomOptions = {}) {
+export function playBoom(boomSize: number = 3, xNorm: number = 0, opts: BoomOptions = {}): boolean {
   const { ignoreOptionsGuard = false, whiteBlack = false } = opts;
-  if (!voiceAllowed(ignoreOptionsGuard, { vol: AudioStore.boomVol })) return;
+  if (!voiceAllowed(ignoreOptionsGuard, { vol: AudioStore.boomVol })) return false;
   const actx = AudioStore.actx!;
   const now = actx.currentTime;
   const t = now + LOOKAHEAD.boom;
   const dest = AudioStore.master!;
 
   const props = getBoomProps(boomSize);
+  // Each boom carries its own compressor and feedback-delay network for up to
+  // ~5s. Matches peak at 4-5 at once (Chaos, Rally); past MAX_BOOMS the newest
+  // is dropped rather than letting a pile-up crackle or stall a phone.
+  boomEnds = boomEnds.filter(end => end > now);
+  if (boomEnds.length >= MAX_BOOMS) return false;
+  boomEnds.push(t + props.dur + boomEchoSpec(boomSize, whiteBlack).tail);
   // The lifted boom carries more of its energy where the ear is most sensitive,
   // so it is shortened, and takes its level from its own ramp rather than a flat
   // multiple of this one's — the two peak at different tiers on purpose.
@@ -663,6 +669,7 @@ export function playBoom(boomSize: number = 3, xNorm: number = 0, opts: BoomOpti
   rightOsc.stop(echoEnd + 0.1);
 
   disposeWhenEnded(rightOsc, parts);
+  return true;
 }
 
 /**
@@ -730,10 +737,14 @@ export function pickGameBoom(profile: BoomProfile, rand: () => number = Math.ran
  */
 const MAX_ATTRACT_BOOMS = 3;
 let attractBoomEnds: number[] = [];
+/** Booms ringing anywhere, menu or match: a safety cap well above a match's peak of 4-5. */
+const MAX_BOOMS = 6;
+let boomEnds: number[] = [];
 
-/** Drop the attract-boom bookkeeping. Tests use this between cases. */
+/** Drop the boom bookkeeping. Tests use this between cases. */
 export function resetAttractBooms() {
   attractBoomEnds = [];
+  boomEnds = [];
 }
 // The ends are on the old context's clock, which a rebuild starts again at zero.
 onAudioRebuild(resetAttractBooms);
@@ -749,16 +760,18 @@ onAudioRebuild(resetAttractBooms);
 export function playRandomGameBoom(xNorm: number, profile: BoomProfile, opts: { ignoreOptionsGuard?: boolean } = {}) {
   const { ignoreOptionsGuard = false } = opts;
   const boom = pickGameBoom(profile);
-  const actx = AudioStore.actx!;
-  if (actx) {
-    const now = actx.currentTime;
-    attractBoomEnds = attractBoomEnds.filter((end) => end > now);
-    if (attractBoomEnds.length >= MAX_ATTRACT_BOOMS) return;
-    const props = getBoomProps(boom.boomSize);
-    const echo = boomEchoSpec(boom.boomSize, boom.whiteBlack);
-    attractBoomEnds.push(now + props.dur + echo.tail);
-  }
-  playBoom(boom.boomSize, xNorm, { ignoreOptionsGuard, whiteBlack: boom.whiteBlack });
+  const actx = AudioStore.actx;
+  if (!actx) return;
+  const now = actx.currentTime;
+  attractBoomEnds = attractBoomEnds.filter((end) => end > now);
+  if (attractBoomEnds.length >= MAX_ATTRACT_BOOMS) return;
+  // A slot is taken only by a boom that plays. Reserving it first let refused
+  // booms — context still stopped before the first tap, Options open, boom
+  // volume 0 — hold every slot for ~5s of audio clock, so the menu stayed
+  // silent for a while after the first tap.
+  if (!playBoom(boom.boomSize, xNorm, { ignoreOptionsGuard, whiteBlack: boom.whiteBlack })) return;
+  const props = getBoomProps(boom.boomSize);
+  attractBoomEnds.push(now + props.dur + boomEchoSpec(boom.boomSize, boom.whiteBlack).tail);
 }
 
 export function playNote(rel: number, xNorm: number, kind: 'bond' | 'break' | 'boom', opts: NoteOptions = {}) {

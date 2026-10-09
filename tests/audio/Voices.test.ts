@@ -5,6 +5,7 @@ import { clickHz, playBinauralClick, resetUiSoundsForTesting, setClickLockMs } f
 
 describe('Voices module', () => {
   beforeEach(() => {
+    resetAttractBooms();
     AudioStore.soundOn = true;
     AudioStore.activeVoices = 0;
     AudioStore.thuds = 0;
@@ -1151,6 +1152,22 @@ describe('Voices module', () => {
       (mockCtx as any).currentTime = 30;
       playRandomGameBoom(0, 'celebration', { ignoreOptionsGuard: true });
       expect(booms).toBe(4);
+
+      // A boom the context refuses takes no slot. Before the first tap the
+      // context is stopped and its clock stands still: refused booms used to
+      // hold every slot, so the menu stayed silent for seconds after the tap.
+      resetAttractBooms();
+      (mockCtx as any).state = 'suspended';
+      for (let i = 0; i < 3; i++) playRandomGameBoom(0, 'celebration', { ignoreOptionsGuard: true });
+      (mockCtx as any).state = 'running';
+      playRandomGameBoom(0, 'celebration', { ignoreOptionsGuard: true });
+      expect(booms).toBe(5);
+
+      // And however many booms a match asks for at once, a handful ring.
+      resetAttractBooms();
+      (mockCtx as any).currentTime = 60;
+      for (let i = 0; i < 20; i++) playBoom(5, 0, { ignoreOptionsGuard: true });
+      expect(booms).toBe(5 + 6);
     });
   });
 

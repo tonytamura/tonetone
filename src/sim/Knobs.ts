@@ -36,6 +36,12 @@ interface KnobCommon {
   group: 'game' | 'physics' | 'chain' | 'audio';
   /** Audio knobs need the AudioContext resumed before they mean anything. */
   wakesAudio?: boolean;
+  /**
+   * Applied when the slider is let go, not at every step of the drag: applying
+   * it is costly (latency rebuilds the AudioContext, and a drag across its range
+   * used to build fifteen of them).
+   */
+  onRelease?: boolean;
   /** True for knobs with no effect on simulation outcomes (visual/audio only). */
   cosmetic?: boolean;
   read(ctx: KnobContext): KnobValue;
@@ -317,7 +323,7 @@ const KNOB_SPECS = {
 
   latency: {
     group: 'audio', kind: 'range', min: 0, max: 0.2, step: 0.01, default: 0.05,
-    wakesAudio: true, cosmetic: true,
+    wakesAudio: true, cosmetic: true, onRelease: true,
     apply: v => { setLatencyHint(v as number); },
     format: v => (v ? Math.round((v as number) * 1000) + 'ms' : t('fmt.auto')),
     read: () => AudioStore.latency,

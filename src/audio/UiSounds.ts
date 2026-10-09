@@ -1,4 +1,4 @@
-import { AudioStore, BEAT, SILENCE, initAudio, isOptionsOpen, onAudioRebuild, scaleNote } from './SynthEngine';
+import { AudioStore, BEAT, SILENCE, initAudio, isAudioAsleep, isOptionsOpen, isStopped, onAudioRebuild, scaleNote } from './SynthEngine';
 
 /**
  * The interface's own voice: the binaural click every button makes.
@@ -182,6 +182,14 @@ export function playBinauralClick(
 ) {
   if (!AudioStore.soundOn) return;
   if (!ignoreOptionsGuard && isOptionsOpen()) return;
+  // An ambient click (a hover, an idle menu pop) is not played on a stopped or
+  // sleeping context: its clock stands still, so the click only queued up,
+  // holding a voice slot until it ran. Six idle pops before the first tap
+  // filled the cap, the tap's own click was refused, and the six went off
+  // together the moment the context started. A tap's click is still played:
+  // the tap is what is resuming the context.
+  const ctxNow = AudioStore.actx;
+  if (clickType === 'hover' && ctxNow && (isStopped(ctxNow) || isAudioAsleep())) return;
   const nowMs = performance.now();
   if (nowMs - lastClickTimestamp < clickLockMs) return;
   if (activeMenuVoices >= MAX_MENU_VOICES) return;
@@ -190,6 +198,7 @@ export function playBinauralClick(
     lastSelectTimestamp = nowMs;
   }
 
+  let counted = false;
   try {
     const actx = getAudioCtx();
     if (!actx) return;
@@ -288,6 +297,7 @@ export function playBinauralClick(
     }
 
     activeMenuVoices++;
+    counted = true;
     rightOsc.onended = () => {
       activeMenuVoices = Math.max(0, activeMenuVoices - 1);
       for (const n of nodesToClean) {
@@ -299,6 +309,8 @@ export function playBinauralClick(
     rightOsc.start(pTime);
     rightOsc.stop(stopTime);
   } catch (e) {
-    activeMenuVoices = Math.max(0, activeMenuVoices - 1);
+    // Only a voice that was counted is uncounted: a throw before the count went
+    // up used to take a slot from some other voice still playing.
+    if (counted) activeMenuVoices = Math.max(0, activeMenuVoices - 1);
   }
 }

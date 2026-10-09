@@ -70,11 +70,17 @@ export function setupSettingsKnobs(
     // A slider reports every step on `input`; a `<select>` reports a pick on
     // `change`, which every browser fires, where `input` on a select is not
     // universal.
-    const pickEvent = el.type.startsWith('select') ? 'change' : 'input';
+    const pickEvent = el.type.startsWith('select') || def.onRelease ? 'change' : 'input';
     el.addEventListener(pickEvent, () => {
-      if (def.wakesAudio) initAudio();
+      // Applied before the context is woken, so a first touch on an audio knob
+      // builds the context with the new value rather than one to throw away.
       run();
+      if (def.wakesAudio) initAudio();
       knobChanged(def.id as KnobId);
+    });
+    // A knob applied on release still shows its value as it is dragged.
+    if (def.onRelease && out) el.addEventListener('input', () => {
+      out.textContent = formatKnob(def, parseFloat(el.value), ctx());
     });
     run();
   }
