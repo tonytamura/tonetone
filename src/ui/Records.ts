@@ -1,6 +1,7 @@
 /**
  * The player's records: the best solo score on each mode, who won the two-player
- * matches on each mode, and the best score and the wins against each AI.
+ * matches on each mode, and the wins against each AI and the best score against
+ * each on each mode.
  *
  * Solo records are kept per mode because the modes are different games: Chaos
  * lasts one minute and Relax three, so one number across them would only reward
@@ -29,7 +30,12 @@ export interface Tally {
 export interface Records {
   /** Best solo score by mode: a preset id or a Custom slot's. */
   solo: Record<string, number>;
-  /** Best score against each AI, by level id; on a named preset only. */
+  /**
+   * Best score against each AI on each named preset, keyed `preset:aiId`
+   * (`aiBestKey`). Kept per mode since 2026-10-09, for the same reason solo is:
+   * a three-minute Relax score and a one-minute Chaos one are not the same
+   * record. A key stored before then, a bare AI id, is kept but not shown.
+   */
   ai: Record<string, number>;
   /** Two-player results by mode. */
   duel: Record<string, Tally>;
@@ -39,6 +45,11 @@ export interface Records {
 
 export function emptyRecords(): Records {
   return { solo: {}, ai: {}, duel: {}, vsAi: {} };
+}
+
+/** Where the best score against `aiId` on `preset` is kept in `Records.ai`. */
+export function aiBestKey(preset: string, aiId: string): string {
+  return `${preset}:${aiId}`;
 }
 
 const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
@@ -167,6 +178,8 @@ export interface RecordSection {
   title: string;
   /** Column heads for the values, when a row has more than one. */
   columns?: string[];
+  /** Whose colour each head is drawn in: 0 player 1, 1 player 2 or the AI; null for neither. */
+  seats?: (0 | 1 | null)[];
   /** `note` is a small second line under the label, such as the ladder's "next". */
   rows: { label: string; values: string[]; note?: string }[];
   /** Said in place of the rows when there are none. */
@@ -180,8 +193,12 @@ export interface RecordSection {
  *   mode never played has no row (since 2026-09-29; it used to show a dash).
  * - Two players: P1's and P2's wins and P1's share, on each mode that has been
  *   played; a mode with no results has no row.
- * - vs AI: on every rung, the best score, the player's and the AI's wins, and
- *   the player's share. `next` marks the rung the ladder plays next.
+ * - vs AI: on every rung, the player's and the AI's wins and the player's
+ *   share. `next` marks the rung the ladder plays next.
+ * - Best vs AI: one row per mode with a best against any AI, one column per AI.
+ *
+ * The heads name the players the way the match does (YOU and the AI, in the
+ * player's language; P1 and P2 between two people) and wear their colours.
  */
 export function recordSections(
   records: Records,
@@ -190,6 +207,7 @@ export function recordSections(
   next: number,
 ): RecordSection[] {
   const dash = '–';
+  const you = t('hud.you');
   return [
     {
       title: t('records.solo'),
@@ -199,6 +217,7 @@ export function recordSections(
     {
       title: t('records.duel'),
       columns: ['P1', 'P2', 'P1 %'],
+      seats: [0, 1, 0],
       rows: modes.filter(m => records.duel[m.id]).map(m => {
         const tally = records.duel[m.id];
         return { label: m.label, values: [String(tally.p1), String(tally.p2), winShare(tally)] };
@@ -207,20 +226,31 @@ export function recordSections(
     },
     {
       title: t('records.ai'),
-      columns: [t('records.best'), 'P1', 'AI', 'P1 %'],
+      columns: [you, t('records.them'), `${you} %`],
+      seats: [0, 1, 0],
       rows: ais.map((a, i) => {
         const tally = records.vsAi[a.id];
         return {
           label: a.label,
           ...(i === next ? { note: t('records.next') } : {}),
-          values: [
-            a.id in records.ai ? String(records.ai[a.id]) : dash,
-            tally ? String(tally.p1) : dash,
-            tally ? String(tally.p2) : dash,
-            winShare(tally),
-          ],
+          values: [tally ? String(tally.p1) : dash, tally ? String(tally.p2) : dash, winShare(tally)],
         };
       }),
+    },
+    {
+      title: t('records.aiBest'),
+      columns: ais.map(a => a.label),
+      seats: ais.map(() => 1 as const),
+      rows: modes
+        .filter(m => ais.some(a => aiBestKey(m.id, a.id) in records.ai))
+        .map(m => ({
+          label: m.label,
+          values: ais.map(a => {
+            const k = aiBestKey(m.id, a.id);
+            return k in records.ai ? String(records.ai[k]) : dash;
+          }),
+        })),
+      empty: t('records.none'),
     },
   ];
 }
@@ -252,16 +282,17 @@ export function saveLadderLevel(level: number, store: KeyValueStore | null = dev
 
 /**
  * What the vs AI results card says: where the ladder goes next, and the best
- * score against this AI. The card's own "You Won" / "You Lost" / "Draw" stays.
+ * score against this AI on this mode (`preset`, its label). The card's own
+ * "You Won" / "You Lost" / "Draw" stays.
  */
 export function ladderNotes(
-  played: string, next: string, direction: 'up' | 'down' | 'stay', atTop: boolean, record: RecordResult
+  played: string, next: string, direction: 'up' | 'down' | 'stay', atTop: boolean, record: RecordResult, preset = ''
 ): ResultNotes {
   const lines: string[] = [];
   if (direction === 'up') lines.push(t('ladder.next', { ai: next }));
   else if (direction === 'down') lines.push(t('ladder.back', { ai: next }));
   else lines.push(atTop ? t('ladder.top', { ai: played }) : t('ladder.again', { ai: next }));
-  if (record.isNew) lines.push(t('ladder.newBest', { ai: played, score: record.best }));
-  else if (record.best > 0) lines.push(t('ladder.best', { ai: played, score: record.best }));
+  if (record.isNew) lines.push(t('ladder.newBest', { ai: played, preset, score: record.best }));
+  else if (record.best > 0) lines.push(t('ladder.best', { ai: played, preset, score: record.best }));
   return { lines };
 }

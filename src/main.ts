@@ -23,7 +23,7 @@ import { createSeatCard, needsSeatCard } from './ui/SeatCard';
 import { createFirstPlayOffer, setupHelpScreen, shouldOfferTutorial } from './ui/FirstPlay';
 import { hasSeenTutorial, markTutorialSeen } from './ui/Progress';
 import {
-  ResultNotes, ladderNotes, loadLadderLevel, loadRecords, recordMatch, recordSections, saveLadderLevel, soloRecordNotes, submitScore,
+  ResultNotes, aiBestKey, ladderNotes, loadLadderLevel, loadRecords, recordMatch, recordSections, saveLadderLevel, soloRecordNotes, submitScore,
 } from './ui/Records';
 import { AI_LEVELS, ladderStep } from './game/AI';
 import { FORCED_AI_LEVEL, aiLevelFor } from './game/AIChoice';
@@ -187,7 +187,7 @@ const firstPlay = createFirstPlayOffer({
 
 setupHelpScreen(() => tutorial.start({ then: null }));
 setupRecordsScreen(
-  () => recordSections(loadRecords(), presetChoices(), AI_LEVELS, loadLadderLevel(AI_LEVELS.length)),
+  () => recordSections(loadRecords(), presetChoices(), AI_LEVELS, aiLevelFor(loadLadderLevel(AI_LEVELS.length))),
   () => recordWords(loadRecords(), AI_LEVELS),
 );
 
@@ -212,8 +212,9 @@ function resultNotes(g: typeof game): ResultNotes | undefined {
  * A vs AI match counts in that AI's tally, and moves the ladder: a win one rung
  * up, a loss one down (a loss to AGI, Game Over, all the way back to AI1), a
  * draw nowhere. The next match, Play again included, is against the new rung.
- * The best score against each AI counts on a named preset only: a Custom
- * slot's match could be twenty minutes long.
+ * The best score against each AI is kept per named preset, as solo bests are
+ * per mode; a Custom slot's match keeps none, since it could be twenty minutes
+ * long. A Custom match does move the ladder.
  */
 function ladderResult(g: typeof game, preset: string | null): ResultNotes {
   const played = AI_LEVELS[g.aiLevel];
@@ -226,9 +227,9 @@ function ladderResult(g: typeof game, preset: string | null): ResultNotes {
   const next = ladderStep(g.aiLevel, mine, theirs);
   const direction = next > g.aiLevel ? 'up' : next < g.aiLevel ? 'down' : 'stay';
   const atTop = mine > theirs && g.aiLevel === AI_LEVELS.length - 1;
-  const record = preset ? submitScore('ai', played.id, mine) : { isNew: false, best: 0, previous: null };
+  const record = preset ? submitScore('ai', aiBestKey(preset, played.id), mine) : { isNew: false, best: 0, previous: null };
   saveLadderLevel(next);
-  return ladderNotes(played.label, AI_LEVELS[next].label, direction, atTop, record);
+  return ladderNotes(played.label, AI_LEVELS[next].label, direction, atTop, record, presetLabel(settings.choice()));
 }
 
 // Leaving for the menu takes down whatever the field was waiting behind.

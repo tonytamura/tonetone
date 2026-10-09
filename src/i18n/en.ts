@@ -45,11 +45,15 @@ export const EN = {
   'help.sounds': 'Sound preview',
   'records.title': 'Records',
   'records.solo': 'Solo — highest score',
-  // The Records screen's sections. Under the two-player and vs AI ones, columns
-  // headed P1, P2, AI and P1 % (kept as they are), and 'best' for the best score.
-  'records.ai': 'vs AI',
+  // The Records screen's sections. Under the two-player one, columns headed P1,
+  // P2 and P1 % (kept as they are); under vs AI, YOU (hud.you), records.them
+  // and YOU %; under the best scores, the AIs' names.
+  'records.ai': 'vs AI — wins',
+  // The best scores against each AI, one row per mode, one column per AI.
+  'records.aiBest': 'vs AI — best score',
+  // Heads the AI's wins under vs AI, beside YOU and YOU %: two or three letters.
+  'records.them': 'AI',
   'records.duel': 'vs Friend — wins',
-  'records.best': 'best',
   'records.none': 'No matches yet',
   // Marks the AI the ladder will play next, after its name: "AI2 · next".
   'records.next': 'next',
@@ -189,8 +193,8 @@ export const EN = {
   'ladder.back': 'Back to {ai}',
   'ladder.again': 'Again: {ai}',
   'ladder.top': '{ai} stays the one to beat.',
-  'ladder.newBest': 'New best against {ai}: {score}',
-  'ladder.best': 'Best against {ai}: {score}',
+  'ladder.newBest': 'New best against {ai} on {preset}: {score}',
+  'ladder.best': 'Best against {ai} on {preset}: {score}',
   'ladder.forced': '{ai}, set in Options. The ladder does not move.',
 
   // ── Score pops on the table ──────────────────────────────────────────────

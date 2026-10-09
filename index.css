@@ -1708,6 +1708,10 @@ select option {
   color: var(--ink-soft);
 }
 
+/* A head in its player's colour: P1 (and YOU) cyan, P2 and the AI pink. */
+.records-head .records-p1 { color: var(--cyan); }
+.records-head .records-p2 { color: var(--pink); }
+
 /* The ladder's "next" under an AI's name, on a line of its own so it never
    breaks the name in a narrow column. */
 .records-note {

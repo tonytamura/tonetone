@@ -33,7 +33,7 @@ describe('the language in force', () => {
 
   it('is English until another is chosen, and fills in {values}', () => {
     expect(language()).toBe('en');
-    expect(t('ladder.best', { ai: 'AI2', score: 480 })).toBe('Best against AI2: 480');
+    expect(t('ladder.best', { ai: 'AI2', preset: 'Normal', score: 480 })).toBe('Best against AI2 on Normal: 480');
     expect(tList('res.pops')).toContain('WINNER!');
   });
 

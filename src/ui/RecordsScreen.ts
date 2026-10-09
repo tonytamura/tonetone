@@ -1,7 +1,7 @@
 /**
  * The Records screen, opened by the trophy on the main menu: the best solo
- * score on every mode, two-player wins by mode, and each AI's best score and
- * wins. Built fresh from storage each time it opens, with a celebration
+ * score on every mode, two-player wins by mode, the wins against each AI, and
+ * the best score against each AI on each mode. Built fresh from storage each time it opens, with a celebration
  * around it (`RecordsCelebration.ts`) for as long as it stays open.
  */
 import { RecordSection } from './Records';
@@ -53,7 +53,7 @@ export function setupRecordsScreen(content: () => RecordSection[], words: () => 
 export function fillRecords(root: HTMLElement | null, sections: RecordSection[]) {
   if (!root) return;
   root.innerHTML = '';
-  const row = (cls: string, label: string, values: string[], cols: number, note?: string) => {
+  const row = (cls: string, label: string, values: string[], cols: number, note?: string, seats?: (0 | 1 | null)[]) => {
     const r = document.createElement('div');
     r.className = cls;
     r.style.setProperty('--cols', String(cols));
@@ -66,11 +66,13 @@ export function fillRecords(root: HTMLElement | null, sections: RecordSection[])
       l.appendChild(n);
     }
     r.appendChild(l);
-    for (const v of values) {
+    values.forEach((v, i) => {
       const b = document.createElement(cls === 'records-row' ? 'b' : 'span');
       b.textContent = v;
+      const seat = seats?.[i];
+      if (seat === 0 || seat === 1) b.className = seat === 0 ? 'records-p1' : 'records-p2';
       r.appendChild(b);
-    }
+    });
     root.appendChild(r);
   };
   for (const sec of sections) {
@@ -86,7 +88,7 @@ export function fillRecords(root: HTMLElement | null, sections: RecordSection[])
       root.appendChild(e);
       continue;
     }
-    if (sec.columns) row('records-row records-head', '', sec.columns, cols);
+    if (sec.columns) row('records-row records-head', '', sec.columns, cols, undefined, sec.seats);
     for (const r of sec.rows) row('records-row', r.label, r.values, cols, r.note);
   }
 }

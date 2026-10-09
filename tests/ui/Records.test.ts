@@ -60,7 +60,7 @@ describe('records', () => {
   });
 });
 
-import { recordMatch, recordSections, soloRecordNotes, winShare } from '../../src/ui/Records';
+import { aiBestKey, recordMatch, recordSections, soloRecordNotes, winShare } from '../../src/ui/Records';
 
 describe('the results card', () => {
   it('says "New highest score" only when a record is set', () => {
@@ -136,13 +136,34 @@ describe('the Records screen', () => {
     expect(none.empty).toBe('No matches yet');
   });
 
-  it('gives every AI its best score, both sides\' wins and the player\'s share, and marks the next', () => {
+  it('gives every AI both sides\' wins and the player\'s share, in the match\'s names and colours, and marks the next', () => {
     const [, , vsAi] = recordSections(records, modes, ais, 1);
-    expect(vsAi.columns).toEqual(['best', 'P1', 'AI', 'P1 %']);
+    expect(vsAi.columns).toEqual(['YOU', 'AI', 'YOU %']);
+    expect(vsAi.seats).toEqual([0, 1, 0]);
     expect(vsAi.rows).toEqual([
-      { label: 'AI1', values: ['–', '–', '–', '–'] },
-      { label: 'AGI', note: 'next', values: ['1500', '1', '3', '25%'] },
+      { label: 'AI1', values: ['–', '–', '–'] },
+      { label: 'AGI', note: 'next', values: ['1', '3', '25%'] },
     ]);
+  });
+
+  it('keeps the best against each AI per mode, and shows only the modes that have one', () => {
+    const withBests = { ...records, ai: { 'normal:agi': 1500, 'chaos:ai1': 300, 'chaos:agi': 700, agi: 999 } };
+    const [, , , best] = recordSections(withBests, modes, ais, 0);
+    expect(best.columns).toEqual(['AI1', 'AGI']);
+    expect(best.rows).toEqual([
+      { label: 'Normal', values: ['–', '1500'] },
+      { label: 'Chaos', values: ['300', '700'] },
+    ]);
+    const [, , , none] = recordSections(records, modes, ais, 0); // a bare id from before is not shown
+    expect(none.rows).toEqual([]);
+    expect(none.empty).toBe('No matches yet');
+  });
+
+  it('stores a best against an AI per mode', () => {
+    const s = memoryStore();
+    submitScore('ai', aiBestKey('normal', 'ai3'), 400, s);
+    expect(submitScore('ai', aiBestKey('chaos', 'ai3'), 100, s).isNew).toBe(true);
+    expect(loadRecords(s).ai).toEqual({ 'normal:ai3': 400, 'chaos:ai3': 100 });
   });
 });
 
@@ -169,9 +190,9 @@ describe('the AI ladder on this device', () => {
     expect(ladderNotes('AI3', 'AI4', 'up', false, none).lines).toEqual(['Next: AI4']);
     expect(ladderNotes('AI3', 'AI2', 'down', false, none).lines).toEqual(['Back to AI2']);
     expect(ladderNotes('AI3', 'AI3', 'stay', false, none).lines).toEqual(['Again: AI3']);
-    expect(ladderNotes('AI4', 'AI4', 'stay', false, { isNew: true, best: 700, previous: 650 }).lines)
-      .toEqual(['Again: AI4', 'New best against AI4: 700']);
-    expect(ladderNotes('AI4', 'AI5', 'up', false, { isNew: false, best: 900, previous: 900 }).lines)
-      .toEqual(['Next: AI5', 'Best against AI4: 900']);
+    expect(ladderNotes('AI4', 'AI4', 'stay', false, { isNew: true, best: 700, previous: 650 }, 'Normal').lines)
+      .toEqual(['Again: AI4', 'New best against AI4 on Normal: 700']);
+    expect(ladderNotes('AI4', 'AI5', 'up', false, { isNew: false, best: 900, previous: 900 }, 'Chaos').lines)
+      .toEqual(['Next: AI5', 'Best against AI4 on Chaos: 900']);
   });
 });

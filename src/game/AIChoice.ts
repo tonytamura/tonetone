@@ -1,9 +1,12 @@
 /**
  * Which AI plays vs AI matches, when it is not the ladder's choice.
  *
- * The `ailevel` knob (Custom only) sets it: 0 leaves the ladder in charge, and
- * n forces rung n (1 = the weakest) so a player can feel one level match after
- * match. A forced match neither moves the ladder nor sets a record. The game
+ * The `ailevel` knob sets it, an everyday option like the volume (no preset
+ * resets it): 0 leaves the ladder in charge, and n forces rung n (1 = the
+ * weakest) so a player can feel one level match after match. A forced match
+ * counts in that AI's tally of wins, but neither moves the ladder nor sets a
+ * best score. A Custom mode's match does move the ladder: breaking the AI
+ * with odd settings is part of the fun. The game
  * and the harness both pick the level through `aiLevelFor`; the harness used to
  * ignore the knob, so a `sweep ailevel=…` measured the classic AI every time.
  */
