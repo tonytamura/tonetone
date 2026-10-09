@@ -59,9 +59,11 @@ describe('settingsLine', () => {
 
   it('round-trips a changed value rather than the default', () => {
     const els = mountKnobs();
-    els.get('boom')!.value = '0.42';
+    els.get('boom')!.value = '0.45';
     const pair = settingsLine().split(',').find(p => p.startsWith('boom='));
-    expect(pair).toBe('boom=0.42');
-    expect(parseKnobValue('boom', '0.42')).toBe(0.42);
+    expect(pair).toBe('boom=0.45');
+    expect(parseKnobValue('boom', '0.45')).toBe(0.45);
+    // A value the slider cannot reach is refused, not run as if it could be.
+    expect(() => parseKnobValue('boom', '0.42')).toThrow(/steps of 0.05/);
   });
 });

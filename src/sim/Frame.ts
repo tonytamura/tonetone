@@ -116,7 +116,11 @@ function refillBank(p: LauncherPlayer, reloadTime: number, dt: number) {
  */
 function botReleases(p: LauncherPlayer, clock: number, isAi: boolean, aiSettled: boolean): boolean {
   if (p.bank <= 0 || p.hold > 0 || clock - p.lastThrowAt < BOT_RELEASE_GAP) return false;
-  return !isAi || (aiSettled && !p.holdFire);
+  // A planning profile holds its release in either seat: a harness bot playing
+  // AGI from seat 1 used to throw before its plan was made, so tournaments
+  // under continuous fire were not seat-symmetric.
+  if (p.holdFire) return false;
+  return !isAi || aiSettled;
 }
 
 /**
@@ -153,6 +157,7 @@ export function advanceFrame(
     clock += dt;
   }
   syncFromCollisionState(game, colState);
+  game.clock = clock;
 
   // Once the match is over the launchers rest: no ring filling and, under
   // continuous fire, no bank refilling behind the results (Tony, 2026-09-30).

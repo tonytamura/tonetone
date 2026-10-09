@@ -6,6 +6,7 @@
  * function the browser build's game loop calls — so it always measures the
  * shipping simulation rather than a copy of it.
  */
+import { aiLevelFor } from '../game/AIChoice';
 import {
   Game, PlayMode, createGame, liveBallCount, lowDensityThreshold, resetField, startMatch,
 } from '../game/GameState';
@@ -91,6 +92,15 @@ export interface SimOptions {
   invariants?: boolean;
   /** Called after every frame, for custom measurements. */
   onFrame?: (game: Game, frame: number, t: number) => void;
+  /**
+   * Matches played on the same Game before the measured one, as the app plays
+   * match after match on one Game: each runs to its match clock (or `seconds`),
+   * then the field is reset the way a new match resets it. A fresh Game per run
+   * could never see state a match leaves behind (Bugs 20 and 21).
+   */
+  priorMatches?: number;
+  /** Seconds the launchers hold at the start, as the app's countdown does. Default 0. */
+  countdown?: number;
 }
 
 export interface RunResult {
@@ -265,12 +275,28 @@ export function runSim(opts: SimOptions = {}): RunResult {
     if (!opts.knobs || !('match' in opts.knobs)) game.matchLen = 0;
     if (opts.knobs) applyKnobs(opts.knobs, ctx);
     recalcThresholds(height);
+    // The `ailevel` knob forces a rung as it does in the game, unless the caller seats one.
+    if (game.aiOn && opts.aiLevel === undefined) game.aiLevel = aiLevelFor(game.aiLevel);
+
+    let clock = 0;
+    const totalFrames = Math.max(1, Math.round(seconds / dt));
+    for (let m = 0; m < (opts.priorMatches ?? 0); m++) {
+      resetField(game, width, height);
+      startMatch(game, opts.countdown ?? 0);
+      for (let f = 0; f < totalFrames && !game.matchOver; f++) {
+        if (mode !== 'idle') {
+          applyPolicy(policies[0], game.players[0], game, width, height, f * dt, dt);
+          if (game.twoPlayer && !game.aiOn) applyPolicy(policies[1], game.players[1], game, width, height, f * dt, dt);
+        }
+        clock = advanceFrame(game, dt, width, height, clock).clock;
+      }
+    }
 
     resetField(game, width, height);
-    // Countdown 0: the harness fires on the first frame. The browser holds fire for
-    // one reload instead, so a measured match is very slightly longer than a played
-    // one at the same `seconds`. Unmeasured; see the Simulation Harness page.
-    startMatch(game, 0);
+    // Countdown 0 by default: the harness fires on the first frame. The browser
+    // holds fire for one reload instead (`countdown` models it), so a measured
+    // match is very slightly longer than a played one at the same `seconds`.
+    startMatch(game, opts.countdown ?? 0);
     // `idle` never fires a throw: lock all reload timers at Infinity so the
     // launcher bays never become ready. (game.turnT was removed in the
     // simultaneous-play refactor; this is the current equivalent guard.)
@@ -278,10 +304,12 @@ export function runSim(opts: SimOptions = {}): RunResult {
       for (const p of game.players) p.reload = Infinity;
     }
 
-    const totalFrames = Math.max(1, Math.round(seconds / dt));
-    const halfFrame = Math.floor(totalFrames / 2);
+    // Half-time of the match itself when it is shorter than the window: taken
+    // from `seconds` alone, a 60s match in a 180s window read its half-time at
+    // 90s, after it had ended, and catch-up became the final lead.
+    const matchFrames = game.matchLen > 0 ? Math.round(game.matchLen / dt) : totalFrames;
+    const halfFrame = Math.floor(Math.min(totalFrames, matchFrames) / 2);
 
-    let clock = 0;
     let worst: Invariants = NO_VIOLATION;
     let worstAt = 0;
     const samples: Sample[] = [];
@@ -388,7 +416,9 @@ export function runSim(opts: SimOptions = {}): RunResult {
         halfTimeScores = [game.players[0].score, game.players[1].score];
       }
 
-      for (let i = 0; i < game.players.length && i < 2; i++) {
+      // Only the decks in play: solo's second launcher never throws, and counting
+      // its untouched deck put 12% more draws under whiteFrac than solo made.
+      for (let i = 0; i < (game.twoPlayer ? 2 : 1); i++) {
         const p = game.players[i];
         for (const slot of ['loaded', 'nextUp', 'then'] as const) {
           const card = p[slot];

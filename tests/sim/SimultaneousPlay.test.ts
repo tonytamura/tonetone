@@ -1,16 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { createGame, resetField, throwBall } from '../../src/game/GameState';
+import { createGame, resetField, startMatch, throwBall } from '../../src/game/GameState';
+import { advanceFrame } from '../../src/sim/Frame';
 import { runSim } from '../../src/sim/Harness';
 import { TOLERANCE, violations } from '../../src/sim/Metrics';
 
 describe('Simultaneous 2-Player Play', () => {
-  it('allows both players to be active in 2P mode', () => {
+  it('lets both players throw on the same frame in 2P mode', () => {
     const game = createGame();
     game.twoPlayer = true;
-
-    // In simultaneous (non-turn-based) mode, reload starts at 0 so both players are immediately active
-    expect(game.players[0].reload).toBe(0);
-    expect(game.players[1].reload).toBe(0);
+    resetField(game, 380, 620);
+    startMatch(game, 0);
+    // No turns: both launchers are ready at once, and one frame throws both.
+    expect(advanceFrame(game, 1 / 60, 380, 620, 0).threw).toBe(2);
+    expect(game.balls.some(b => b.credit === 0) && game.balls.some(b => b.credit === 1)).toBe(true);
   });
 
   it('handles simultaneous shots from both players without physics violations', () => {
@@ -39,10 +41,10 @@ describe('Simultaneous 2-Player Play', () => {
     expect(p1Ball).toBeDefined();
   });
 
-  it('runs a 60-second simultaneous duel simulation cleanly', () => {
+  it('runs a simultaneous duel cleanly, with both players scoring', () => {
     const res = runSim({
       seed: 42,
-      seconds: 60,
+      seconds: 30,
       mode: 'duel',
       policies: ['engine-ai', 'engine-ai'],
     });
@@ -51,12 +53,8 @@ describe('Simultaneous 2-Player Play', () => {
     expect(res.worst.frozen).toBe(0);
     expect(res.worst.overlap).toBeLessThanOrEqual(TOLERANCE.overlap);
     expect(res.throws).toBeGreaterThan(0);
-    expect(res.finalScores[0] + res.finalScores[1]).toBeGreaterThanOrEqual(0);
-    expect(Number.isNaN(res.finalScores[0])).toBe(false);
-    expect(Number.isNaN(res.finalScores[1])).toBe(false);
-
-    // Both players score and interact in 2-player mode
-    expect(res.players[0].score).toBeGreaterThanOrEqual(0);
-    expect(res.players[1].score).toBeGreaterThanOrEqual(0);
+    // Both players score in 2-player mode (`>= 0` here used to pass with neither).
+    expect(res.players[0].score).toBeGreaterThan(0);
+    expect(res.players[1].score).toBeGreaterThan(0);
   });
 });

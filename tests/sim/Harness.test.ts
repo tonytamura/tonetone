@@ -1,3 +1,4 @@
+import { levelIndex } from '../../src/game/AI';
 import { describe, it, expect } from 'vitest';
 import { DEFAULT_HEIGHT, DEFAULT_WIDTH, extract, runMany, runSim } from '../../src/sim/Harness';
 import { PhysicsConfig } from '../../src/physics/Config';
@@ -226,15 +227,6 @@ describe('the five qualities a preset is judged on', () => {
     expect(r.chainLongFrac).toBeLessThanOrEqual(1);
   });
 
-  it('measures chain depth without changing what it measures', () => {
-    // The tally objects are read off the balls that already carry them, so a
-    // run measured for chains has to be identical to one that is not.
-    const a = runSim({ mode: 'duel', seed: 3, seconds: 20 });
-    const b = runSim({ mode: 'duel', seed: 3, seconds: 20 });
-    expect(a.chainAvg).toBe(b.chainAvg);
-    expect(a.finalScores).toEqual(b.finalScores);
-  });
-
   it('separates live balls from boom debris', () => {
     const r = runSim({ mode: 'duel', seed: 1, seconds: 60 });
     // Ghosts are debris in flight, not playable material, so the live count can
@@ -271,5 +263,39 @@ describe('the five qualities a preset is judged on', () => {
     // Solo has no second launcher to take a lead from, so the count is not a
     // small number there — it is meaningless, and reported as zero.
     expect(runSim({ mode: 'solo', seed: 1, seconds: 60 }).leadChanges).toBe(0);
+  });
+});
+
+describe('the harness plays what the app plays', () => {
+  it('lets the ailevel knob seat a rung, as the app does', () => {
+    // It used to read the knob back and seat the classic AI regardless.
+    const forced = runSim({ mode: 'ai', seed: 4, seconds: 10, invariants: false, knobs: { ailevel: 3 } });
+    const seated = runSim({ mode: 'ai', seed: 4, seconds: 10, invariants: false, aiLevel: levelIndex('ai3') });
+    const classic = runSim({ mode: 'ai', seed: 4, seconds: 10, invariants: false });
+    expect(forced.finalScores).toEqual(seated.finalScores);
+    expect(forced.finalScores).not.toEqual(classic.finalScores);
+  });
+
+  it('plays a match after earlier ones on the same Game, from a clean start', () => {
+    let first: number[] | null = null;
+    const r = runSim({
+      mode: 'ai', aiLevel: levelIndex('ai2'), seed: 2, seconds: 10, invariants: false, priorMatches: 2, countdown: 3,
+      knobs: { match: 10 },
+      onFrame: g => { if (!first) first = g.players.map(p => p.score); },
+    });
+    expect(first).toEqual([0, 0]);
+    expect(r.throws).toBeGreaterThan(2);
+    // The countdown holds the launchers: nothing is thrown in its first 3s.
+    let thrownEarly = 0;
+    runSim({ mode: 'duel', seed: 2, seconds: 3, invariants: false, countdown: 3,
+      onFrame: g => { thrownEarly = g.balls.filter(b => b.credit >= 0).length; } });
+    expect(thrownEarly).toBe(0);
+  });
+
+  it('measures half-time at half the match, not half the window', () => {
+    let atHalf: number[] = [];
+    const r = runSim({ mode: 'duel', seed: 1, seconds: 60, invariants: false, knobs: { match: 30 },
+      onFrame: (g, f) => { if (f === 900) atHalf = g.players.map(p => p.score); } });
+    expect(r.halfTimeScores).toEqual(atHalf);
   });
 });

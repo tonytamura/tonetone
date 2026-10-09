@@ -608,6 +608,13 @@ export function parseKnobValue(id: string, raw: string): KnobValue {
   if (raw.trim() === '' || !isFinite(v)) throw new Error(`Knob "${id}" needs a number, got "${raw}"`);
   if (v < def.min) throw new Error(`Knob "${id}" is below its minimum ${def.min}`);
   if (v > def.max) throw new Error(`Knob "${id}" is above its maximum ${def.max}`);
+  // Only values the slider can reach: the panel snaps anything else to its grid,
+  // so a run at boom=0.43 measured a setting no player can choose (0.45 is).
+  const decimals = (String(def.step).split('.')[1] || '').length;
+  const nearest = Number((def.min + Math.round((v - def.min) / def.step) * def.step).toFixed(decimals));
+  if (Math.abs(nearest - v) > 1e-9) {
+    throw new Error(`Knob "${id}" moves in steps of ${def.step} from ${def.min}: ${v} is not one (nearest ${nearest})`);
+  }
   return v;
 }
 

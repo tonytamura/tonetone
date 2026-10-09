@@ -26,8 +26,7 @@ import {
   ResultNotes, ladderNotes, loadLadderLevel, loadRecords, recordMatch, recordSections, saveLadderLevel, soloRecordNotes, submitScore,
 } from './ui/Records';
 import { AI_LEVELS, ladderStep } from './game/AI';
-import { setPlannerBudget } from './game/AIPlanner';
-import { FORCED_AI_LEVEL } from './game/AIChoice';
+import { FORCED_AI_LEVEL, aiLevelFor } from './game/AIChoice';
 import { settingsLine } from './game/Settings';
 import { initAudio, audioReturned, checkAudioOnGesture, sleepAudio, AudioStore, fadeDroneForResults, setOptionsOpenState, setSoundOn, onSoundChange } from './audio/SynthEngine';
 import { uiClick } from './audio/UiSounds';
@@ -148,7 +147,7 @@ function newMatch() {
   // included). Read here, not when the result is decided, so the results card
   // still names the AI that was just played.
   // A level forced in Options (Custom) wins over the ladder's.
-  if (game.aiOn) game.aiLevel = FORCED_AI_LEVEL > 0 ? FORCED_AI_LEVEL - 1 : loadLadderLevel(AI_LEVELS.length);
+  if (game.aiOn) game.aiLevel = aiLevelFor(loadLadderLevel(AI_LEVELS.length));
   resetField(game, renderCtx.W, renderCtx.H);
   setPaused(game, false);
   // Hold fire for one reload so no ball leaves a launcher until the start countdown ends.
@@ -158,10 +157,6 @@ function newMatch() {
   resetStartCountdown();
 }
 
-
-// The planning AIs spread their thinking over the frames before a throw, at
-// most this long per frame, so a slow device thinks less rather than stutters.
-setPlannerBudget(4);
 
 const settings = setupSettingsKnobs(() => game, () => renderCtx.H || window.innerHeight);
 // A duel's winner picks the next match's mode on the results card.

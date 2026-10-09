@@ -68,7 +68,7 @@ That is the full gate for any change to `src/physics/`, `src/game/` or
 `src/sim/`. Run it before reporting a change as done. The individual gates:
 
 ```bash
-npm test               # unit tests (379), including the harness's own
+npm test               # unit tests, including the harness's own
 npm run sim:physics    # textbook solver results: momentum, energy, 90° separation
 npm run sim:invariants # geometric invariants on every frame of 10 scenarios
 npm run sim:baseline   # did this change alter how the game plays?

@@ -1,9 +1,9 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createGame, resetField, startMatch } from '../../src/game/GameState';
 import { recalcThresholds } from '../../src/physics/Config';
 import { withSeed } from '../../src/sim/Rng';
 import { AudioStore } from '../../src/audio/SynthEngine';
-import { PlanJob, cloneForPlanning, setPlannerBudget } from '../../src/game/AIPlanner';
+import { PlanJob, cloneForPlanning, setPlannerBudget, PLAN_FRAMES_PER_FRAME } from '../../src/game/AIPlanner';
 
 const W = 380, H = 620;
 
@@ -18,7 +18,8 @@ function table() {
 
 const CANDIDATES = [-40, -15, 0, 20, 45].map(aimDeg => ({ aimDeg, strength: 1 }));
 
-afterEach(() => setPlannerBudget(Infinity));
+beforeEach(() => setPlannerBudget(Infinity));
+afterEach(() => setPlannerBudget(PLAN_FRAMES_PER_FRAME));
 
 describe('the planner', () => {
   AudioStore.soundOn = false;

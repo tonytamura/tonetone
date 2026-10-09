@@ -275,6 +275,12 @@ describe('knob defaults match the module literals', () => {
     const literalPhys: Record<string, unknown> = { ...PhysicsConfig };
     const literalAudio: Record<string, unknown> = { ...AudioStore };
     const literalMatchLen = game.matchLen;
+    // Every knob read through its own `read`, before the defaults go on: the
+    // field list below this used to name AudioStore fields that do not exist
+    // ('vol', 'droneVol'), so those checks never ran, and nine knobs (latency,
+    // haptics, colours, white odds, fire, reload, rain…) were never compared.
+    const literalKnobs: Record<string, unknown> = {};
+    for (const [id, def] of Object.entries(KNOBS)) literalKnobs[id] = def.read({ game, height: 620 });
 
     const snap = snapshotConfig();
     try {
@@ -288,12 +294,17 @@ describe('knob defaults match the module literals', () => {
           drift.push(`PhysicsConfig.${k}: literal ${was}, knob default ${now}`);
         }
       }
-      for (const k of ['vol', 'lockVol', 'breakVol', 'boomVol', 'clickVol', 'droneVol']) {
+      for (const k of Object.keys(literalAudio)) {
         const was = literalAudio[k];
         const now = (AudioStore as Record<string, unknown>)[k];
         if (typeof was === 'number' && typeof now === 'number' && Math.abs(was - now) > 1e-9) {
           drift.push(`AudioStore.${k}: literal ${was}, knob default ${now}`);
         }
+      }
+      for (const [id, def] of Object.entries(KNOBS)) {
+        const was = literalKnobs[id], now = def.read({ game, height: 620 });
+        const differs = typeof was === 'number' && typeof now === 'number' ? Math.abs(was - now) > 1e-9 : was !== now;
+        if (differs) drift.push(`knob ${id}: literal ${String(was)}, default ${String(now)}`);
       }
       if (Math.abs(literalMatchLen - game.matchLen) > 1e-9) {
         drift.push(`Game.matchLen: literal ${literalMatchLen}, knob default ${game.matchLen}`);

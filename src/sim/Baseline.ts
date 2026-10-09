@@ -13,6 +13,9 @@
  */
 import { RunResult, SimOptions, runSim } from './Harness';
 import { presetKnobs } from './Knobs';
+import { levelIndex } from '../game/AI';
+
+const withoutMatch = (id: string) => { const k = presetKnobs(id); delete k.match; return k; };
 
 export interface BaselineScenario {
   label: string;
@@ -32,10 +35,24 @@ export const BASELINE_SCENARIOS: BaselineScenario[] = [
   { label: 'solo/380x460/s1', opts: { mode: 'solo', seed: 1, seconds: 60, height: 460 } },
   // A tablet-sized field.
   { label: 'duel/768x1024/s1', opts: { mode: 'duel', seed: 1, seconds: 60, width: 768, height: 1024 } },
+  // Version 3: what the scenarios above could not see. Every one of them played
+  // the pre-ladder AI, automatic fire, no match clock and three colours, on a
+  // fresh Game — breaking every ladder rung moved no row at all.
+  { label: 'ai/ai1/380x620/s1', opts: { mode: 'ai', aiLevel: levelIndex('ai1'), seed: 1, seconds: 60 } },
+  { label: 'ai/ai2/380x620/s1', opts: { mode: 'ai', aiLevel: levelIndex('ai2'), seed: 1, seconds: 60 } },
+  { label: 'ai/ai3/380x620/s1', opts: { mode: 'ai', aiLevel: levelIndex('ai3'), seed: 1, seconds: 60 } },
+  { label: 'ai/agi/380x620/s1', opts: { mode: 'ai', aiLevel: levelIndex('agi'), seed: 1, seconds: 30 } },
+  { label: 'fire/duel/380x620/s1', opts: { mode: 'duel', seed: 1, seconds: 60, knobs: { fire: 1 } } },
+  { label: 'fire/ai/ai3/380x620/s1', opts: { mode: 'ai', aiLevel: levelIndex('ai3'), seed: 1, seconds: 60, knobs: { fire: 1 } } },
+  // A match clock that runs out inside the window: the end, and what stops at it.
+  { label: 'match45/duel/380x620/s1', opts: { mode: 'duel', seed: 1, seconds: 60, knobs: { match: 45 } } },
+  { label: 'cascade/duel/380x620/s1', opts: { mode: 'duel', seed: 1, seconds: 60, knobs: withoutMatch('cascade') } },
+  { label: 'rally/duel/380x620/s1', opts: { mode: 'duel', seed: 1, seconds: 60, knobs: withoutMatch('rally') } },
+  // The match after a match, on the same Game, after the app's countdown.
+  { label: 'second/ai/ai2/380x620/s1', opts: { mode: 'ai', aiLevel: levelIndex('ai2'), seed: 1, seconds: 45, priorMatches: 1, countdown: 3, knobs: { match: 45 } } },
 ];
 
-const chaos = presetKnobs('chaos');
-delete chaos.match;
+const chaos = withoutMatch('chaos');
 
 /**
  * The invariants gate runs these on top of the baseline scenarios.
@@ -122,8 +139,11 @@ export interface BaselineFile {
 /**
  * 2: the digest gained the density and chain-depth metrics, and `blockedThrows`
  * became a true per-launcher count rather than a per-frame flag.
+ * 3: scenarios for the ladder rungs, continuous fire, a match clock that runs
+ * out, the Cascade and Rally presets (Rally plays six colours), and a second
+ * match on the same Game; and solo stopped counting player 2's idle deck.
  */
-export const BASELINE_VERSION = 2;
+export const BASELINE_VERSION = 3;
 
 export function measureBaseline(scenarios = BASELINE_SCENARIOS): BaselineFile {
   return {

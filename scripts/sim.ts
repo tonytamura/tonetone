@@ -367,7 +367,8 @@ function cmdCompare(args: Args): number {
   const json: any = { a, b, runs, metrics: {} };
 
   for (const m of metricNames) {
-    const c = compare(ra.map(extract(m)), rb.map(extract(m)));
+    // The same seeds on both sides: paired.
+    const c = compare(ra.map(extract(m)), rb.map(extract(m)), true);
     rows.push([
       m,
       estimateText(c.a.mean, c.a.stderr),
@@ -381,7 +382,7 @@ function cmdCompare(args: Args): number {
   // Paired catch-up statistic: only meaningful when both launchers are playing.
   if (base.mode === 'duel' || base.mode === 'ai') {
     const gains = (rs: RunResult[]) => rs.map(r => catchUp(r.halfTimeScores, r.finalScores));
-    const c = compare(gains(ra), gains(rb));
+    const c = compare(gains(ra), gains(rb), true);
     const ea = estimate(gains(ra)), eb = estimate(gains(rb));
     json.catchUp = { a: ea, b: eb, comparison: c };
     rows.push([

@@ -88,11 +88,20 @@ export interface Comparison {
   relative: number | null;
 }
 
-export function compare(a: number[], b: number[]): Comparison {
+/**
+ * `paired`: a[i] and b[i] are the same seed under the two configurations, so
+ * the error is that of the per-seed differences. The shared table and dice
+ * cancel out of it, which made it 4-5x smaller than the unpaired figure on the
+ * harness's own runs; treating paired runs as independent withheld verdicts
+ * the data supported.
+ */
+export function compare(a: number[], b: number[], paired = false): Comparison {
   const ma = mean(a), mb = mean(b);
   const ea = stderr(a), eb = stderr(b);
   const delta = mb - ma;
-  const se = Math.sqrt(ea * ea + eb * eb);
+  const se = paired && a.length === b.length && a.length > 1
+    ? stderr(b.map((v, i) => v - a[i]))
+    : Math.sqrt(ea * ea + eb * eb);
   return {
     a: { mean: ma, stderr: ea, n: a.length },
     b: { mean: mb, stderr: eb, n: b.length },

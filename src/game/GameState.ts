@@ -83,6 +83,11 @@ export interface Game {
    * stops only above 1.25x it (`isLowBallDensity`). Cleared by `resetField`.
    */
   raining: boolean;
+  /**
+   * The simulation clock the solver last stepped to: what `lastHit`'s pair
+   * cooldowns are measured on. Kept by `advanceFrame`, read by the planner.
+   */
+  clock: number;
   killBig: number;
   killGroups: number;
   killBalls: number;
@@ -124,6 +129,7 @@ export function createGame(): Game {
     rainInterval: 0,
     rainTimer: 0,
     raining: false,
+    clock: 0,
     killBig: 0,
     killGroups: 0,
     killBalls: 0,

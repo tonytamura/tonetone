@@ -57,15 +57,26 @@ export function cloneForPlanning(game: Game): Game {
 export interface Candidate { aimDeg: number; strength: number }
 
 /**
- * How long, in milliseconds, planning may take in one frame. Unlimited by
- * default, which is what the harness uses: every candidate is tried on the
- * frame planning starts, so a seeded run is exactly reproducible. The page sets
- * a budget, and planning then spreads over the frames before the throw; a slow
- * device tries fewer candidates rather than dropping frames.
+ * How many physics frames the planner may simulate per real frame, in the game
+ * and in the harness alike, so the AGI the harness measures is the one that
+ * ships, and it plays the same on every device.
+ *
+ * It used to be 4ms of wall time in the page and unlimited in the harness. A
+ * plan is ~4,200 simulated frames at ~0.3ms each on a laptop, so the page's AGI
+ * tried about a quarter of its candidates before each throw while the harness's
+ * tried them all: the ladder's AGI figures described an AI nobody played.
+ *
+ * 16 is the least that keeps AGI a rung (2026-10-09, AGI v AI3, 40 two-minute
+ * matches): at 8 it won 34% ±7, its first candidates' three tries eating the
+ * whole window; at 16 it won 73% ±7. Plans cut to fit 8 (1s look-ahead, 2 or
+ * 3 tries) stayed inside the noise, 40-57%. Cost on a laptop: 2.4ms median,
+ * 6.5ms p90 per frame while planning, which runs only against AGI.
  */
-let frameBudgetMs = Infinity;
-export function setPlannerBudget(ms: number) {
-  frameBudgetMs = ms;
+export const PLAN_FRAMES_PER_FRAME = 16;
+let frameBudget = PLAN_FRAMES_PER_FRAME;
+/** Override the budget, in simulated frames per real frame. Tests use Infinity to plan in one go. */
+export function setPlannerBudget(frames: number) {
+  frameBudget = frames;
 }
 
 /**
@@ -74,8 +85,6 @@ export function setPlannerBudget(ms: number) {
  * third; the page can read these to see how much an AI actually thought.
  */
 export const plannerStats = { jobs: 0, tried: 0, offered: 0 };
-
-const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 type ColState = ReturnType<typeof toCollisionState>;
 
@@ -98,7 +107,10 @@ export class PlanJob {
   private simBefore = 0;
   private roll = 0;
   private total = 0;
-  private clock = 0;
+  /** The simulated clock: starts at the game's, since `lastHit`'s cooldowns are on it. */
+  private clock: number;
+  /** The clock at the moment of the throw, where every candidate starts. */
+  private throwClock = 0;
   private rng: number;
   best: (Candidate & { score: number }) | null = null;
 
@@ -120,6 +132,11 @@ export class PlanJob {
   ) {
     this.base = cloneForPlanning(game);
     this.baseState = toCollisionState(this.base);
+    // Pair cooldowns are stamped on the game's clock. Starting at 0 put every
+    // pair that had collided this match in cooldown for the whole plan, so in
+    // the imagined throws they never locked, boomed or peeled again: 18% of
+    // candidate scores were wrong, and 1 decision in 6.
+    this.clock = this.throwClock = game.clock;
     this.advanceLeft = Math.max(0, Math.round(untilThrow / FALLBACK_DT));
     this.rng = seed >>> 0;
     plannerStats.jobs++;
@@ -149,10 +166,10 @@ export class PlanJob {
     syncFromCollisionState(g, st);
   }
 
-  /** Work until done or until this frame's budget is spent. */
+  /** Work until done or until this frame's budget of simulated frames is spent. */
   run(): void {
-    const start = now();
-    const spent = () => now() - start > frameBudgetMs;
+    let frames = 0;
+    const spent = () => ++frames >= frameBudget;
     const shared = Math.random;
     Math.random = () => this.next();
     try {
@@ -161,13 +178,17 @@ export class PlanJob {
       while (this.advanceLeft > 0) {
         this.step(this.base, this.baseState);
         this.advanceLeft--;
-        if (this.advanceLeft % 8 === 0 && spent()) return;
+        this.throwClock = this.clock;
+        if (spent()) return;
       }
       while (!this.done) {
         if (!this.sim) {
           const c = this.candidates[this.idx];
           this.rng = (this.seed + this.roll * 0x9e3779b9) >>> 0;
           const sim = cloneForPlanning(this.base);
+          // Every try starts at the moment of the throw: carrying the clock on
+          // from the last try left later candidates on a different footing.
+          this.clock = this.throwClock;
           const p = sim.players[this.who];
           p.aimDeg = c.aimDeg;
           p.strength = c.strength;
@@ -182,7 +203,7 @@ export class PlanJob {
         while (this.simFrames > 0) {
           this.step(this.sim, this.simState!);
           this.simFrames--;
-          if (this.simFrames % 8 === 0 && spent()) return;
+          if (spent()) return;
         }
         this.total += this.sim.players[this.who].score - this.simBefore;
         this.sim = null;
@@ -195,7 +216,6 @@ export class PlanJob {
         this.roll = 0;
         this.total = 0;
         this.idx++;
-        if (spent()) return;
       }
     } finally {
       Math.random = shared;

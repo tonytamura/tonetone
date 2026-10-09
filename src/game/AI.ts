@@ -221,6 +221,8 @@ interface AiState {
   job?: PlanJob;
   /** The loaded ball that decision is for: a new one means a new throw to plan. */
   forBall?: unknown;
+  /** Seconds the current plan has been thinking, for continuous fire's hold. */
+  jobAge?: number;
   /** This throw's careless angle and strength, when it is a careless one. */
   wildDeg?: number;
   wildPow?: number;
@@ -433,7 +435,7 @@ export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, heigh
     // more than `window`: with a reload of `window` or less (Chaos, Rally, the
     // slider) it never does, and the first decision of the match stood for
     // every throw after it (Bug 17).
-    if (st.forBall !== p.loaded) { st.forBall = p.loaded; st.job = undefined; st.planned = undefined; }
+    if (st.forBall !== p.loaded) { st.forBall = p.loaded; st.job = undefined; st.planned = undefined; st.jobAge = 0; }
     if (FIRE_ON_RELEASE || p.reload <= prof.plan.window) {
       if (!st.job) {
         const who = game.players.indexOf(p);
@@ -442,8 +444,12 @@ export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, heigh
       }
       if (!st.job.done) st.job.run();
       if (st.job.best) st.planned = st.job.best;
+      st.jobAge = (st.jobAge ?? 0) + dt;
     }
-    if (FIRE_ON_RELEASE) p.holdFire = !st.job?.done;
+    // Under continuous fire the release waits for the plan, but no longer than
+    // automatic fire would give it (`window`): with the frame budget a whole
+    // plan takes ~9s, and waiting it out cost AGI a quarter of its throws.
+    if (FIRE_ON_RELEASE) p.holdFire = !st.job?.done && (st.jobAge ?? 0) < prof.plan.window;
     if (st.planned) {
       p.aimDeg += (st.planned.aimDeg - p.aimDeg) * k;
       p.strength += (st.planned.strength - p.strength) * k;
