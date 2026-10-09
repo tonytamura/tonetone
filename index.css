@@ -411,12 +411,14 @@ input[type=range] {
   --seat-soft: rgba(79, 240, 255, 0.14);
   --seat-glow: rgba(79, 240, 255, 0.55);
   --seat-dim: rgba(79, 240, 255, 0.3);
+  --seat-hot: rgba(79, 240, 255, 0.95);
 }
 #cue2 {
   --seat: var(--pink);
   --seat-soft: rgba(255, 26, 217, 0.14);
   --seat-glow: rgba(255, 26, 217, 0.55);
   --seat-dim: rgba(255, 26, 217, 0.3);
+  --seat-hot: rgba(255, 26, 217, 0.95);
 }
 #cue, #cue2 {
   display: grid;
@@ -998,7 +1000,10 @@ select option {
   user-select: all;
 }
 
-/* ── Countdown in cue bar (start & end-of-match) ── */
+/* ── Countdown in cue bar (start & end-of-match) ──
+   In the colour of the player whose strip it is in, start and end alike: P1's
+   cyan, P2's pink. It used to be cyan for the start and pink for the end in
+   both strips (Tony, 2026-10-09). */
 .bar-countdown {
   display: inline-block;
   font-family: var(--font-ui);
@@ -1006,19 +1011,13 @@ select option {
   font-weight: var(--fw-title);
   letter-spacing: -0.01em;
   line-height: 1;
-  color: var(--cyan);
+  color: var(--seat, var(--cyan));
   text-shadow:
-    0 0 12px rgba(79, 240, 255, 0.95),
-    0 0 28px rgba(79, 240, 255, 0.55);
+    0 0 12px var(--seat-hot, rgba(79, 240, 255, 0.95)),
+    0 0 28px var(--seat-glow, rgba(79, 240, 255, 0.55));
   -webkit-font-smoothing: antialiased;
   min-width: 2ch;
   text-align: center;
-}
-.bar-countdown.end {
-  color: var(--pink);
-  text-shadow:
-    0 0 12px rgba(255, 26, 217, 0.95),
-    0 0 28px rgba(255, 26, 217, 0.55);
 }
 .bar-countdown.go {
   font-size: var(--fs-lg);
