@@ -36,13 +36,20 @@ function isAndroid(): boolean {
  * start-up, before the page can have asked for full screen itself, because
  * `display-mode: fullscreen` also matches a tab put full screen by the
  * Fullscreen API.
+ *
+ * Never inside a frame. itch.io's "launch in fullscreen" puts its frame
+ * full screen, which from inside matches `display-mode: fullscreen` too: the
+ * game took itself for installed there, showed an X that could not close
+ * another site's page, and hid the full screen button.
  */
-const INSTALLED_WEB_APP = (() => {
+export function detectInstalledWebApp(): boolean {
   if (typeof window === 'undefined' || typeof matchMedia === 'undefined') return false;
+  if (window.self !== window.top) return false;
   if (document.fullscreenElement) return false;
   return matchMedia('(display-mode: fullscreen), (display-mode: standalone), (display-mode: minimal-ui)').matches
     || (navigator as Navigator & { standalone?: boolean }).standalone === true;
-})();
+}
+const INSTALLED_WEB_APP = detectInstalledWebApp();
 
 /**
  * Already full screen as an app: the Android or iOS app, or the website
@@ -62,7 +69,8 @@ export function isAppWindow(): boolean {
  * - nowhere on iOS, app or website: there is no way to, and Apple rejects
  *   apps that quit themselves (to the player it looks like a crash). Home is
  *   how an iPhone leaves an app;
- * - nowhere in a browser tab, which a page cannot close.
+ * - nowhere in a browser tab, which a page cannot close, nor in a frame on
+ *   another site (itch.io), whose page is not the game's to close.
  *
  * Full screen hides Android's navigation bar, and swiping it back in made the
  * page resize under the player's finger, so the X on the menu is the way out.
