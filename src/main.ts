@@ -247,8 +247,15 @@ function setPlayers(mode: PlayMode) {
   setHidden(cue2, top === 'none');
   cue2?.classList.toggle('deck-only', top === 'deck');
   cue2?.classList.toggle('flip', top === 'full');
-  newMatch();
+  // Size the field to this mode's layout before the match is laid out on it:
+  // the opening rack is centred on whatever height renderCtx holds. The top
+  // strip shows in two-player and hides in solo, and the next-ball chips are
+  // 76px canvases until a strip refresh sizes them to the ball (about 21px), so
+  // both change the field's height. Measured afterwards, the rack sat 19-27px
+  // off centre on every change of mode, and 27px on the first match.
+  refreshAllStrips();
   handleResize();
+  newMatch();
 }
 
 const soundBtn = document.getElementById('sound');
