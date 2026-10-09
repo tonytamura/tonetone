@@ -5,7 +5,7 @@ import { COLORS } from '../../src/game/Rules';
 import { TOLERANCE, violations } from '../../src/sim/Metrics';
 import { mulberry32, currentSeed, withSeed } from '../../src/sim/Rng';
 import { advanceFrame, normalizeDt, substepCount, FALLBACK_DT, MAX_FRAME_DT } from '../../src/sim/Frame';
-import { createGame, resetField, startTurns } from '../../src/game/GameState';
+import { createGame, resetField, startMatch } from '../../src/game/GameState';
 
 const SHORT = { seconds: 6, sampleEvery: 10 } as const;
 
@@ -56,7 +56,7 @@ describe('frame guards', () => {
   it('never advances the clock backwards, even on a bad delta', () => {
     const game = createGame();
     resetField(game, DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    startTurns(game);
+    startMatch(game, 0);
     let clock = 0;
     for (const bad of [-1, 0, NaN, 10, 1 / 60]) {
       const next = advanceFrame(game, bad, DEFAULT_WIDTH, DEFAULT_HEIGHT, clock).clock;

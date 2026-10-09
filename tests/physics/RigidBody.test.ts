@@ -4,7 +4,6 @@ import {
   syncGroup,
   shiftGroup,
   rebuildGroups,
-  clampWalls,
   separateGroups,
 } from '../../src/physics/RigidBody';
 import { Ball } from '../../src/physics/Types';
@@ -121,26 +120,6 @@ describe('RigidBody physics module', () => {
       expect(groups[0].members.length).toBe(2);
       expect(b1.group).toBe(groups[0]);
       expect(b2.group).toBe(groups[0]);
-    });
-  });
-
-  describe('clampWalls', () => {
-    it('shifts group when member balls breach left wall', () => {
-      const b1 = createMockBall(1, 5, 100); // R = 12, so minX = -7 < 0
-      const g = makeGroup([b1], 0, 0);
-
-      clampWalls(g, 800, 600);
-
-      expect(b1.x).toBe(PhysicsConfig.R); // 12
-    });
-
-    it('shifts group when member balls breach right wall', () => {
-      const b1 = createMockBall(1, 795, 100); // R = 12, maxX = 807 > 800
-      const g = makeGroup([b1], 0, 0);
-
-      clampWalls(g, 800, 600);
-
-      expect(b1.x).toBe(800 - PhysicsConfig.R); // 788
     });
   });
 

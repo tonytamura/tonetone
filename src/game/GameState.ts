@@ -131,16 +131,6 @@ export function createGame(): Game {
   };
 }
 
-/** Both players are always active in simultaneous mode. */
-export function turnActive(_game: Game, _p: LauncherPlayer): boolean {
-  return true;
-}
-
-/** Reset all reload timers so both launchers can fire immediately at match start. */
-export function startTurns(game: Game) {
-  for (const p of game.players) p.reload = 0;
-}
-
 /**
  * Put a freshly reset field into a running match.
  *
@@ -310,7 +300,10 @@ export function spawn(
 ): boolean {
   if (game.balls.length >= PhysicsConfig.MAX_BALLS) return false;
   if (!fits(x, y, !!aim, game, width, height)) {
-    game.flashes.push({ x, y, t: 0, kind: 'blocked' });
+    // Only an aimed spawn has someone to tell. A rain ball tries up to 30
+    // random spots a tick, and flashing each miss drew phantom rings around
+    // whatever ball happened to be in the way (about 3.4 a minute).
+    if (aim) game.flashes.push({ x, y, t: 0, kind: 'blocked' });
     return false;
   }
 

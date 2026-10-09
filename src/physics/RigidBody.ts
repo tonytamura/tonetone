@@ -106,7 +106,11 @@ export function rebuildGroups(balls: Ball[], byId: Map<number, Ball>): Group[] {
       L += o.x * ((m._vy || 0) - vy) - o.y * ((m._vx || 0) - vx);
       L += ((PhysicsConfig.R * PhysicsConfig.R) / 2) * (m._av || 0);
     }
-    g.av = Math.max(-12, Math.min(12, PhysicsConfig.SPIN * L / g.inertia));
+    // Angular momentum is conserved through a regroup. The `spin` knob already
+    // acts in collisions (through invI); applying it here as well compounded it
+    // on every rebuild, so at spin 0.5 a group's spin halved with each spawn,
+    // lock or boom anywhere on the table.
+    g.av = Math.max(-12, Math.min(12, L / g.inertia));
 
     if (members.length > 1) {
       const plain = members.find(m => !m.special);
@@ -118,17 +122,6 @@ export function rebuildGroups(balls: Ball[], byId: Map<number, Ball>): Group[] {
   }
 
   return out;
-}
-
-export function clampWalls(g: Group, width: number, height: number) {
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  const R = PhysicsConfig.R;
-  for (const b of g.members) {
-    minX = Math.min(minX, b.x - R); maxX = Math.max(maxX, b.x + R);
-    minY = Math.min(minY, b.y - R); maxY = Math.max(maxY, b.y + R);
-  }
-  if (minX < 0) shiftGroup(g, -minX, 0); else if (maxX > width) shiftGroup(g, width - maxX, 0);
-  if (minY < 0) shiftGroup(g, 0, -minY); else if (maxY > height) shiftGroup(g, 0, height - maxY);
 }
 
 export function separateGroups(A: Group, B: Group, nx: number, ny: number): boolean {

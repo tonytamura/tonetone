@@ -70,7 +70,7 @@ describe('AI module', () => {
 });
 
 import { AI_LEVELS, AI_STRATEGIES, CLASSIC_LEVEL, ladderStep, launchSpeedToArrive, profileNamed, strengthForSpeed } from '../../src/game/AI';
-import { launchSpeedOf } from '../../src/physics/LauncherBays';
+import { launchSpeedOf, topLaunchSpeed } from '../../src/physics/LauncherBays';
 import { PhysicsConfig } from '../../src/physics/Config';
 
 describe('the AI ladder', () => {
@@ -99,10 +99,14 @@ describe('the AI ladder', () => {
 
   it('throws exactly as hard as it means to', () => {
     recalcThresholds(620);
-    for (const s of [0.2, 0.5, 0.85, 1]) {
+    for (const s of [0.2, 0.5, 0.85]) {
       const speed = launchSpeedOf({ strength: s } as any);
       expect(strengthForSpeed(speed)).toBeCloseTo(s, 6);
     }
+    // Above the solver's speed cap a harder throw is no faster, and the speed
+    // the AI and the arrow read says so.
+    expect(launchSpeedOf({ strength: 1 } as any)).toBe(topLaunchSpeed());
+    expect(topLaunchSpeed()).toBe(PhysicsConfig.SPEED_CAP * PhysicsConfig.SC);
     // Rolling costs speed in proportion to distance: 0 px costs nothing.
     expect(launchSpeedToArrive(PhysicsConfig.BOOM_SPEED, 0)).toBe(PhysicsConfig.BOOM_SPEED);
     expect(launchSpeedToArrive(PhysicsConfig.BOOM_SPEED, 300)).toBeGreaterThan(PhysicsConfig.BOOM_SPEED);

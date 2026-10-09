@@ -2,8 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   makeLauncher,
   createGame,
-  turnActive,
-  startTurns,
   resetField,
   fits,
   spawn,
@@ -43,28 +41,6 @@ describe('GameState module', () => {
       expect(game.paused).toBe(false);
       expect(game.rainInterval).toBe(0);
       expect(game.rainTimer).toBe(0);
-    });
-  });
-
-  describe('turnActive & turns', () => {
-    it('always returns true in simultaneous mode', () => {
-      const game = createGame();
-      expect(turnActive(game, game.players[0])).toBe(true);
-      expect(turnActive(game, game.players[1])).toBe(true);
-
-      // Reload state does not affect turnActive — both players are always eligible.
-      game.players[0].reload = 2;
-      expect(turnActive(game, game.players[0])).toBe(true);
-      expect(turnActive(game, game.players[1])).toBe(true);
-    });
-
-    it('starts turns by resetting player reloads', () => {
-      const game = createGame();
-      game.players[0].reload = 3;
-      game.players[1].reload = 3;
-      startTurns(game);
-      expect(game.players[0].reload).toBe(0);
-      expect(game.players[1].reload).toBe(0);
     });
   });
 

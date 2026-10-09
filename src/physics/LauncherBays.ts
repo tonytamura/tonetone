@@ -117,7 +117,18 @@ export function throwSpeedOf(p: LauncherPlayer, _twoPlayer?: boolean): number {
  * knob in whichever direction it points.
  */
 export function launchSpeedOf(p: LauncherPlayer, twoPlayer?: boolean): number {
-  return throwSpeedOf(p, twoPlayer) * PhysicsConfig.KICK;
+  return Math.min(throwSpeedOf(p, twoPlayer) * PhysicsConfig.KICK, topLaunchSpeed());
+}
+
+/**
+ * The fastest a thrown ball actually travels: the bay's hardest throw, or the
+ * solver's speed cap if that is lower. At the defaults the cap wins, so the
+ * last ~11% of the drag adds nothing; the aim arrow's heat and the AI's
+ * "can it boom from here" read this rather than the bay's nominal maximum.
+ */
+export function topLaunchSpeed(): number {
+  const c = PhysicsConfig;
+  return Math.min(c.THROW_MAX * c.DUEL_POWER * c.SC * c.KICK, c.SPEED_CAP * c.SC);
 }
 
 /** True when the throw as aimed would boom the group it hits. */
@@ -149,8 +160,7 @@ export function boomsOnImpact(p: LauncherPlayer, twoPlayer?: boolean): boolean {
  * about that combination.
  */
 export function boomHeatOf(p: LauncherPlayer, twoPlayer?: boolean): number {
-  const ceiling = PhysicsConfig.THROW_MAX * PhysicsConfig.DUEL_POWER * PhysicsConfig.SC * PhysicsConfig.KICK;
-  const span = ceiling - PhysicsConfig.BOOM_SPEED;
+  const span = topLaunchSpeed() - PhysicsConfig.BOOM_SPEED;
   if (span <= 0) return 0;
   return Math.max(0, Math.min(1, (launchSpeedOf(p, twoPlayer) - PhysicsConfig.BOOM_SPEED) / span));
 }

@@ -8,7 +8,7 @@ import { installSeededRandom, restoreRandom, currentSeed, withSeed } from '../..
 import { createStrip } from '../../src/ui/ControlStrips';
 import { createRenderContext, resizeRenderer } from '../../src/graphics/Renderer';
 import { clearSpriteCache } from '../../src/graphics/Sprites';
-import { createGame, resetField, toCollisionState } from '../../src/game/GameState';
+import { createGame, resetField, toCollisionState, spawnRainBall } from '../../src/game/GameState';
 import { advanceFrame } from '../../src/sim/Frame';
 import { launchPointOf, bayInset } from '../../src/physics/LauncherBays';
 import { setupTouchControls } from '../../src/ui/TouchControls';
@@ -743,6 +743,40 @@ describe('Bug Detection Test Suite', () => {
         }
       });
       expect(specials).toBe(0);
+    });
+  });
+
+  describe('Bug 22: the spin knob compounded on every regroup', () => {
+    // rebuildGroups applied SPIN to a regrouped body's angular momentum, which
+    // collisions had already scaled: at spin 0.5 a spinning group halved its
+    // spin on every spawn, lock or boom anywhere on the table.
+    it('keeps a group spinning through regroups that change nothing', () => {
+      const saved = snapshotConfig();
+      try {
+        PhysicsConfig.SPIN = 0.5;
+        const a = makeBall(1, 100, 100), b = makeBall(2, 124, 100);
+        a.bonds.add(2); b.bonds.add(1);
+        const byId = new Map([[1, a], [2, b]]);
+        let gs = rebuildGroups([a, b], byId);
+        gs[0].av = 4;
+        for (let i = 0; i < 4; i++) gs = rebuildGroups([a, b], byId);
+        expect(gs[0].av).toBeCloseTo(4, 6);
+      } finally { restoreConfig(saved); }
+    });
+  });
+
+  describe('Bug 23: every failed rain spot drew a phantom blocked ring', () => {
+    // A rain ball tries up to 30 random spots a tick, and each miss pushed a
+    // 'blocked' flash, drawn as a ripple ring around whatever ball was in the
+    // way, about 3.4 times a minute in a duel.
+    it('rains silently when a spot is taken; only an aimed throw flashes', () => {
+      const game = createGame();
+      resetField(game, 200, 200);
+      // Fill the board so that every random spot is taken.
+      for (let x = 12; x < 200; x += 24) for (let y = 12; y < 200; y += 24) game.balls.push(makeBall(game.nextId++, x, y));
+      game.flashes = [];
+      withSeed(1, () => { for (let i = 0; i < 5; i++) spawnRainBall(game, 200, 200); });
+      expect(game.flashes.filter(f => f.kind === 'blocked')).toHaveLength(0);
     });
   });
 

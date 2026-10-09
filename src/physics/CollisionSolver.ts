@@ -411,7 +411,9 @@ export function collide(state: CollisionState, now: number) {
     }
 
     if (-rvn < PhysicsConfig.RULE_SPEED * PhysicsConfig.SC) return;
-    const key = a.id + '|' + b.id;
+    // Smaller id first: the broadphase visits a pair in either order as the
+    // balls change cells, and an ordered key let the 0.2s cooldown be skipped.
+    const key = a.id < b.id ? a.id + '|' + b.id : b.id + '|' + a.id;
     if (now - (state.lastHit.get(key) || -9) < PAIR_COOLDOWN) return;
     state.lastHit.set(key, now);
 
@@ -502,6 +504,10 @@ export function collide(state: CollisionState, now: number) {
     const spent = new Set<Ball>();
     for (const h of ghostHits) {
       if (spent.has(h.gh)) continue;
+      // The group may have boomed earlier in this same substep (a break or a
+      // white hit): its balls are debris now, and booming them again counted
+      // one boom twice — two tallies, a second pop and a second sound.
+      if (h.real.ghost) continue;
       spent.add(h.gh);
       state.flashes.push({ x: h.gh.x, y: h.gh.y, t: 0, kind: 'spawn' });
       if (h.gh.pure || (h.gh.kind !== h.real.kind && h.real.bonds.size)) {
