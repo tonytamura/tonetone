@@ -79,6 +79,11 @@ export interface Game {
   reloadTime: number;
   rainInterval: number;
   rainTimer: number;
+  /**
+   * Whether the auto rain is on: it starts below the density threshold and
+   * stops only above 1.25x it (`isLowBallDensity`). Cleared by `resetField`.
+   */
+  raining: boolean;
   killBig: number;
   killGroups: number;
   killBalls: number;
@@ -119,6 +124,7 @@ export function createGame(): Game {
     reloadTime: 3,
     rainInterval: 0,
     rainTimer: 0,
+    raining: false,
     killBig: 0,
     killGroups: 0,
     killBalls: 0,
@@ -195,22 +201,26 @@ export function resetField(game: Game, width?: number, height?: number) {
   game.byId.clear();
   game.paused = false;
   game.rainTimer = 0;
+  game.raining = false;
   game.killBig = 0;
   game.killGroups = 0;
   game.killBalls = 0;
 
+  // Every launcher starts the match as a new game makes it: the browser plays
+  // match after match on one Game, and anything a launcher carried over — the
+  // AI's working state (Bug 20), its aim, last match's scores — showed up in the
+  // next one. The decks are drawn only once every score is back to zero: the
+  // black and white odds read both players' scores, and drawing first dealt the
+  // last match's winner a black on 39.5% of opening cards.
+  for (const p of game.players) {
+    for (const k of Object.keys(p)) if (k.startsWith('_')) delete (p as any)[k];
+    delete p.holdFire;
+    Object.assign(p, makeLauncher(p.side));
+  }
   for (const p of game.players) {
     p.loaded = drawFor(p, game.players, game.twoPlayer);
     p.nextUp = drawFor(p, game.players, game.twoPlayer);
     p.then = drawFor(p, game.players, game.twoPlayer);
-    p.reload = 0; p.bank = BANK_MAX; p.releases = 0; p.hold = 0; p.destroyed = 0; p.booms = 0;
-    p.locks = 0; p.peels = 0; p.score = 0; p.best = 0;
-    p.lockPts = 0; p.boomPts = 0; p.peelPts = 0;
-    // The AI's working state rides on the launcher, which outlives the match:
-    // a fresh match starts it afresh, or a careless angle drawn by AI2 stayed in
-    // the seat and AI3 threw every ball that way (Bug 20).
-    (p as any)._ai = undefined;
-    p.holdFire = false;
   }
 
   if (width && height) {
@@ -240,10 +250,9 @@ export function liveBallCount(game: Game): number {
 export function isLowBallDensity(game: Game, width: number, height: number, stopThresholdMultiplier = 1.25): boolean {
   const activeCount = liveBallCount(game);
   const baseThreshold = lowDensityThreshold(width, height);
-  const targetThreshold = (game as any)._isRaining ? Math.round(baseThreshold * stopThresholdMultiplier) : baseThreshold;
-  const raining = activeCount < targetThreshold;
-  (game as any)._isRaining = raining;
-  return raining;
+  const targetThreshold = game.raining ? Math.round(baseThreshold * stopThresholdMultiplier) : baseThreshold;
+  game.raining = activeCount < targetThreshold;
+  return game.raining;
 }
 
 export function spawnRainBall(game: Game, width: number, height: number): boolean {

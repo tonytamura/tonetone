@@ -696,6 +696,56 @@ describe('Bug Detection Test Suite', () => {
     });
   });
 
+  describe('Bug 21: a match inherited what the previous one left on the Game', () => {
+    // The browser plays every match on one Game; the harness made a fresh one per
+    // run and could not see this. resetField drew the opening deck before zeroing
+    // the scores, so last match's winner opened with a black on 39.5% of cards
+    // (the rule says none at 0), and the auto rain's on/off state survived.
+    const W = 412, H = 915;
+    const snapshot = (g: any) => JSON.stringify({
+      players: g.players.map((p: any) => ({ ...p, loaded: p.loaded && [p.loaded.kind, p.loaded.special],
+        nextUp: p.nextUp && [p.nextUp.kind, p.nextUp.special], then: p.then && [p.then.kind, p.then.special] })),
+      raining: g.raining, balls: g.balls.length,
+    });
+
+    it('starts a reused Game exactly where a fresh one starts', () => {
+      const fresh = withSeed(11, () => {
+        const g = createGame(); g.twoPlayer = true; g.aiOn = true;
+        resetField(g, W, H); return snapshot(g);
+      });
+      const reused = createGame(); reused.twoPlayer = true; reused.aiOn = true;
+      withSeed(3, () => {
+        resetField(reused, W, H); startMatch(reused, 0);
+        let clock = 0;
+        for (let f = 0; f < 60 * 30; f++) clock = advanceFrame(reused, 1 / 60, W, H, clock).clock;
+      });
+      // The leftovers the old resetField kept: a winner's score, rain on, AI state.
+      reused.players[0].score = 300; reused.players[1].score = 200;
+      reused.raining = true;
+      (reused.players[1] as any)._ai = { key: 5, wildDeg: -5 };
+      (reused.players[1] as any)._targetGroup = reused.groups[0];
+      reused.players[1].aimDeg = 33;
+      withSeed(11, () => resetField(reused, W, H));
+      expect(snapshot(reused)).toBe(fresh);
+    });
+
+    it('never deals an opening black or white, whatever the last score was', () => {
+      const game = createGame(); game.twoPlayer = true;
+      let specials = 0;
+      withSeed(5, () => {
+        for (let i = 0; i < 400; i++) {
+          game.players[0].score = 300; game.players[1].score = 200;
+          resetField(game);
+          for (const p of game.players) for (const c of [p.loaded, p.nextUp, p.then]) if (c?.special) specials++;
+          game.players[0].score = 200; game.players[1].score = 300;
+          resetField(game);
+          for (const p of game.players) for (const c of [p.loaded, p.nextUp, p.then]) if (c?.special) specials++;
+        }
+      });
+      expect(specials).toBe(0);
+    });
+  });
+
   describe('Guard: an AI aim that is not a number would stand the launcher still for good', () => {
     // Tony saw AI3 stop on 2026-09-30 and 432 harness runs never did. A NaN aim
     // is the one way it could stop for the rest of a match: easing from NaN stays
