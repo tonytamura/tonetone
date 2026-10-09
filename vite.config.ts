@@ -4,9 +4,9 @@ import { resolve } from 'path';
 /**
  * The site's own address, for the share tags (`og:image` must be absolute).
  * Vercel exposes the production domain to the build; anywhere else, including
- * the native builds, the current Vercel address stands in.
+ * the native builds, the site's address stands in.
  */
-const SITE_URL = 'https://' + (process.env.VERCEL_PROJECT_PRODUCTION_URL || 'tonetone-six.vercel.app');
+const SITE_URL = 'https://' + (process.env.VERCEL_PROJECT_PRODUCTION_URL || 'toneboom.vercel.app');
 
 function siteUrl(): Plugin {
   return {
