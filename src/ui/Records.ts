@@ -226,7 +226,9 @@ export function recordSections(
     },
     {
       title: t('records.ai'),
-      columns: [you, t('records.them'), `${you} %`],
+      // The share is the player's, so its head is in their colour; "VOCÊ %" and
+      // the like did not fit the column.
+      columns: [you, t('records.them'), '%'],
       seats: [0, 1, 0],
       rows: ais.map((a, i) => {
         const tally = records.vsAi[a.id];

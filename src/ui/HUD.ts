@@ -135,7 +135,8 @@ export function endMatchUI(game: Game, onRestart: () => void, notes?: ResultNote
 
   const them = game.aiOn ? (AI_LEVELS[game.aiLevel]?.label ?? 'AI') : 'P2';
   const me = game.aiOn ? escapeHtml(t('hud.you')) : 'P1';
-  const head = solo ? '<tr><th></th><th class="p1">' + escapeHtml(t('hud.you')) + '</th></tr>'
+  // Solo's column is headed as its strip is, SCORE: there is no one else to be YOU against.
+  const head = solo ? '<tr><th></th><th class="p1">' + escapeHtml(t('hud.score')) + '</th></tr>'
                     : '<tr><th></th><th class="p1">' + me + '</th><th class="p2">' + them + '</th></tr>';
   const body = rows
     .map(

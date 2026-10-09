@@ -138,7 +138,7 @@ describe('the Records screen', () => {
 
   it('gives every AI both sides\' wins and the player\'s share, in the match\'s names and colours, and marks the next', () => {
     const [, , vsAi] = recordSections(records, modes, ais, 1);
-    expect(vsAi.columns).toEqual(['YOU', 'AI', 'YOU %']);
+    expect(vsAi.columns).toEqual(['YOU', 'AI', '%']);
     expect(vsAi.seats).toEqual([0, 1, 0]);
     expect(vsAi.rows).toEqual([
       { label: 'AI1', values: ['–', '–', '–'] },

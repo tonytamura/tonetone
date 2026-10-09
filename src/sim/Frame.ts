@@ -23,7 +23,11 @@ import { LauncherPlayer } from '../physics/Types';
 import { aiAimLevel } from '../game/AI';
 import { playSoundEvents } from '../audio/SoundEvents';
 
-/** Frames longer than this are treated as a hitch and replaced by FALLBACK_DT. */
+/**
+ * Frames longer than this are a hitch and are clamped to it, so the match runs
+ * slow through the hitch rather than jumping. A missing or non-positive dt
+ * becomes FALLBACK_DT.
+ */
 export const MAX_FRAME_DT = 0.05;
 export const FALLBACK_DT = 1 / 60;
 export const MAX_SUBSTEPS = 24;
@@ -78,7 +82,7 @@ export function normalizeDt(rawDt: number): number {
 
 /**
  * Velocity-based substepping: fast groups get finer steps so nothing tunnels
- * through a ball at high speed. Clamped to 2..8 steps per frame.
+ * through a ball at high speed. Clamped to 2..MAX_SUBSTEPS steps per frame.
  */
 export function substepCount(game: Game, dt: number): number {
   let fastest = 0;

@@ -16,6 +16,7 @@ import {
 } from '../game/Tutorial';
 import { uiClick } from '../audio/UiSounds';
 import { coreRules } from './RulesText';
+import { FIRE_ON_RELEASE } from '../game/Rules';
 import { t } from '../i18n/I18n';
 import { setHidden } from './Dom';
 
@@ -82,12 +83,17 @@ export interface CardCopy {
   small?: string;
 }
 
-/** The last card: the rules again, and how a match is won. */
-export function closingCard(matchLen: number): CardCopy {
+/**
+ * The last card: the rules again, and how a match is won. `release` is the
+ * player's fire option, not the tutorial's (which plays on the default), and
+ * `solo` says the match ahead has no one to beat.
+ */
+export function closingCard(matchLen: number, release = FIRE_ON_RELEASE, solo = false): CardCopy {
+  const time = formatClock(matchLen);
   return {
     title: t('tut.card.title'),
-    lines: coreRules(),
-    small: matchLen > 0 ? t('tut.card.small', { time: formatClock(matchLen) }) : t('tut.card.smallEndless'),
+    lines: coreRules(release),
+    small: matchLen <= 0 ? t('tut.card.smallEndless') : solo ? t('tut.card.smallSolo', { time }) : t('tut.card.small', { time }),
   };
 }
 
@@ -170,8 +176,10 @@ export function createTutorialSession(deps: TutorialSessionDeps): TutorialSessio
     uiClick('confirm');
     // The saved match length, not the tutorial's: the card is about the match
     // they are about to play.
+    // Likewise the player's own fire option: the tutorial reset it to the
+    // default, and the card said "it fires by itself" to players who let go.
     const len = tut ? tut.saved.matchLen : game.matchLen;
-    const copy = closingCard(len);
+    const copy = closingCard(len, tut ? tut.saved.config.fireOnRelease : FIRE_ON_RELEASE, then === 'solo');
     const title = el('tut-card-title'), body = el('tut-card-body'), small = el('tut-card-small'), actions = el('tut-card-actions');
     if (title) title.textContent = copy.title;
     if (body) {

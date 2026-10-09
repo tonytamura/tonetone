@@ -72,7 +72,7 @@ export function createFirstPlayOffer(handlers: {
  */
 export function setupHelpScreen(onReplay: () => void) {
   // The rules and credits are written into the page, so they are written again
-  // in the new words whenever the language changes.
+  // in the new words whenever the language changes, and whenever Help opens.
   const fillText = () => {
     const rules = el('help-rules');
     if (rules) {
@@ -107,6 +107,9 @@ export function setupHelpScreen(onReplay: () => void) {
   el('helpBtn')?.addEventListener('click', e => {
     e.stopPropagation();
     uiClick('confirm');
+    // Written again on each visit: the rules follow the fire option and the
+    // mode, which can have changed in Options since the last.
+    fillText();
     setHidden(el('help-overlay'), false);
   });
   el('help-close')?.addEventListener('click', e => { e.stopPropagation(); uiClick('cancel'); close(); });

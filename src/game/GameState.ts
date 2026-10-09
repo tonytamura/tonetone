@@ -407,8 +407,12 @@ function launchBall(
   const dir = aimDirOf(p);
   const spot = launchSpot(p, dir, game, width, height);
   if (!spot) {
+    // A blocked bay retries every frame; one ring at a time says so. A ring
+    // a frame stacked sixty a second over the launcher.
     const m = launchPointOf(p, width, height);
-    game.flashes.push({ x: m.x, y: m.y, t: 0, kind: 'blocked' });
+    if (!game.flashes.some(f => f.kind === 'blocked' && f.x === m.x && f.y === m.y)) {
+      game.flashes.push({ x: m.x, y: m.y, t: 0, kind: 'blocked' });
+    }
     return false;
   }
   const speed = throwSpeedOf(p, game.twoPlayer);

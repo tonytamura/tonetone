@@ -701,7 +701,8 @@ Common options
   --seed <n>                 Seed (default 1). Runs are exactly reproducible.
   --seconds <n>              Simulated seconds (default 60)
   --width / --height <px>    Field size (default 380x620)
-  --preset normal|relax|chaos  Start from a declared preset, minus its match
+  --preset normal|relax|chaos|cascade|drift|rally
+                             Start from a declared preset, minus its match
                              clock (default: normal). See --set to add it back.
   --set a=1,b=2              Knob overrides, applied on top of --preset
   --runs <n>                 Repeats, for sweep and compare
@@ -714,6 +715,8 @@ Common options
   --strategies a,b,c         tournament: which strategies (default all)
   --levels a,b,c             ladder: which levels, in order (default all)
   --reference <level>        ladder: also seat every level against this one
+  --invariants false         Skip the per-frame invariant checks, which is
+                             faster (every command that runs matches)
   --json                     Machine-readable output
   --tolerance <pct>          baseline check: allowed drift (default 0, exact)
 

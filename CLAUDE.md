@@ -70,7 +70,7 @@ That is the full gate for any change to `src/physics/`, `src/game/` or
 ```bash
 npm test               # unit tests, including the harness's own
 npm run sim:physics    # textbook solver results: momentum, energy, 90° separation
-npm run sim:invariants # geometric invariants on every frame of 10 scenarios
+npm run sim:invariants # geometric invariants on every frame of 22 scenarios
 npm run sim:baseline   # did this change alter how the game plays?
 ```
 
@@ -119,7 +119,7 @@ npm run sim -- compare --a <knob>=<old> --b <knob>=<new> --runs 30 --mode duel
 
 `advanceFrame` in [`src/sim/Frame.ts`](src/sim/Frame.ts) is the **only** game
 loop; `main.ts` and the harness both call it. Keep it that way. Do not add a
-second copy of the substep rule, the turn timer or the rain cadence to either
+second copy of the substep rule, the reload ring or the rain cadence to either
 caller — a harness that mirrors the loop instead of sharing it ends up measuring a
 simulation that no longer exists.
 
@@ -131,7 +131,8 @@ simulation that no longer exists.
   "inside the noise" into an effect.
 - **Quote the numbers**, with their error bars, not just the direction.
 - **Name the proxy's limits.** `--policy engine-ai` is the pre-ladder AI (no
-  longer a ladder rung, but still what the baseline plays): it aims at the
+  longer a ladder rung, but still what most baseline scenarios play; the
+  rungs have one scenario each): it aims at the
   biggest group and never checks whether the line is clear.
   It cannot represent shot selection. If that is the skill in question, say so
   instead of reporting its number. `--policy agi` (and the `planner` strategy)

@@ -294,6 +294,22 @@ body {
   height: 100%;
 }
 
+/* The match is played in a portrait column, centred, on any screen wider than
+   that: a tablet or a foldable in landscape (Android 16 ignores the app's
+   portrait lock on large screens), or a desktop browser. The game is tuned on
+   a phone's field; at 1280x800 the field was 1280 wide and 660 tall, so balls
+   crossed a flat strip and rarely met. Speeds scale with the field's height
+   (PhysicsConfig.SC), so only the width is held. A portrait phone is narrower
+   than the column and is unaffected. The menu and the full-screen cards still
+   use the whole screen. */
+#cue2, #stage, #cue, #bar {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: max(360px, 62dvh);
+  margin-left: auto;
+  margin-right: auto;
+}
+
 canvas#c {
   display: block;
   width: 100%;
@@ -408,10 +424,10 @@ input[type=range] {
 
 #cue {
   --seat: var(--cyan);
-  --seat-soft: rgba(79, 240, 255, 0.14);
-  --seat-glow: rgba(79, 240, 255, 0.55);
-  --seat-dim: rgba(79, 240, 255, 0.3);
-  --seat-hot: rgba(79, 240, 255, 0.95);
+  --seat-soft: rgba(0, 229, 255, 0.14);
+  --seat-glow: rgba(0, 229, 255, 0.55);
+  --seat-dim: rgba(0, 229, 255, 0.3);
+  --seat-hot: rgba(0, 229, 255, 0.95);
 }
 #cue2 {
   --seat: var(--pink);
@@ -455,6 +471,13 @@ input[type=range] {
 #cue2 {
   border-top: none;
   border-bottom: 1px solid rgba(255, 26, 217, 0.32);
+}
+/* Player 2's strip is laid out back to front (see index.html): the clock sits at
+   the outer edge of the left side, as player 1's does on the right. */
+#cue2 .cue-left { gap: 12px; }
+#cue2 .cue-left .bar-time { margin-left: 0; margin-right: auto; }
+@media (max-width: 360px) {
+  #cue2 .cue-left { gap: 8px; }
 }
 
 .cue-left {
@@ -670,6 +693,8 @@ input[type=range] {
   padding: 9px 20px;
   border-color: var(--cyan);
 }
+/* Player 2's card, turned round at the top: their buttons in their colour. */
+#overcard2 button { border-color: var(--pink); }
 
 /* A duel's winner picks the next match's mode, ‹ Chaos ›, beside Play again
    on one row. Buttons, not a <select>, so the top player's card turns it round

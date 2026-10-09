@@ -246,9 +246,11 @@ const KNOB_SPECS = {
   },
 
   reload: {
-    group: 'physics', kind: 'range', min: 0, max: 8, step: 0.5, default: 3,
+    // From 0.5s: 0 ("off") meant a launcher with no pace at all, a bank always
+    // full, which is not a mode anyone plays, and its start countdown was empty.
+    group: 'physics', kind: 'range', min: 0.5, max: 8, step: 0.5, default: 3,
     apply: (v, { game }) => { game.reloadTime = v; },
-    format: v => (v === 0 ? t('fmt.off') : v.toFixed(1) + 's'),
+    format: v => v.toFixed(1) + 's',
     read: ({ game }) => game.reloadTime,
   },
 
@@ -288,9 +290,11 @@ const KNOB_SPECS = {
   },
 
   minboom: {
-    group: 'chain', kind: 'range', min: 1, max: 6, step: 1, default: 2,
+    // From 2: at 1 ("any") a lone ball boomed, so every hard hit on a single
+    // ball scored as a boom, which the rules nowhere describe.
+    group: 'chain', kind: 'range', min: 2, max: 6, step: 1, default: 2,
     apply: v => { PhysicsConfig.MIN_BOOM = v; },
-    format: v => (v <= 1 ? t('fmt.any') : v + '+'),
+    format: v => v + '+',
     read: () => PhysicsConfig.MIN_BOOM,
   },
 

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { t } from '../../src/i18n/I18n';
 import { TUTORIAL_CLOCK, closingButton, closingCard, tutorialLine } from '../../src/ui/TutorialUI';
 import { TutorialEvent, TUTORIAL_STEPS } from '../../src/game/Tutorial';
 
@@ -95,6 +96,8 @@ describe('tutorial copy', () => {
     expect(c.small).toBe('Most points in 2:00 wins.');
     expect(closingCard(180).small).toBe('Most points in 3:00 wins.');
     expect(closingCard(0).small).toBe('Most points wins.');
+    // Solo has no one to beat.
+    expect(closingCard(120, false, true).small).toBe(t('tut.card.smallSolo', { time: '2:00' }));
     // On the way into a mode, the button starts it; otherwise it goes back.
     expect(closingButton('solo')).toBe('Start game');
     expect(closingButton('duel')).toBe('Start game');

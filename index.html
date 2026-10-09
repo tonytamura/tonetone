@@ -82,8 +82,15 @@
   </div>
 </div>
 
+<!-- Drawn turned round for player 2, so it is laid out back to front: seen from
+     their side it reads as player 1's does, their own score by the chips and the
+     other score and the clock on the far side. -->
 <div id="cue2" class="cue" hidden>
   <div class="cue-left">
+    <div class="bar-time">
+      <b id="time2">2:00</b>
+      <span id="countdown2" class="bar-countdown" hidden></span>
+    </div>
     <span class="score-p1"><b id="scoreP1_2"><span class="score-lbl">P1</span><span class="score-num">0</span></b></span>
   </div>
   <div class="cuecenter">
@@ -94,10 +101,6 @@
   </div>
   <div class="cue-right">
     <span class="score-p2"><b id="scoreP2_2"><span class="score-lbl">P2</span><span class="score-num">0</span></b></span>
-    <div class="bar-time">
-      <b id="time2">2:00</b>
-      <span id="countdown2" class="bar-countdown" hidden></span>
-    </div>
   </div>
 </div>
 
@@ -208,7 +211,7 @@
     <p class="knob-hint" data-i18n="knob.haptics.hint">Short vibrations on booms and locks, on phones that have them.</p>
     <div class="knob"><label for="ailevel" data-i18n="knob.ailevel.label">AI opponent</label>
       <input id="ailevel" type="range" min="0" max="4" step="1" value="0"><output id="ailevelv">ladder</output></div>
-    <p class="knob-hint" data-i18n="knob.ailevel.hint">Who you play in 1 player. Ladder: a win moves you up to a stronger AI, a loss down to a weaker one, and losing to AGI starts again from AI1. Pick one AI to play only that one; it moves no ladder and sets no record.</p>
+    <p class="knob-hint" data-i18n="knob.ailevel.hint">Who you play in vs AI. Ladder: a win moves you up to a stronger AI, a loss down to a weaker one, and losing to AGI starts again from AI1. Pick one AI to play only that one: its wins still count, but the ladder stays put and no best score is kept.</p>
 
     <div id="advanced" hidden>
 
@@ -232,7 +235,7 @@
       <input id="size" type="range" min="8" max="26" step="1" value="12"><output id="sizev">12</output></div>
     <p class="knob-hint" data-i18n="knob.size.hint">The size of every ball. Bigger balls are easier to hit and fill the table sooner.</p>
     <div class="knob"><label for="rain" data-i18n="knob.rain.label">rain interval</label>
-      <input id="rain" type="range" min="0" max="10" step="0.5" value="0"><output id="rainv">off</output></div>
+      <input id="rain" type="range" min="0" max="10" step="0.5" value="0"><output id="rainv">auto</output></div>
     <p class="knob-hint" data-i18n="knob.rain.hint">Balls that drop onto the table by themselves. Auto drops one only while the table is running low. A time drops one that often, however full the table is.</p>
     <div class="knob"><label for="shotdecay" data-i18n="knob.shotdecay.label">repeat hits pay</label>
       <input id="shotdecay" type="range" min="0.3" max="1" step="0.05" value="0.5"><output id="shotdecayv">&times;0.50</output></div>
@@ -252,16 +255,16 @@
       <input id="kick" type="range" min="0.2" max="2.5" step="0.05" value="1.2"><output id="kickv">1.2&times;</output></div>
     <p class="knob-hint" data-i18n="knob.kick.hint">Multiplies the speed of every throw. Higher sends balls farther and makes a boom easier to reach.</p>
     <div class="knob"><label for="reload" data-i18n="knob.reload.label">shot every</label>
-      <input id="reload" type="range" min="0" max="8" step="0.5" value="3"><output id="reloadv">3.0s</output></div>
+      <input id="reload" type="range" min="0.5" max="8" step="0.5" value="3"><output id="reloadv">3.0s</output></div>
     <p class="knob-hint" data-i18n="knob.reload.hint">Time between one launcher's throws: how long you have to aim each ball.</p>
 
     <h2 data-i18n="panel.breaking">Breaking</h2>
     <div class="knob"><label for="boom" data-i18n="knob.boom.label">boom at</label>
       <input id="boom" type="range" min="0.2" max="1" step="0.05" value="0.4"><output id="boomv">40%</output></div>
-    <p class="knob-hint" data-i18n="knob.boom.hint">How hard a throw must be to boom a group, as a share of the power bar. Softer hits stick or knock one ball loose. Lower makes booms easier; the aim arrow turns red from this point.</p>
+    <p class="knob-hint" data-i18n="knob.boom.hint">How hard a throw must be to boom a group. Softer hits stick or knock one ball loose. Lower makes booms easier; the aim arrow turns red where a throw will boom.</p>
     <div class="knob"><label for="maxpower" data-i18n="knob.maxpower.label">max power</label>
       <input id="maxpower" type="range" min="600" max="2000" step="50" value="1600"><output id="maxpowerv">1600</output></div>
-    <p class="knob-hint" data-i18n="knob.maxpower.hint">The speed of a throw at full power.</p>
+    <p class="knob-hint" data-i18n="knob.maxpower.hint">The hardest throw the launcher makes, before the throw speed multiplies it. The speed cap can hold a ball below it.</p>
     <div class="knob"><label for="kickout" data-i18n="knob.kickout.label">knock-loose speed</label>
       <input id="kickout" type="range" min="0.3" max="1.2" step="0.05" value="0.5"><output id="kickoutv">50% /13%</output></div>
     <p class="knob-hint" data-i18n="knob.kickout.hint">How fast a ball knocked off a group flies, as a share of max power. The second figure is how much of that range is fast enough to boom another group: a chain.</p>
@@ -272,8 +275,8 @@
       <input id="speedcap" type="range" min="600" max="3600" step="100" value="3200"><output id="speedcapv">3200 px/s</output></div>
     <p class="knob-hint" data-i18n="knob.speedcap.hint">The fastest any group can move, however hard it is hit. Lower keeps the table calmer.</p>
     <div class="knob"><label for="minboom" data-i18n="knob.minboom.label">smallest boom</label>
-      <input id="minboom" type="range" min="1" max="6" step="1" value="2"><output id="minboomv">2+</output></div>
-    <p class="knob-hint" data-i18n="knob.minboom.hint">The fewest balls a group needs before it can boom. A smaller group only loses a ball, however hard it is hit. Any lets even a single ball boom.</p>
+      <input id="minboom" type="range" min="2" max="6" step="1" value="2"><output id="minboomv">2+</output></div>
+    <p class="knob-hint" data-i18n="knob.minboom.hint">The fewest balls a group needs before it can boom. A smaller group only loses a ball, however hard it is hit.</p>
 
     <h2 data-i18n="panel.sound">Sound</h2>
     <div class="knob"><label for="lock" data-i18n="knob.lock.label">lock sound</label>

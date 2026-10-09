@@ -31,6 +31,13 @@ export function resetStartCountdown() {
   shown = '';
 }
 
+/** Stop the run-in countdown and show the match time, as the tutorial wants. */
+export function clearCountdown(game: Game) {
+  startElapsed = -1;
+  setCdText(game, '', 'start');
+  lastText = '';
+}
+
 /** Apply text + classes to both countdown bar elements (hiding the time display
  *  when active, and only driving cd2El when in two-player mode). */
 function setCdText(game: Game, text: string, cls: 'start' | 'go' | 'end') {

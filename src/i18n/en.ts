@@ -47,7 +47,7 @@ export const EN = {
   'records.solo': 'Solo — highest score',
   // The Records screen's sections. Under the two-player one, columns headed P1,
   // P2 and P1 % (kept as they are); under vs AI, YOU (hud.you), records.them
-  // and YOU %; under the best scores, the AIs' names.
+  // and %; under the best scores, the AIs' names.
   'records.ai': 'vs AI — wins',
   // The best scores against each AI, one row per mode, one column per AI.
   'records.aiBest': 'vs AI — best score',
@@ -75,6 +75,8 @@ export const EN = {
   'rules.lock.text': 'Same colours stick together.',
   'rules.boom.label': 'Boom',
   'rules.boom.text': 'A different colour, thrown hard — a deep red arrow — booms the whole group. Bigger booms pay more.',
+  // Shown under the boom rule on the help card when the mode's smallest boom is above 2.
+  'rules.boom.min': 'On this mode a group needs {n} balls to boom; a smaller one only loses a ball.',
   'rules.peel.label': 'Knock loose',
   'rules.peel.text': 'Too soft, and only one ball comes off.',
   'rules.black.label': 'Black',
@@ -83,6 +85,7 @@ export const EN = {
   'rules.white.text': 'Booms whatever it touches, black included.',
   'rules.two.label': 'Two players',
   'rules.two.text': 'Each of you owns your half — drag in it to aim. Both launchers fire together.',
+  'rules.two.text.release': 'Each of you owns your half — drag in it to aim, and let go to throw.',
 
   // ── Credits ──────────────────────────────────────────────────────────────
   'credits.title': 'Credits',
@@ -129,6 +132,8 @@ export const EN = {
   // {time} is the match length, such as 2:00.
   'tut.card.small': 'Most points in {time} wins.',
   'tut.card.smallEndless': 'Most points wins.',
+  // The closing card's last line on the way into Solo, where there is no one to beat.
+  'tut.card.smallSolo': 'You have {time}. Score all you can.',
   'tut.card.start': 'Start game',
   'tut.card.menu': 'Back to menu',
 
@@ -171,7 +176,7 @@ export const EN = {
   'res.beatAgi': 'You Beat AGI',
   'res.gameOver': 'Game Over',
   'res.total': 'total',
-  'res.connections': 'connections',
+  'res.connections': 'locks',
   'res.booms': 'booms',
   'res.knocked': 'knocked loose',
   'res.again': 'Play again',
@@ -239,7 +244,7 @@ export const EN = {
   'knob.haptics.label': 'haptics',
   'knob.haptics.hint': 'Short vibrations on booms and locks, on phones that have them.',
   'knob.ailevel.label': 'AI opponent',
-  'knob.ailevel.hint': 'Who you play in vs AI. Ladder: a win moves you up to a stronger AI, a loss down to a weaker one, and losing to AGI starts again from AI1. Pick one AI to play only that one; it moves no ladder and sets no record.',
+  'knob.ailevel.hint': 'Who you play in vs AI. Ladder: a win moves you up to a stronger AI, a loss down to a weaker one, and losing to AGI starts again from AI1. Pick one AI to play only that one: its wins still count, but the ladder stays put and no best score is kept.',
   'knob.specials.label': 'black & white',
   'knob.specials.hint': 'The two special balls. Black sticks to any colour and survives every boom but a white one. White booms whatever it touches, black included.',
   'knob.white.label': 'white chance',
@@ -267,9 +272,9 @@ export const EN = {
   'knob.reload.label': 'shot every',
   'knob.reload.hint': "Time between one launcher's throws: how long you have to aim each ball.",
   'knob.boom.label': 'boom at',
-  'knob.boom.hint': 'How hard a throw must be to boom a group, as a share of the power bar. Softer hits stick or knock one ball loose. Lower makes booms easier; the aim arrow turns red from this point.',
+  'knob.boom.hint': 'How hard a throw must be to boom a group. Softer hits stick or knock one ball loose. Lower makes booms easier; the aim arrow turns red where a throw will boom.',
   'knob.maxpower.label': 'max power',
-  'knob.maxpower.hint': 'The speed of a throw at full power.',
+  'knob.maxpower.hint': 'The hardest throw the launcher makes, before the throw speed multiplies it. The speed cap can hold a ball below it.',
   'knob.kickout.label': 'knock-loose speed',
   'knob.kickout.hint': 'How fast a ball knocked off a group flies, as a share of max power. The second figure is how much of that range is fast enough to boom another group: a chain.',
   'knob.spread.label': 'boom debris',
@@ -277,7 +282,7 @@ export const EN = {
   'knob.speedcap.label': 'speed cap',
   'knob.speedcap.hint': 'The fastest any group can move, however hard it is hit. Lower keeps the table calmer.',
   'knob.minboom.label': 'smallest boom',
-  'knob.minboom.hint': 'The fewest balls a group needs before it can boom. A smaller group only loses a ball, however hard it is hit. Any lets even a single ball boom.',
+  'knob.minboom.hint': 'The fewest balls a group needs before it can boom. A smaller group only loses a ball, however hard it is hit.',
   'knob.lock.label': 'lock sound',
   'knob.lock.hint': 'Volume of the note when same colours stick together.',
   'knob.brk.label': 'break sound',
@@ -304,7 +309,6 @@ export const EN = {
   'fmt.noDecay': 'no decay',
   'fmt.none': 'none',
   'fmt.endless': 'endless',
-  'fmt.any': 'any',
 
   // ── Sound preview ────────────────────────────────────────────────────────
   // The technical figures under each sound stay in English; these are its name,

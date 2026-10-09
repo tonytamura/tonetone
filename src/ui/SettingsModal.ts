@@ -44,6 +44,12 @@ export function setupSettingsKnobs(
     if (el && out) out.textContent = formatKnob(def, parseFloat(el.value), ctx());
   };
 
+  const refreshWhiteReadout = () => {
+    const el = document.getElementById('white') as HTMLInputElement | null;
+    const out = document.getElementById('whitev');
+    if (el && out) out.textContent = formatKnob(KNOBS.white, parseFloat(el.value), ctx());
+  };
+
   // Each knob's applier, by id, so the preset picker can drive the same code path
   // a drag does instead of a second one that could diverge from it.
   const runners: Record<string, () => void> = {};
@@ -63,6 +69,9 @@ export function setupSettingsKnobs(
       applyKnob(def, raw, ctx());
       if (out) out.textContent = formatKnob(def, raw, ctx());
       if (def.group === 'chain') refreshChainReadout();
+      // The white readout is a chance per ball, which depends on how many
+      // colours share the draw: it went stale when only the colours moved.
+      if (def.id === 'colours') refreshWhiteReadout();
       if (def.group === 'audio' || def.wakesAudio) updateSoundTesterReadouts();
     };
     runners[def.id] = run;

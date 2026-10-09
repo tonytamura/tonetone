@@ -15,7 +15,7 @@ import { updateHUD, endMatchUI } from './ui/HUD';
 import { presetChoices, presetLabel } from './ui/PlayerSettings';
 import { setupSettingsKnobs } from './ui/SettingsModal';
 import { setHidden } from './ui/Dom';
-import { resetStartCountdown, updateCountdown } from './ui/Countdown';
+import { clearCountdown, resetStartCountdown, updateCountdown } from './ui/Countdown';
 import { startResultsEffects, updateResultsEffects } from './ui/ResultsCelebration';
 import { exitToMenu, onExitToMenu, setPaused, setupMatchControls } from './ui/MatchControls';
 import { TUTORIAL_CLOCK, createTutorialSession } from './ui/TutorialUI';
@@ -30,7 +30,7 @@ import { FORCED_AI_LEVEL, aiLevelFor } from './game/AIChoice';
 import { settingsLine } from './game/Settings';
 import { initAudio, audioReturned, checkAudioOnGesture, sleepAudio, AudioStore, fadeDroneForResults, setOptionsOpenState, setSoundOn, onSoundChange } from './audio/SynthEngine';
 import { uiClick } from './audio/UiSounds';
-import { initMenuScreen, showMenu, hideMenu, isMenuOccluding, slideOutRight, slideInFromRight } from './ui/menu/MenuScreen';
+import { initMenuScreen, showMenu, hideMenu, isMenuOccluding, isMenuVisible, slideOutRight, slideInFromRight } from './ui/menu/MenuScreen';
 
 const stageEl = document.getElementById('stage') as HTMLElement;
 const cv = document.getElementById('c') as HTMLCanvasElement;
@@ -84,8 +84,16 @@ function onPageShown() {
   recoverGraphics();
   audioReturned();
 }
+/**
+ * A match left for another app comes back paused. The frame loop stops while
+ * the page is hidden, so nothing is lost, but it used to resume the instant the
+ * page came back, before the player had their thumb on the screen.
+ */
+function pauseForLeaving() {
+  if (!isMenuVisible() && !game.matchOver && !tutorial.isActive() && !fieldHeld()) setPaused(game, true);
+}
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) sleepAudio();
+  if (document.hidden) { pauseForLeaving(); sleepAudio(); }
   else onPageShown();
 });
 window.addEventListener('pagehide', sleepAudio);
@@ -143,6 +151,11 @@ const tutorial = createTutorialSession({
 onExitToMenu(() => tutorial.stop());
 
 function newMatch() {
+  // Measure the field first, as setPlayers does: Play again after picking a
+  // mode with another strip layout on the results card laid the rack out on
+  // the old field's height, off centre.
+  refreshAllStrips();
+  handleResize();
   // Against the AI, the rung the last result moved the ladder to (Play again
   // included). Read here, not when the result is decided, so the results card
   // still names the AI that was just played.
@@ -248,14 +261,12 @@ function setPlayers(mode: PlayMode) {
   setHidden(cue2, top === 'none');
   cue2?.classList.toggle('deck-only', top === 'deck');
   cue2?.classList.toggle('flip', top === 'full');
-  // Size the field to this mode's layout before the match is laid out on it:
-  // the opening rack is centred on whatever height renderCtx holds. The top
+  // `newMatch` sizes the field to this layout before laying the match out on
+  // it: the opening rack is centred on whatever height renderCtx holds. The top
   // strip shows in two-player and hides in solo, and the next-ball chips are
   // 76px canvases until a strip refresh sizes them to the ball (about 21px), so
   // both change the field's height. Measured afterwards, the rack sat 19-27px
   // off centre on every change of mode, and 27px on the first match.
-  refreshAllStrips();
-  handleResize();
   newMatch();
 }
 
@@ -284,6 +295,9 @@ const panelCloseBtn = document.getElementById('panel-close');
 let panelHideTimer: ReturnType<typeof setTimeout> | undefined;
 function showOptionsPanel() {
   clearTimeout(panelHideTimer);
+  // The settings line is read when the panel opens, not once at load, so it
+  // carries what was changed since.
+  if (settingsBox) settingsBox.value = settingsLine();
   setOptionsOpenState(true);
   setHidden(panelEl, false);
 }
@@ -386,7 +400,10 @@ function frame(ts: number) {
   refreshAllStrips();
   // On the simulation's dt, which holds the launchers: on raw time a hitch
   // during the countdown (or a slow device) showed Start! before they let go.
-  if (!held) updateCountdown(game, simDt);
+  // The tutorial has no start countdown: opened from the first-play offer, it
+  // inherited the held match's and ran 3-2-1 over its first card.
+  if (tutorial.isActive()) clearCountdown(game);
+  else if (!held) updateCountdown(game, simDt);
 
   requestAnimationFrame(frame);
 }
