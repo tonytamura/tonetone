@@ -12,6 +12,7 @@ const M: Messages = {
   'menu.audioOn': 'Con sonido',
   'menu.audioOff': 'Sin sonido',
   'menu.language': 'Idioma',
+  'menu.keys': 'Menú principal. Las flechas mueven, Intro elige.',
   'menu.pops': '¡ENLACE!|BOOM!|¡SUELTA!|¡PEGADO!|¡COMBO!|¡ENCAJA!|¡PERFECTO!',
 
   'common.close': 'Cerrar',

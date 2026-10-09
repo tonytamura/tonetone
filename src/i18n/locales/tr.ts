@@ -12,6 +12,7 @@ const M: Messages = {
   'menu.audioOn': 'Ses açık',
   'menu.audioOff': 'Ses kapalı',
   'menu.language': 'Dil',
+  'menu.keys': 'Ana menü. Ok tuşları gezinir, Enter seçer.',
   'menu.pops': 'BAĞ!|BOOM!|KOPAR!|KİLİT!|KOMBO!|TAM YERİ!|MÜKEMMEL!',
 
   'common.close': 'Kapat',

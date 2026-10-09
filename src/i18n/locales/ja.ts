@@ -12,6 +12,7 @@ const M: Messages = {
   'menu.audioOn': 'サウンドON',
   'menu.audioOff': 'サウンドOFF',
   'menu.language': '言語',
+  'menu.keys': 'メインメニュー。矢印キーで移動、Enterで決定。',
   'menu.pops': 'ガッチリ！|BOOM!|ペリッ！|ロック！|コンボ！|ピタッ！|パーフェクト！',
 
   'common.close': '閉じる',

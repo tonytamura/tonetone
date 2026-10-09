@@ -12,6 +12,7 @@ const M: Messages = {
   'menu.audioOn': '소리 켬',
   'menu.audioOff': '소리 끔',
   'menu.language': '언어',
+  'menu.keys': '메인 메뉴. 화살표 키로 이동, Enter로 선택.',
   'menu.pops': '연결!|BOOM!|톡!|착!|콤보!|쏙!|퍼펙트!',
 
   'common.close': '닫기',

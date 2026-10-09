@@ -12,6 +12,7 @@ const M: Messages = {
   'menu.audioOn': 'Suara nyala',
   'menu.audioOff': 'Suara mati',
   'menu.language': 'Bahasa',
+  'menu.keys': 'Menu utama. Tombol panah untuk bergerak, Enter untuk memilih.',
   'menu.pops': 'IKAT!|BOOM!|LEPAS!|NEMPEL!|KOMBO!|PAS!|SEMPURNA!',
 
   'common.close': 'Tutup',

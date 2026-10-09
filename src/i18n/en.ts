@@ -28,6 +28,7 @@ export const EN = {
   'menu.audioOff': 'Audio off',
   // The flag button's name for screen readers, and the title of its screen.
   'menu.language': 'Language',
+  'menu.keys': 'Main menu. Arrow keys move, Enter chooses.',
   // Words that float up over the menu now and then; short, upper case.
   'menu.pops': 'BOND!|BOOM!|PEEL!|LOCK!|COMBO!|SLOT!|PERFECT!',
 

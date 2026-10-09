@@ -29,7 +29,7 @@ import { AI_LEVELS, ladderStep } from './game/AI';
 import { setPlannerBudget } from './game/AIPlanner';
 import { FORCED_AI_LEVEL } from './game/AIChoice';
 import { settingsLine } from './game/Settings';
-import { initAudio, audioReturned, checkAudioOnGesture, sleepAudio, AudioStore, applyGain, fadeDroneForResults, fadeDroneForOptions, setOptionsOpenState } from './audio/SynthEngine';
+import { initAudio, audioReturned, checkAudioOnGesture, sleepAudio, AudioStore, fadeDroneForResults, setOptionsOpenState, setSoundOn, onSoundChange } from './audio/SynthEngine';
 import { uiClick } from './audio/UiSounds';
 import { initMenuScreen, showMenu, hideMenu, isMenuOccluding, slideOutRight, slideInFromRight } from './ui/menu/MenuScreen';
 
@@ -245,10 +245,6 @@ function fieldHeld(): boolean {
 }
 
 function setPlayers(mode: PlayMode) {
-  // The menu owns the audio toggle while it is up, and it writes straight to
-  // AudioStore. Nothing refreshed the bar's button from that, so a match entered
-  // with audio switched off in the menu still showed "Audio on".
-  setSound(AudioStore.soundOn);
   game.twoPlayer = mode !== 'solo';
   game.aiOn = mode === 'ai';
   const top = topStripFor(mode);
@@ -261,20 +257,21 @@ function setPlayers(mode: PlayMode) {
 }
 
 const soundBtn = document.getElementById('sound');
-function setSound(on: boolean) {
-  AudioStore.soundOn = on;
+function soundLabel() {
+  const on = AudioStore.soundOn;
   if (soundBtn) {
     soundBtn.textContent = on ? t('menu.audioOn') : t('menu.audioOff');
     soundBtn.setAttribute('aria-pressed', String(on));
   }
-  applyGain();
 }
+onSoundChange(soundLabel);
+soundLabel();
 // The bar's labels are set in code, not markup, so a new language writes them again.
 onLanguageChange(() => {
-  if (soundBtn) soundBtn.textContent = AudioStore.soundOn ? t('menu.audioOn') : t('menu.audioOff');
+  soundLabel();
   fsLabel();
 });
-soundBtn?.addEventListener('click', () => { initAudio(); setSound(!AudioStore.soundOn); if (AudioStore.soundOn) uiClick('confirm'); });
+soundBtn?.addEventListener('click', () => { initAudio(); setSoundOn(!AudioStore.soundOn); if (AudioStore.soundOn) uiClick('confirm'); });
 
 const panelEl = document.getElementById('panel');
 const panelCloseBtn = document.getElementById('panel-close');
@@ -285,12 +282,10 @@ let panelHideTimer: ReturnType<typeof setTimeout> | undefined;
 function showOptionsPanel() {
   clearTimeout(panelHideTimer);
   setOptionsOpenState(true);
-  fadeDroneForOptions(true);
   setHidden(panelEl, false);
 }
 function hideOptionsPanel() {
   setOptionsOpenState(false);
-  fadeDroneForOptions(false);
   setHidden(panelEl, true);
 }
 panelCloseBtn?.addEventListener('click', () => {

@@ -11,6 +11,16 @@ import { colorOfKind, randomKind } from '../../game/Rules';
 import { BLACK_HEX, MENU_CYAN, MENU_PINK_DEEP, PINK, Rgb, WHITE, WHITE_HEX, hex, rgb, rgba } from '../../graphics/Palette';
 import { P_COLOR } from '../../graphics/Renderer';
 import { popText } from '../../graphics/PopText';
+
+/**
+ * How many 60ths of a second this menu frame covers. The ambience moved a fixed
+ * amount per frame, so it ran twice as fast on a 120Hz phone and at half speed
+ * when one throttled to 30fps; every per-frame step is scaled by this now.
+ */
+let step = 1;
+export function setMenuStep(frames: number) {
+  step = frames;
+}
 import { TAU } from '../../math';
 
 /**
@@ -107,8 +117,8 @@ export function drawMenuBalls(c: CanvasRenderingContext2D, width: number, height
   // Update positions and bounce off boundaries
   for (let i = 0; i < menuBalls.length; i++) {
     const b = menuBalls[i];
-    b.x += b.vx;
-    b.y += b.vy;
+    b.x += b.vx * step;
+    b.y += b.vy * step;
 
     if (b.x < pad) { b.x = pad; b.vx *= -1; }
     if (b.x > width - pad) { b.x = width - pad; b.vx *= -1; }
@@ -245,7 +255,7 @@ export function drawMenuFlashes(c: CanvasRenderingContext2D, width: number, heig
 
   for (let i = menuFlashes.length - 1; i >= 0; i--) {
     const f = menuFlashes[i];
-    f.t += 0.016;
+    f.t += 0.016 * step;
     const spec = FLASH_SPECS[f.kind] || FLASH_SPECS.spawn;
     const p = f.t / FLASH_LIFE;
     if (p >= 1) {
@@ -327,8 +337,8 @@ export function drawMenuPops(c: CanvasRenderingContext2D, width: number, height:
 
   for (let i = menuPops.length - 1; i >= 0; i--) {
     const pop = menuPops[i];
-    pop.t += 0.016;
-    pop.y += pop.vy;
+    pop.t += 0.016 * step;
+    pop.y += pop.vy * step;
 
     const k = pop.t / POP_LIFE;
     if (k >= 1) {
@@ -428,7 +438,7 @@ export function drawSoundNotes(
   boundsW: number,
   boundsH: number
 ) {
-  if (notes.length < MAX_NOTES && Math.random() < 0.04) {
+  if (notes.length < MAX_NOTES && Math.random() < 0.04 * step) {
     notes.push(createSoundNote(centerX, centerY, boundsW, boundsH));
   }
 
@@ -438,10 +448,10 @@ export function drawSoundNotes(
 
   for (let i = notes.length - 1; i >= 0; i--) {
     const n = notes[i];
-    n.life++;
-    n.x += n.vx;
-    n.y += n.vy;
-    n.rotation += n.rotSpeed;
+    n.life += step;
+    n.x += n.vx * step;
+    n.y += n.vy * step;
+    n.rotation += n.rotSpeed * step;
 
     const progress = n.life / n.maxLife;
     if (progress < 0.18) {
@@ -553,8 +563,8 @@ export function drawBackground(c: CanvasRenderingContext2D, width: number, heigh
   c.save();
   c.fillStyle = WHITE_HEX;
   motes.forEach(m => {
-    m.y += m.speedY;
-    m.x += m.speedX + Math.sin(t * 0.01 + m.pulse) * 0.22;
+    m.y += m.speedY * step;
+    m.x += (m.speedX + Math.sin(t * 0.01 + m.pulse) * 0.22) * step;
     if (m.y < -10) m.y = height + 10;
     if (m.x < -10) m.x = width + 10;
     if (m.x > width + 10) m.x = -10;

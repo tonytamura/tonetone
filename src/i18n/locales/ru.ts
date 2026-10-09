@@ -12,6 +12,7 @@ const M: Messages = {
   'menu.audioOn': 'Звук вкл.',
   'menu.audioOff': 'Звук выкл.',
   'menu.language': 'Язык',
+  'menu.keys': 'Главное меню. Стрелки — выбор, Enter — подтвердить.',
   'menu.pops': 'СВЯЗЬ!|BOOM!|ОТРЫВ!|СЦЕПКА!|КОМБО!|В ЦЕЛЬ!|ИДЕАЛЬНО!',
 
   'common.close': 'Закрыть',

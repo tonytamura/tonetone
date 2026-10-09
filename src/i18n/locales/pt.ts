@@ -12,6 +12,7 @@ const M: Messages = {
   'menu.audioOn': 'Som ligado',
   'menu.audioOff': 'Som desligado',
   'menu.language': 'Idioma',
+  'menu.keys': 'Menu principal. Setas movem, Enter escolhe.',
   'menu.pops': 'GRUDOU!|BOOM!|SOLTOU!|TRAVOU!|COMBO!|ENCAIXOU!|PERFEITO!',
   'common.close': 'Fechar',
   'common.back': 'Voltar',

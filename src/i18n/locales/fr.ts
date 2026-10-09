@@ -12,6 +12,7 @@ const M: Messages = {
   'menu.audioOn': 'Son activé',
   'menu.audioOff': 'Son coupé',
   'menu.language': 'Langue',
+  'menu.keys': 'Menu principal. Les flèches déplacent, Entrée choisit.',
   'menu.pops': 'LIEN !|BOOM!|DÉCROCHE !|COLLÉ !|COMBO !|CALÉ !|PARFAIT !',
   'common.close': 'Fermer',
   'common.back': 'Retour',

@@ -205,7 +205,6 @@ export function makeReverbIR(actx: AudioContext, seconds: number, decay: number)
 
 let _dcBlockNode: BiquadFilterNode | null = null;
 let _isResultsDucked = false;
-let _isOptionsDucked = false;
 let _isOptionsOpen = false;
 
 export function isOptionsOpen(): boolean {
@@ -217,9 +216,32 @@ export function isOptionsOpen(): boolean {
   return false;
 }
 
+/**
+ * Whether the Options panel is open: the drone and every voice not marked to
+ * play through it go quiet. One flag; a second one (`fadeDroneForOptions`) was
+ * always set alongside it.
+ */
 export function setOptionsOpenState(open: boolean) {
   _isOptionsOpen = open;
   applyDrone();
+}
+
+const soundListeners: (() => void)[] = [];
+
+/**
+ * Switch sound on or off: the one way to, so every control showing it can
+ * follow. The menu's button and the bar's each wrote `soundOn` themselves, and
+ * the bar had to be resynced by hand when a match began.
+ */
+export function setSoundOn(on: boolean) {
+  AudioStore.soundOn = on;
+  applyGain();
+  for (const fn of soundListeners) fn();
+}
+
+/** Called after every `setSoundOn`. */
+export function onSoundChange(fn: () => void) {
+  soundListeners.push(fn);
 }
 
 /** Smoothly ramp drone gain to 0 (duck=true, options open, or soundOn=false) or restore it. */
@@ -227,8 +249,8 @@ export function applyDrone() {
   const { actx, droneGain, drone, soundOn } = AudioStore;
   if (!actx || !droneGain) return;
   const optionsActive = isOptionsOpen();
-  const targetGain = _isResultsDucked || _isOptionsDucked || optionsActive || !soundOn ? 0 : DRONE_LEVEL * Math.max(0, drone);
-  if (optionsActive || _isOptionsDucked) {
+  const targetGain = _isResultsDucked || optionsActive || !soundOn ? 0 : DRONE_LEVEL * Math.max(0, drone);
+  if (optionsActive) {
     droneGain.gain.setValueAtTime(0, actx.currentTime);
   } else {
     droneGain.gain.setTargetAtTime(targetGain, actx.currentTime, 0.4);
@@ -237,11 +259,6 @@ export function applyDrone() {
 
 export function fadeDroneForResults(duck: boolean) {
   _isResultsDucked = duck;
-  applyDrone();
-}
-
-export function fadeDroneForOptions(duck: boolean) {
-  _isOptionsDucked = duck;
   applyDrone();
 }
 
@@ -413,7 +430,7 @@ export function startDrone() {
   const actx = AudioStore.actx;
   const soundOn = AudioStore.soundOn;
   const optionsActive = isOptionsOpen();
-  const droneVal = _isResultsDucked || _isOptionsDucked || optionsActive || !soundOn ? 0 : Math.max(0, AudioStore.drone);
+  const droneVal = _isResultsDucked || optionsActive || !soundOn ? 0 : Math.max(0, AudioStore.drone);
   const targetGain = DRONE_LEVEL * droneVal;
 
   const droneGain = actx.createGain();

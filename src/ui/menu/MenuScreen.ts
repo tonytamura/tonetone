@@ -1,5 +1,5 @@
-import { AudioStore, applyGain, isOptionsOpen } from '../../audio/SynthEngine';
-import { onLanguageChange } from '../../i18n/I18n';
+import { AudioStore, isOptionsOpen, onSoundChange, setSoundOn } from '../../audio/SynthEngine';
+import { onLanguageChange, t } from '../../i18n/I18n';
 import { isNativeApp } from '../Platform';
 import { clickHz, initMenuAudio, lastSelectAt, playBinauralClick, playHoverClick } from '../../audio/UiSounds';
 import { PlayMode } from '../../game/GameState';
@@ -8,7 +8,7 @@ import { uiFont } from '../../graphics/Fonts';
 import { BLACK, MENU_CYAN, MENU_PINK_DEEP, PINK, WHITE, WHITE_HEX, hex, rgba } from '../../graphics/Palette';
 import { setHidden } from '../Dom';
 import { MenuLayout, buttonIndexAt, computeMenuLayout, menuItems } from './MenuLayout';
-import { clearMenuPops, drawBackground, drawMenuBalls, drawMenuFlashes, drawMenuPops, initAmbience } from './MenuAmbience';
+import { clearMenuPops, drawBackground, drawMenuBalls, drawMenuFlashes, drawMenuPops, initAmbience, setMenuStep } from './MenuAmbience';
 import { drawLogo } from './LogoArt';
 
 /**
@@ -57,6 +57,14 @@ function parkPointer() {
   pointer.y = -1000;
 }
 let activeHoverIndex = -1;
+/**
+ * The button picked with the arrow keys, or -1 while the pointer leads. The
+ * buttons are drawn on the canvas, with no DOM of their own, so without this
+ * the menu could not be used from a keyboard or a screen reader at all.
+ */
+let keyIndex = -1;
+/** A polite live region that reads out the button the keys land on. */
+let announcer: HTMLElement | null = null;
 let clickedItemIndex = -1;
 let lastInteractionTimestamp = 0;
 
@@ -88,7 +96,7 @@ function drawMenu(c: CanvasRenderingContext2D, layout: MenuLayout) {
   if (!canvas) return;
 
   const prevHoverIndex = activeHoverIndex;
-  const currentHoverIndex = buttonIndexAt(layout, pointer.x, pointer.y);
+  const currentHoverIndex = keyIndex >= 0 ? keyIndex : buttonIndexAt(layout, pointer.x, pointer.y);
 
   layout.buttons.forEach((btn) => {
     const isHovered = (currentHoverIndex === btn.index);
@@ -341,6 +349,7 @@ export function slideInFromRight() {
 }
 
 export function showMenu() {
+  keyIndex = -1;
   const el = container();
   if (el) {
     if (typeof window !== 'undefined') {
@@ -431,13 +440,34 @@ function safeCancelAnimationFrame(id: number) {
   }
 }
 
+/** When the last menu frame was drawn, for the animation's per-second step. */
+let lastFrameAt = 0;
+
+/** An overlay drawn over the menu (Help, Records, Language) hides it behind a blur. */
+function menuCovered(): boolean {
+  if (isOptionsOpen()) return true;
+  if (typeof document === 'undefined' || !document.getElementById) return false;
+  return ['help-overlay', 'records-overlay', 'lang-overlay'].some(id => {
+    const el = document.getElementById(id);
+    return !!el && !el.hidden;
+  });
+}
+
 function renderLoop() {
   if (!menuActive) return;
-  if (isOptionsOpen()) {
+  // Nothing redraws under the Options panel or a blurred overlay: redrawing at
+  // 60fps underneath also made the browser recompute the blur every frame.
+  if (menuCovered()) {
+    lastFrameAt = 0;
     animationId = safeRequestAnimationFrame(renderLoop);
     return;
   }
-  animFrame++;
+  const nowMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  // In 60ths of a second, capped so a long stall does not fling everything.
+  const frames = lastFrameAt ? Math.min(3, Math.max(0, (nowMs - lastFrameAt) * 0.06)) : 1;
+  lastFrameAt = nowMs;
+  setMenuStep(frames);
+  animFrame += frames;
 
   const c = ctx;
   if (c) {
@@ -462,9 +492,26 @@ export function initMenuScreen(onSelectMode: (mode: PlayMode) => void, onOptions
   audioBtn = document.getElementById('audioToggle') as HTMLButtonElement;
   fsBtn = document.getElementById('fsToggle') as HTMLButtonElement;
   onLanguageChange(() => { updateAudioBtnLabel(); updateFsBtnLabel(); clearMenuPops(); });
+  onSoundChange(updateAudioBtnLabel);
 
   if (!canvas) return;
   ctx = canvas.getContext('2d');
+
+  // The drawn buttons, for a keyboard and a screen reader: the canvas takes
+  // focus and says how to use it, and a live region reads out each button the
+  // arrow keys land on.
+  const cv = canvas;
+  cv.tabIndex = 0;
+  cv.setAttribute?.('role', 'application');
+  const labelCanvas = () => cv.setAttribute?.('aria-label', t('menu.keys'));
+  labelCanvas();
+  onLanguageChange(labelCanvas);
+  if (!announcer && typeof document !== 'undefined' && document.createElement && document.body?.appendChild) {
+    announcer = document.createElement('div');
+    announcer.setAttribute('aria-live', 'polite');
+    announcer.className = 'sr-only';
+    document.body.appendChild(announcer);
+  }
 
   resize();
   if (typeof window !== 'undefined') {
@@ -504,6 +551,7 @@ export function initMenuScreen(onSelectMode: (mode: PlayMode) => void, onOptions
       // stylus or a phone reporting a hover would light buttons nobody is
       // touching.
       if (e.pointerType !== 'mouse' && !pointer.isDown) return;
+      keyIndex = -1;
       pointer.isMouse = e.pointerType === 'mouse';
       const p = getCanvasPointer(e);
       pointer.x = p.x;
@@ -528,15 +576,36 @@ export function initMenuScreen(onSelectMode: (mode: PlayMode) => void, onOptions
       pointer.isDown = false;
       parkPointer();
     });
+
+    window.addEventListener('keydown', (e) => {
+      if (!menuActive || isTransitioning || menuCovered()) return;
+      const target = e.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement ||
+          target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement) return;
+      const n = menuItems.length;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        initMenuAudio();
+        const down = e.key === 'ArrowDown';
+        const from = keyIndex >= 0 ? keyIndex : activeHoverIndex;
+        keyIndex = from < 0 ? (down ? 0 : n - 1) : (from + (down ? 1 : n - 1)) % n;
+        parkPointer();
+        playHoverClick(HOVER_BASE_HZ + keyIndex * HOVER_STEP_HZ, 0);
+        if (announcer) announcer.textContent = t(menuItems[keyIndex].key);
+      } else if ((e.key === 'Enter' || e.key === ' ') && keyIndex >= 0) {
+        e.preventDefault();
+        initMenuAudio();
+        activeHoverIndex = keyIndex;
+        handleInteraction();
+      }
+    });
   }
 
   audioBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
-    AudioStore.soundOn = !AudioStore.soundOn;
-    updateAudioBtnLabel();
-    // Without this the master gain and the ambient drone keep running when the
-    // button says "Audio off" — soundOn alone only gates newly started voices.
-    applyGain();
+    // setSoundOn also moves the master gain and the drone: soundOn alone only
+    // gates newly started voices.
+    setSoundOn(!AudioStore.soundOn);
     if (AudioStore.soundOn) {
       playBinauralClick(587.33, 0.20, 0, 'toggle');
     }

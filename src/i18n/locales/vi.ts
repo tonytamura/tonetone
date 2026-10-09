@@ -12,6 +12,7 @@ const M: Messages = {
   'menu.audioOn': 'Bật âm',
   'menu.audioOff': 'Tắt âm',
   'menu.language': 'Ngôn ngữ',
+  'menu.keys': 'Menu chính. Phím mũi tên để di chuyển, Enter để chọn.',
   'menu.pops': 'DÍNH!|BOOM!|TÁCH!|KHÓA!|COMBO!|KHỚP!|HOÀN HẢO!',
 
   'common.close': 'Đóng',

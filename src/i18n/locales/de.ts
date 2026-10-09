@@ -12,6 +12,7 @@ const M: Messages = {
   'menu.audioOn': 'Ton an',
   'menu.audioOff': 'Ton aus',
   'menu.language': 'Sprache',
+  'menu.keys': 'Hauptmenü. Pfeiltasten bewegen, Eingabe wählt.',
   'menu.pops': 'KLEBT!|BOOM!|RAUS!|FEST!|KOMBO!|PASST!|PERFEKT!',
   'common.close': 'Schließen',
   'common.back': 'Zurück',
