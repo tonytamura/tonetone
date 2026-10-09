@@ -6,13 +6,11 @@
     "androidScheme": "https"
   },
   "plugins": {
-    "SplashScreen": {
-      "launchShowDuration": 1500,
-      "backgroundColor": "#120726"
+    "SystemBars": {
+      "style": "DARK"
     },
     "StatusBar": {
-      "style": "DARK",
-      "backgroundColor": "#120726"
+      "style": "DARK"
     }
   }
 }

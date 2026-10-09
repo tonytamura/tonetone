@@ -6,7 +6,8 @@
  * `drawImpactBoom` the menu uses, on the app's dark background. It writes:
  *
  * - Android launcher icons, legacy square and round, and the adaptive icon's
- *   foreground layer, at every density;
+ *   foreground layer and monochrome layer (the themed icon of Android 13 and
+ *   up, which the system tints), at every density;
  * - Android splash screens, portrait and landscape, at every density;
  * - the web icons (`public/icon-*.png`, the favicon and the Apple touch icon);
  * - a 512px store icon, to `store/`, for the Play listing;
@@ -29,7 +30,7 @@ const BG = '#120726';
 const DENSITIES: [string, number][] = [['mdpi', 1], ['hdpi', 1.5], ['xhdpi', 2], ['xxhdpi', 3], ['xxxhdpi', 4]];
 const RES = 'android/app/src/main/res';
 
-type Kind = 'foreground' | 'square' | 'round' | 'splash' | 'web';
+type Kind = 'foreground' | 'mono' | 'square' | 'round' | 'splash' | 'web';
 /** `opaque`: written as RGB with no alpha channel, which the App Store requires of an app icon. */
 interface Job { path: string; w: number; h: number; kind: Kind; opaque?: boolean }
 
@@ -69,6 +70,7 @@ for (const [d, k] of DENSITIES) {
   jobs.push({ path: `${RES}/mipmap-${d}/ic_launcher.png`, w: 48 * k, h: 48 * k, kind: 'square' });
   jobs.push({ path: `${RES}/mipmap-${d}/ic_launcher_round.png`, w: 48 * k, h: 48 * k, kind: 'round' });
   jobs.push({ path: `${RES}/mipmap-${d}/ic_launcher_foreground.png`, w: 108 * k, h: 108 * k, kind: 'foreground' });
+  jobs.push({ path: `${RES}/mipmap-${d}/ic_launcher_monochrome.png`, w: 108 * k, h: 108 * k, kind: 'mono' });
   jobs.push({ path: `${RES}/drawable-port-${d}/splash.png`, w: 320 * k, h: 480 * k, kind: 'splash' });
   jobs.push({ path: `${RES}/drawable-land-${d}/splash.png`, w: 480 * k, h: 320 * k, kind: 'splash' });
 }
@@ -109,7 +111,7 @@ async function main() {
         // Ball radius as a share of the shorter side. The adaptive foreground
         // must keep its art inside the central 66% that every mask shape shows.
         let share = 0.2;
-        if (job.kind === 'foreground') share = 0.135;
+        if (job.kind === 'foreground' || job.kind === 'mono') share = 0.135;
         if (job.kind === 'splash') share = 0.11;
         if (job.kind === 'round') {
           c.beginPath(); c.arc(W / 2, H / 2, S / 2, 0, Math.PI * 2); c.clip(); fill();
@@ -120,6 +122,15 @@ async function main() {
           c.beginPath(); c.roundRect(0, 0, W, H, r); c.clip(); fill();
         }
         const r = S * share, gap = r * 2.12, cy = H / 2 - r * 0.08;
+        if (job.kind === 'mono') {
+          // Only the alpha counts: the system paints it in the theme's colour.
+          // The white ball solid, the black one a ring, the boom a spark between.
+          c.fillStyle = '#fff'; c.strokeStyle = '#fff';
+          c.beginPath(); c.arc(W / 2 - gap / 2, cy, r, 0, Math.PI * 2); c.fill();
+          c.lineWidth = r * 0.28;
+          c.beginPath(); c.arc(W / 2 + gap / 2, cy, r - c.lineWidth / 2, 0, Math.PI * 2); c.stroke();
+          return cv.toDataURL('image/png');
+        }
         drawBilliardBall(c, W / 2 - gap / 2, cy, r, WHITE_BALL);
         drawBilliardBall(c, W / 2 + gap / 2, cy, r, BLACK_BALL);
         drawImpactBoom(c, W / 2, cy, r, 20);

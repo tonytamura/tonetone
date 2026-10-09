@@ -15,6 +15,7 @@
     "sim:baseline": "vite-node scripts/sim.ts -- baseline check",
     "verify": "npm run build && npm test && npm run sim:physics && npm run sim:invariants && npm run sim:baseline",
     "cap:sync": "cap sync",
+    "build:native": "tsc && vite build --sourcemap false && vite-node scripts/native-version.ts && cap sync",
     "cap:android": "cap open android",
     "cap:ios": "cap open ios",
     "check:strip": "vite-node scripts/check-strip.ts",
@@ -25,7 +26,6 @@
     "@capacitor/core": "^8.0.0",
     "@capacitor/haptics": "^8.0.0",
     "@capacitor/ios": "^8.0.0",
-    "@capacitor/screen-orientation": "^8.0.0",
     "@capacitor/status-bar": "^8.0.0"
   },
   "devDependencies": {
