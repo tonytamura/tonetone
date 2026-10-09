@@ -4,11 +4,11 @@ import { computeMenuLayout } from '../../src/ui/menu/MenuLayout';
 import { MAX_MENU_VOICES, playBinauralClick, resetUiSoundsForTesting, setClickLockMs } from '../../src/audio/UiSounds';
 import { AudioStore } from '../../src/audio/SynthEngine';
 import type { PlayMode } from '../../src/game/GameState';
-import { closeApp, isAppWindow } from '../../src/ui/Platform';
+import { canOfferFullscreen, closeApp } from '../../src/ui/Platform';
 
 // Where the game runs: a browser tab unless a test says it is an app window
 // (the Android or iOS app, or the installed website), and nowhere it can close.
-vi.mock('../../src/ui/Platform', () => ({ isAppWindow: vi.fn(() => false), closeApp: vi.fn(() => null) }));
+vi.mock('../../src/ui/Platform', () => ({ canOfferFullscreen: vi.fn(() => true), closeApp: vi.fn(() => null) }));
 
 /**
  * A 2D context that accepts anything drawn on it.
@@ -189,13 +189,13 @@ describe('MenuScreen', () => {
     hideMenu();
   });
 
-  it('hides the full screen button in the apps and the installed website, which are full screen already', () => {
-    vi.mocked(isAppWindow).mockReturnValue(true);
+  it('hides the full screen button where the game should not offer one (app windows, frames on other sites)', () => {
+    vi.mocked(canOfferFullscreen).mockReturnValue(false);
     initMenuScreen(() => {});
     showMenu();
     expect(fsBtnEl.hasAttribute('hidden')).toBe(true);
     hideMenu();
-    vi.mocked(isAppWindow).mockReturnValue(false);
+    vi.mocked(canOfferFullscreen).mockReturnValue(true);
   });
 
   it('shows the X only where the game can close itself, and closes it', () => {

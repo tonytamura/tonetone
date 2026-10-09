@@ -1,6 +1,6 @@
 import { AudioStore, isOptionsOpen, onSoundChange, setSoundOn } from '../../audio/SynthEngine';
 import { onLanguageChange, t } from '../../i18n/I18n';
-import { closeApp, isAppWindow } from '../Platform';
+import { canOfferFullscreen, closeApp } from '../Platform';
 import { clickHz, initMenuAudio, lastSelectAt, playBinauralClick, playHoverClick } from '../../audio/UiSounds';
 import { PlayMode } from '../../game/GameState';
 import { clearSpriteCache } from '../../graphics/Sprites';
@@ -396,9 +396,10 @@ function fullscreenApi() {
   const docEl = typeof document !== 'undefined' ? (document.documentElement as any) : null;
   return {
     docEl,
-    // The Android and iOS apps, and the website installed to the home screen,
-    // are full screen already: no button there.
-    request: docEl && !isAppWindow() ? (docEl.requestFullscreen || docEl.webkitRequestFullscreen || null) : null,
+    // Only in a browser tab of its own (Platform.canOfferFullscreen): the apps
+    // and the installed website are full screen already, and a frame on another
+    // site (itch.io) has its host's button instead.
+    request: docEl && canOfferFullscreen() ? (docEl.requestFullscreen || docEl.webkitRequestFullscreen || null) : null,
     exit: typeof document !== 'undefined' ? (document.exitFullscreen || (document as any).webkitExitFullscreen || null) : null,
     isOn: typeof document !== 'undefined' && !!(document.fullscreenElement || (document as any).webkitFullscreenElement),
   };

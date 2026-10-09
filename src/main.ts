@@ -1,10 +1,11 @@
 import { registerOffline } from './ui/Offline';
+import { trackViewportHeight } from './ui/ViewportHeight';
 import { PlayMode, createGame, resetField, startMatch } from './game/GameState';
 import { isLangId, onLanguageChange, setLanguage, startingLanguage, t } from './i18n/I18n';
 import { setupLanguagePicker } from './ui/LanguagePicker';
 import { setupRecordsScreen } from './ui/RecordsScreen';
 import { recordWords } from './ui/RecordsCelebration';
-import { isAppWindow } from './ui/Platform';
+import { canOfferFullscreen } from './ui/Platform';
 import { setupAudioReadout } from './ui/AudioReadout';
 import { setupAiReadout } from './ui/AiReadout';
 import { advanceFrame } from './sim/Frame';
@@ -37,6 +38,9 @@ const stageEl = document.getElementById('stage') as HTMLElement;
 const cv = document.getElementById('c') as HTMLCanvasElement;
 const renderCtx = createRenderContext(cv);
 const game = createGame();
+
+// Before anything is measured: the page's height comes from script, not 100dvh.
+trackViewportHeight();
 
 function handleResize() {
   resizeRenderer(renderCtx, stageEl);
@@ -333,8 +337,8 @@ copyBtn?.addEventListener('click', () => {
 // Fullscreen API fallback
 const fsBtn = document.getElementById('fs');
 const docEl = document.documentElement as any;
-// Browser tabs only: the Android and iOS apps and the installed website are full screen already.
-const fsRequest = isAppWindow() ? null : docEl.requestFullscreen || docEl.webkitRequestFullscreen || null;
+// Browser tabs only (Platform.canOfferFullscreen).
+const fsRequest = !canOfferFullscreen() ? null : docEl.requestFullscreen || docEl.webkitRequestFullscreen || null;
 const fsExit = document.exitFullscreen || (document as any).webkitExitFullscreen || null;
 function fsActive() { return document.fullscreenElement || (document as any).webkitFullscreenElement || null; }
 function fsLabel() { if (fsBtn) fsBtn.textContent = fsActive() ? t('menu.exitFullScreen') : t('menu.fullScreen'); }

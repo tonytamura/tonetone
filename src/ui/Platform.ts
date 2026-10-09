@@ -61,6 +61,17 @@ export function isAppWindow(): boolean {
 }
 
 /**
+ * Whether the game offers its own full screen button: only in a browser tab of
+ * its own. Not in an app window, which is full screen already, and not in a
+ * frame on another site: on itch.io the browser refused it (whether a frame
+ * may go full screen is the host page's to allow), and itch.io has its own.
+ */
+export function canOfferFullscreen(): boolean {
+  if (isAppWindow()) return false;
+  return typeof window === 'undefined' || window.self === window.top;
+}
+
+/**
  * How the game closes itself, where it can, or null:
  *
  * - the Android app: Capacitor's own exit;
