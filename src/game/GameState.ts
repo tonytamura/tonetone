@@ -3,7 +3,7 @@ import { PhysicsConfig } from '../physics/Config';
 import { BANK_MAX, FIRE_ON_RELEASE, drawFor, randomKind, colorOfKind } from './Rules';
 import { BLACK_HEX, WHITE_HEX } from '../graphics/Palette';
 import { rebuildGroups } from '../physics/RigidBody';
-import { aimDirOf, launchPointOf, throwSpeedOf } from '../physics/LauncherBays';
+import { aimDirOf, launchPointOf, launchSpeedOf, throwSpeedOf, topLaunchSpeed } from '../physics/LauncherBays';
 import { playSwoosh } from '../audio/Voices';
 import { panOf } from '../audio/SoundEvents';
 import { CollisionState, RAIN_BLINK, RAIN_GRACE } from '../physics/CollisionSolver';
@@ -439,7 +439,8 @@ function launchBall(
   p.nextUp = p.then || drawFor(p, game.players, game.twoPlayer);
   p.then = drawFor(p, game.players, game.twoPlayer);
 
-  if (!opts.silent) playSwoosh(panOf(spot.x, width), speed / (PhysicsConfig.THROW_MAX * 1.4), { isWhite });
+  // Loudness is the share of the hardest throw, so it does not change with the screen's scale.
+  if (!opts.silent) playSwoosh(panOf(spot.x, width), launchSpeedOf(p) / topLaunchSpeed(), { isWhite, seat: who, felt: !(game.aiOn && who === 1) });
 
   if (!game.matchRunning && !game.matchOver) {
     game.matchRunning = true;

@@ -6,6 +6,7 @@ import { PhysicsConfig } from '../physics/Config';
 import { panOf } from '../audio/SoundEvents';
 import { AudioStore, isOptionsOpen, triggerHaptic } from '../audio/SynthEngine';
 import { playNote, playSwoosh, playRandomGameBoom } from '../audio/Voices';
+import { playFlashSound } from '../audio/FlashSounds';
 
 /**
  * The fireworks over the results card: flashes, floating words and booms, on
@@ -109,9 +110,10 @@ function randBetween(lo: number, hi: number): number {
 export function updateResultsEffects(game: Game, dt: number, W: number, H: number) {
   const now = performance.now();
 
-  // 1. Age what is on screen. Celebration pops drift upwards as they fade; the
-  //    rest of the lifecycle is the solver's, so it is not written out again.
-  for (const pop of game.pops) pop.y -= dt * 30;
+  // 1. Age what is on screen. Celebration pops drift away from their player as
+  //    they fade: up the screen for player 1, down it for player 2, whose card
+  //    is the flipped one. The rest of the lifecycle is the solver's.
+  for (const pop of game.pops) pop.y += (pop.who === 1 ? 1 : -1) * dt * 30;
   ageEffects(game, dt);
 
   const winnerIdx = celebrationWinner(game);
@@ -128,7 +130,7 @@ export function updateResultsEffects(game: Game, dt: number, W: number, H: numbe
     if (epic) {
       for (let i = 0; i < 8; i++) spawnFlash(game, W, band);
       if (audible) playNote(0.5, 0, 'boom', { boomSize: 9 });
-      triggerHaptic('heavy');
+      if (!isOptionsOpen()) triggerHaptic('heavy');
       lastFlashTime = lastBigBoomTime = now;
     }
   }
@@ -140,8 +142,7 @@ export function updateResultsEffects(game: Game, dt: number, W: number, H: numbe
       const f = spawnFlash(game, W, band);
       if (audible) {
         const normX = panOf(f.x, W);
-        if (f.kind === 'spawn' || f.kind === 'blocked') playRandomGameBoom(normX, 'celebration');
-        else playNote(Math.random(), normX, f.kind === 'break' ? 'break' : 'bond', { boost: 0.6 });
+        playFlashSound(f.kind, normX, 'celebration');
       }
     }
   }
@@ -163,7 +164,8 @@ export function updateResultsEffects(game: Game, dt: number, W: number, H: numbe
   if (cfg.bigBoomGap && now - lastBigBoomTime > gap(cfg.bigBoomGap)) {
     lastBigBoomTime = now;
     if (audible) playNote(Math.random(), Math.random() * 1.6 - 0.8, 'boom', { boomSize: 6 + Math.floor(Math.random() * 4) });
-    triggerHaptic('heavy');
+    // Felt even with the sound off (haptics has its own switch), but not under Options.
+    if (!isOptionsOpen()) triggerHaptic('heavy');
   }
 
   // 3. Spawn randomized celebratory pops
@@ -175,11 +177,11 @@ export function updateResultsEffects(game: Game, dt: number, W: number, H: numbe
     // stopped.
     const words = tList(cfg.words);
     const txt = words[Math.floor(Math.random() * words.length)];
-    // Player 1's pop rises about 70px over its life; player 2's is drawn rotated,
-    // so its own drift and its float offset cancel and it stays roughly put.
+    // A pop travels about 70px over its life, towards the far edge of its
+    // player's half: up for player 1, down for player 2. Leave that room.
     const pad = 28;
     const ry = winnerIdx === 1
-      ? randBetween(band.top + pad, band.bottom - pad)
+      ? randBetween(band.top + pad, band.bottom - 70)
       : randBetween(band.top + 70, band.bottom - pad);
     const rx = randBetween(W * 0.15, W * 0.85);
     game.pops.push({ x: rx, y: ry, t: 0, label: { text: txt }, who: winnerIdx, scale: cfg.popScale });

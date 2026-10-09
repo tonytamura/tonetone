@@ -61,7 +61,8 @@ export interface AudioState {
   load: number;
   loadAt: number;
   thudAt: number;
-  swooshAt: number;
+  /** Last swoosh per seat, P1 then P2. */
+  swooshAt: number[];
   thuds: number;
   volume: number;
   lockVol: number;
@@ -124,7 +125,7 @@ export const AudioStore: AudioState = {
   load: 0,
   loadAt: 0,
   thudAt: -9,
-  swooshAt: -9,
+  swooshAt: [-9, -9],
   thuds: 0,
   volume: 0.9,
   lockVol: 1,
@@ -415,7 +416,7 @@ export function rebuildAudio(reason: string) {
   AudioStore.load = 0;
   AudioStore.loadAt = 0;
   AudioStore.thudAt = -9;
-  AudioStore.swooshAt = -9;
+  AudioStore.swooshAt = [-9, -9];
   _asleep = false;
   _returnedAt = null;
   _stuckSince = null;

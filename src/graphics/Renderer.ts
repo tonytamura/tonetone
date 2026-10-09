@@ -213,7 +213,7 @@ export function drawPops(rc: RenderContext, game: Game) {
     // screen. Slide it back on rather than letting it clip.
     const text = popText(f.label);
     ctx.translate(popCenterX(f.x, ctx.measureText(text).width, W), f.y);
-    if (game.twoPlayer && f.who === 1) ctx.rotate(Math.PI);
+    if (game.twoPlayer && !game.aiOn && f.who === 1) ctx.rotate(Math.PI);
     ctx.globalAlpha = Math.max(0, 1 - k * k);
     ctx.fillStyle = P_COLOR[f.who] || WHITE_HEX;
     ctx.shadowColor = BLACK_HEX;
@@ -491,7 +491,7 @@ function drawLoadedBall(
   if (!marksShown(game.marks)) return;
   ctx.save();
   ctx.translate(m.x, m.y);
-  if (p.side < 0) ctx.rotate(Math.PI);
+  if (p.side < 0 && !game.aiOn) ctx.rotate(Math.PI);
   drawBallMark(ctx, p.loaded.kind, 0, 0, R * bob, p.loaded.color);
   ctx.restore();
 }
@@ -639,7 +639,7 @@ export function drawResultsCanvas(rc: RenderContext, game: Game) {
       const x = half * 2 < W ? Math.min(W - half, Math.max(half, f.x)) : W / 2;
       ctx.save();
       ctx.translate(x, f.y);
-      if (game.twoPlayer && f.who === 1) ctx.rotate(Math.PI);
+      if (game.twoPlayer && !game.aiOn && f.who === 1) ctx.rotate(Math.PI);
       const alpha = Math.max(0, 1 - k * k);
       ctx.globalAlpha = alpha;
       const color = P_COLOR[f.who] || hex(MENU_CYAN);

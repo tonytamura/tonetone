@@ -1,7 +1,7 @@
-import { AudioStore, isOptionsOpen, isStopped } from '../../audio/SynthEngine';
+import { AudioStore, isOptionsOpen } from '../../audio/SynthEngine';
+import { playFlashSound } from '../../audio/FlashSounds';
 import { tList } from '../../i18n/I18n';
-import { playNote, playRandomGameBoom } from '../../audio/Voices';
-import { clickHz, initMenuAudio, playBinauralClick } from '../../audio/UiSounds';
+import { initMenuAudio, playBinauralClick } from '../../audio/UiSounds';
 import { pitchOf } from '../../audio/SoundEvents';
 import { Flash, FLASH_LIFE, POP_LIFE, Pop } from '../../physics/Types';
 import { CURRENTS, FLASH_SPECS, MENU_RING, drawRippleRing, ringFade, ringRadius } from '../../graphics/VisualFX';
@@ -206,7 +206,7 @@ const MENU_FLASH_R = 22;
  * match has. `rel` picks the scale degree; pass the ball's kind through where
  * there is one, exactly as the collision solver does.
  *
- * `blocked` keeps the UI click: it is a "no" from the interface, not a game event.
+ * The kind-to-sound mapping is `playFlashSound`'s, shared with the results screen.
  */
 function spawnMenuFlash(
   width: number,
@@ -222,23 +222,9 @@ function spawnMenuFlash(
 
   if (!AudioStore.soundOn) return;
   const normX = width > 0 ? (x / width) * 2 - 1 : 0;
-  if (k === 'blocked') {
-    // A click only once the audio is playing: before the first tap it would sit
-    // queued on the stopped context and go off with everything else on the tap.
-    if (AudioStore.actx && !isStopped(AudioStore.actx)) playBinauralClick(clickHz('cancel'), 0.2, normX, 'hover');
-    return;
-  }
-  initMenuAudio();
-  if (k === 'spawn') {
-    // A boom on the menu is a real one, drawn from the spread of chain sizes a
-    // match actually produces, rather than the bare `playNote(..., 'boom')`
-    // this used to make — that passes no chain size, so every menu boom was the
-    // smallest tier and the range never showed.
-    playRandomGameBoom(normX, 'menu');
-    return;
-  }
-  playNote(rel !== undefined ? rel : Math.random(), normX,
-    k === 'break' ? 'break' : 'bond');
+  // Anything but the click needs the graph started; the click waits for it.
+  if (k !== 'blocked') initMenuAudio();
+  playFlashSound(k, normX, 'menu', rel);
 }
 
 export function drawMenuFlashes(c: CanvasRenderingContext2D, width: number, height: number) {
@@ -295,9 +281,9 @@ export function clearMenuPops() {
 let nextPopId = 1;
 let lastAutoPopTime = 0;
 
-// The words are the player's language; the scores are the same everywhere.
-const POP_SCORES = ['+100', '+500', '+1000'];
-const popTexts = () => [...tList('menu.pops'), ...POP_SCORES];
+// Words only, in the player's language. Invented scores (+100, +500, +1000)
+// used to float here too, in amounts no match ever pays.
+const popTexts = () => tList('menu.pops');
 
 function spawnMenuPop(width: number, height: number) {
   if (isOptionsOpen()) return;

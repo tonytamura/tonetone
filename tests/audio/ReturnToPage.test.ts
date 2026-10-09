@@ -196,14 +196,14 @@ describe('rebuilding', () => {
     const heard = vi.fn();
     onAudioRebuild(heard);
     const before = audioRebuilds();
-    Object.assign(AudioStore, { activeVoices: 22, thuds: 10, cursor: 900, loadAt: 900, load: 3, thudAt: 900, swooshAt: 900 });
+    Object.assign(AudioStore, { activeVoices: 22, thuds: 10, cursor: 900, loadAt: 900, load: 3, thudAt: 900, swooshAt: [900, 900] });
     rebuildAudio('test');
     expect(audioRebuilds()).toBe(before + 1);
     expect(heard).toHaveBeenCalledTimes(1);
     expect(AudioStore).toMatchObject({ activeVoices: 0, thuds: 0, load: 0, loadAt: 0 });
     expect(AudioStore.cursor).toBeLessThan(0);
     expect(AudioStore.thudAt).toBeLessThan(0);
-    expect(AudioStore.swooshAt).toBeLessThan(0);
+    expect(Math.max(...AudioStore.swooshAt)).toBeLessThan(0);
   });
 
   it('is a no-op before audio has started', () => {

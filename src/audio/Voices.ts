@@ -1,5 +1,5 @@
 import { AudioStore, BEAT, SILENCE, isOptionsOpen, isAudioAsleep, isStopped, onAudioRebuild, loadAt_, MAX_THUDS, MAX_VOICES, triggerHaptic, inKey, scaleNote, SCALE_NOTES } from './SynthEngine';
-import { boomTierOf, BOOM_TIER_COUNT as RULES_BOOM_TIER_COUNT } from '../game/Rules';
+import { boomTierOf, BOOM_TIERS as RULE_TIERS, BOOM_TIER_COUNT as RULES_BOOM_TIER_COUNT } from '../game/Rules';
 
 export const BREAK_VOICE = {
   mul: 1, dur: 0.42, jitter: 0.10, peak: 0.42, attack: 0.010, tick: 0.10,
@@ -229,6 +229,10 @@ export interface SwooshOptions {
   ignoreOptionsGuard?: boolean;
   /** The white cue ball, which is a struck metal sheet rather than a thud. */
   isWhite?: boolean;
+  /** Whose launcher threw it. Each seat has its own retrigger guard, so two players throwing together are both heard. */
+  seat?: number;
+  /** False for a throw the player did not make (the AI's), which is heard but not felt. */
+  felt?: boolean;
 }
 
 function rampFreq(param: any, targetVal: number, targetTime: number) {
@@ -691,14 +695,14 @@ export function playBoom(boomSize: number = 3, xNorm: number = 0, opts: BoomOpti
  * Measured with `--policy engine-ai`, which aims at the biggest group and
  * never checks whether the line is clear. It cannot represent shot selection, so
  * a player who picks shots well may well build past 20 more often than this.
+ *
+ * The ranges are read off the game's tier thresholds (`BOOM_TIERS` in
+ * `game/Rules`); the top tier runs six balls past its floor.
  */
-const BOOM_TIERS: { lo: number; hi: number }[] = [
-  { lo: 2, hi: 4 },
-  { lo: 5, hi: 9 },
-  { lo: 10, hi: 14 },
-  { lo: 15, hi: 19 },
-  { lo: 20, hi: 26 },
-];
+const BOOM_TIERS: { lo: number; hi: number }[] = Array.from({ length: RULES_BOOM_TIER_COUNT }, (_, i) => ({
+  lo: i === 0 ? 2 : RULE_TIERS[i - 1].min,
+  hi: i < RULE_TIERS.length ? RULE_TIERS[i].min - 1 : RULE_TIERS[RULE_TIERS.length - 1].min + 6,
+}));
 
 const BOOM_PROFILES = {
   menu: { weights: [0.50, 0.26, 0.14, 0.07, 0.03], whiteBlack: 0.12 },
@@ -1193,7 +1197,7 @@ export const SWOOSH_METAL_MODES = [
  * `xNorm` still biases the two sides rather than collapsing them, so the launch
  * keeps its position on the table without giving up the spread.
  */
-function playWhiteSwoosh(xNorm: number, normForce: number) {
+function playWhiteSwoosh(xNorm: number, normForce: number, felt: boolean) {
   const actx = AudioStore.actx!;
   const now = actx.currentTime;
   const t = now + LOOKAHEAD.brief;
@@ -1208,7 +1212,7 @@ function playWhiteSwoosh(xNorm: number, normForce: number) {
   const peak = 0.125 * Math.max(0.15, normForce) * AudioStore.clickVol;
   if (peak < 0.001) return;
 
-  triggerHaptic('heavy');
+  if (felt) triggerHaptic('heavy');
 
   // The swing: modes rise as the ball is thrown, then fall away behind it. A
   // wider arc travelled faster is the difference between a swing and a wave.
@@ -1335,18 +1339,19 @@ function playWhiteSwoosh(xNorm: number, normForce: number) {
 
 // Launch swoosh. Ball-on-ball collisions are `playKnock`.
 export function playSwoosh(xNorm: number, force: number, opts: SwooshOptions = {}) {
-  const { ignoreOptionsGuard = false, isWhite = false } = opts;
+  const { ignoreOptionsGuard = false, isWhite = false, seat = 0, felt = true } = opts;
   if (!voiceAllowed(ignoreOptionsGuard, { noise: true, vol: AudioStore.clickVol })) return;
   const actx = AudioStore.actx!;
   const now = actx.currentTime;
   if (AudioStore.thuds >= MAX_THUDS) return;
 
   const normForce = Math.min(1, Math.max(0, force));
-  if (now - AudioStore.swooshAt < 0.08) return;
-  AudioStore.swooshAt = now;
+  const k = seat === 1 ? 1 : 0;
+  if (now - AudioStore.swooshAt[k] < 0.08) return;
+  AudioStore.swooshAt[k] = now;
 
   // The white ball is a different instrument, not a brighter setting of this one.
-  if (isWhite) { playWhiteSwoosh(xNorm, normForce); return; }
+  if (isWhite) { playWhiteSwoosh(xNorm, normForce, felt); return; }
 
   // Tight 10ms lookahead for immediate audio response without JS frame-lag crackle
   const t = now + LOOKAHEAD.brief;

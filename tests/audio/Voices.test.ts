@@ -138,7 +138,7 @@ describe('Voices module', () => {
       AudioStore.master = {} as any;
       AudioStore.wetBus = null;
       AudioStore.thuds = 0;
-      AudioStore.swooshAt = -9;
+      AudioStore.swooshAt = [-9, -9];
       playSwoosh(xNorm, 0.8, { ignoreOptionsGuard: true, isWhite: true });
       for (const call of (mockCtx.createStereoPanner as any).mock.results) {
         pans.push(call.value.pan.value);
@@ -1043,7 +1043,7 @@ describe('Voices module', () => {
       AudioStore.master = {} as any;
       AudioStore.wetBus = null;
       AudioStore.thuds = 0;
-      AudioStore.swooshAt = -9;
+      AudioStore.swooshAt = [-9, -9];
 
       playSwoosh(0, 0.8, { ignoreOptionsGuard: true, isWhite: true });
 
@@ -1052,6 +1052,52 @@ describe('Voices module', () => {
       // One broad filter among the narrow mode banks — that is the scrape.
       expect(bandpassQs.some((q) => q < 11)).toBe(true);
       expect(bandpassQs.filter((q) => q >= 11).length).toBe(SWOOSH_METAL_MODES.length * 2);
+    });
+  });
+  describe('launch swoosh retrigger guard', () => {
+    function countSwooshes(play: () => void): number {
+      const ctx = new Proxy({ currentTime: 5 } as any, {
+        get(target: any, key: string) {
+          if (key in target) return target[key];
+          if (!key.startsWith('create')) return undefined;
+          const n: any = new Proxy({}, {
+            get(t: any, k: string) {
+              if (k in t) return t[k];
+              t[k] = /^(gain|frequency|Q|pan|playbackRate|detune)$/.test(k)
+                ? { value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {}, setTargetAtTime() {}, cancelScheduledValues() {} }
+                : () => {};
+              return t[k];
+            },
+          });
+          if (key === 'createBufferSource') target.sources = (target.sources || 0) + 1;
+          return () => n;
+        },
+      });
+      Object.assign(AudioStore, {
+        actx: ctx, master: {}, wetBus: null, noiseBuf: { duration: 2 },
+        activeVoices: 0, thuds: 0, swooshAt: [-9, -9], soundOn: true,
+      });
+      play();
+      return ctx.sources || 0;
+    }
+
+    it('lets both seats be heard when they throw in the same instant', () => {
+      const one = countSwooshes(() => playSwoosh(0, 0.8, { ignoreOptionsGuard: true, seat: 0 }));
+      expect(one).toBeGreaterThan(0);
+      const both = countSwooshes(() => {
+        playSwoosh(0, 0.8, { ignoreOptionsGuard: true, seat: 0 });
+        playSwoosh(0, 0.8, { ignoreOptionsGuard: true, seat: 1 });
+      });
+      expect(both).toBe(one * 2);
+    });
+
+    it('still drops a second swoosh from the same seat within 80 ms', () => {
+      const one = countSwooshes(() => playSwoosh(0, 0.8, { ignoreOptionsGuard: true, seat: 1 }));
+      const twice = countSwooshes(() => {
+        playSwoosh(0, 0.8, { ignoreOptionsGuard: true, seat: 1 });
+        playSwoosh(0, 0.8, { ignoreOptionsGuard: true, seat: 1 });
+      });
+      expect(twice).toBe(one);
     });
   });
   describe('attract-screen booms', () => {
@@ -1226,7 +1272,7 @@ describe('Voices module', () => {
       });
       Object.assign(AudioStore, {
         actx: ctx, master: node(false), wetBus: node(false), noiseBuf: {},
-        activeVoices: 0, thuds: 0, swooshAt: -9, soundOn: true,
+        activeVoices: 0, thuds: 0, swooshAt: [-9, -9], soundOn: true,
       });
       fn();
       return out;

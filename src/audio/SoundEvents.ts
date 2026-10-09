@@ -13,7 +13,8 @@
  * scheduling look-ahead the voices already use.
  */
 import { SoundEvent } from '../physics/Types';
-import { playBoom, playNote, playKnock, playMagneticElectricSound, relOfDegree } from './Voices';
+import { boomTier, playBoom, playNote, playKnock, playMagneticElectricSound, relOfDegree } from './Voices';
+import { triggerHaptic } from './SynthEngine';
 
 /** The knock force that maps to full loudness. Harder hits are clamped to it. */
 export const KNOCK_FULL_SCALE_FORCE = 380;
@@ -63,7 +64,12 @@ export function playSoundEvents(sounds: SoundEvent[], width: number): void {
         // Straight to `playBoom`, not through `playNote`. The boom path there
         // reads neither a scale degree nor a boost, so routing through it meant
         // computing both on the belief that they mattered.
-        playBoom(s.size, pan, { whiteBlack: s.whiteBlack });
+        // Felt as well as heard, in a match only: the attract screens call
+        // `playBoom` too, and a menu that buzzes in the hand is not wanted.
+        if (playBoom(s.size, pan, { whiteBlack: s.whiteBlack })) {
+          const tier = boomTier(s.size);
+          triggerHaptic(tier >= 3 ? 'heavy' : tier >= 1 ? 'medium' : 'light');
+        }
         break;
       case 'peel':
         playNote(pitchOf(s.kind), pan, 'break');
