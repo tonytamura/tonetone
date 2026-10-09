@@ -26,6 +26,7 @@ import { playSoundEvents } from '../audio/SoundEvents';
 /** Frames longer than this are treated as a hitch and replaced by FALLBACK_DT. */
 export const MAX_FRAME_DT = 0.05;
 export const FALLBACK_DT = 1 / 60;
+export const MAX_SUBSTEPS = 24;
 
 /** Density-based rain interval used when the rain knob is on "auto". */
 export const AUTO_RAIN_INTERVAL = 0.7;
@@ -70,7 +71,9 @@ export interface FrameResult {
  * silently disable every collision cooldown.
  */
 export function normalizeDt(rawDt: number): number {
-  return !(rawDt > 0) || rawDt > MAX_FRAME_DT ? FALLBACK_DT : rawDt;
+  // A long frame is clamped, not replaced: swapping anything over 50ms for
+  // 1/60s ran a device stuck at 19fps at 30% speed, a 2:00 match lasting 6:20.
+  return !(rawDt > 0) ? FALLBACK_DT : Math.min(rawDt, MAX_FRAME_DT);
 }
 
 /**
@@ -80,7 +83,7 @@ export function normalizeDt(rawDt: number): number {
 export function substepCount(game: Game, dt: number): number {
   let fastest = 0;
   for (const g of game.groups) fastest = Math.max(fastest, Math.abs(g.vx) + Math.abs(g.vy));
-  return Math.max(2, Math.min(8, Math.ceil((fastest * dt) / (PhysicsConfig.R * 0.3))));
+  return Math.max(2, Math.min(MAX_SUBSTEPS, Math.ceil((fastest * dt) / (PhysicsConfig.R * 0.3))));
 }
 
 /** The rain interval in force right now, accounting for the "auto" setting. */
@@ -161,8 +164,9 @@ export function advanceFrame(
   let aiSettled = false;
   if (game.aiOn && !game.matchOver) {
     const before = game.players[1].aimDeg;
-    aiAimLevel(game.players[1], game, width, height, game.aiLevel);
-    aiSettled = Math.abs(game.players[1].aimDeg - before) < AI_SETTLED_DEG;
+    aiAimLevel(game.players[1], game, width, height, game.aiLevel, dt);
+    // Settled is a turn rate, not a per-frame step: at 120Hz each frame moves half as far.
+    aiSettled = Math.abs(game.players[1].aimDeg - before) < AI_SETTLED_DEG * dt * 60;
   }
 
   let fired = 0;

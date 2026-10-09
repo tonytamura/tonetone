@@ -4,7 +4,7 @@ import { PhysicsConfig } from '../../src/physics/Config';
 import { COLORS } from '../../src/game/Rules';
 import { TOLERANCE, violations } from '../../src/sim/Metrics';
 import { mulberry32, currentSeed, withSeed } from '../../src/sim/Rng';
-import { advanceFrame, normalizeDt, substepCount, FALLBACK_DT, MAX_FRAME_DT } from '../../src/sim/Frame';
+import { advanceFrame, normalizeDt, substepCount, FALLBACK_DT, MAX_FRAME_DT, MAX_SUBSTEPS } from '../../src/sim/Frame';
 import { createGame, resetField, startMatch } from '../../src/game/GameState';
 
 const SHORT = { seconds: 6, sampleEvery: 10 } as const;
@@ -35,22 +35,37 @@ describe('seeded randomness', () => {
 });
 
 describe('frame guards', () => {
-  it('replaces a non-positive or oversized delta with the fallback', () => {
+  it('replaces a non-positive delta with the fallback and clamps a long one', () => {
     expect(normalizeDt(0)).toBe(FALLBACK_DT);
     // A negative dt used to drive the simulation clock backwards, which made
     // every collision fail its cooldown check and silently disabled bonding.
     expect(normalizeDt(-0.5)).toBe(FALLBACK_DT);
     expect(normalizeDt(NaN)).toBe(FALLBACK_DT);
-    expect(normalizeDt(MAX_FRAME_DT + 0.01)).toBe(FALLBACK_DT);
+    // A long frame is clamped, not swapped for 1/60: a phone stuck at 19fps ran
+    // the whole game at 30% speed, a 2:00 match lasting 6:20.
+    expect(normalizeDt(MAX_FRAME_DT + 0.01)).toBe(MAX_FRAME_DT);
+    expect(normalizeDt(1 / 19)).toBe(MAX_FRAME_DT);
     expect(normalizeDt(1 / 120)).toBe(1 / 120);
   });
 
-  it('substeps between 2 and 8 according to the fastest group', () => {
+  it('substeps between 2 and MAX_SUBSTEPS according to the fastest group', () => {
     const game = createGame();
     expect(substepCount(game, 1 / 60)).toBe(2);
     resetField(game, DEFAULT_WIDTH, DEFAULT_HEIGHT);
     for (const g of game.groups) { g.vx = 100000; g.vy = 0; }
-    expect(substepCount(game, 1 / 60)).toBe(8);
+    expect(substepCount(game, 1 / 60)).toBe(MAX_SUBSTEPS);
+  });
+
+  it('runs a match at the same speed below 20fps as at 60fps', () => {
+    // A 20s match ends after 20s of frames at 60fps, and at 19fps only the 5%
+    // the 50ms clamp holds back later (it used to take over a minute).
+    for (const [dt, by] of [[1 / 60, 20.1], [1 / 19, 21.2]]) {
+      let over = -1;
+      runSim({ mode: 'duel', seconds: 70, dt, invariants: false, knobs: { match: 20 },
+        onFrame: (g, _f, t) => { if (over < 0 && g.matchOver) over = t; } });
+      expect(over).toBeGreaterThan(19.9);
+      expect(over).toBeLessThan(by);
+    }
   });
 
   it('never advances the clock backwards, even on a bad delta', () => {

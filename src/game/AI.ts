@@ -5,7 +5,18 @@ import { FIRE_ON_RELEASE, boomPay, lockPay, peelPay } from './Rules';
 import type { Game } from './GameState';
 import { Candidate, PlanJob } from './AIPlanner';
 
-export function aiAim(p: LauncherPlayer, groups: Group[], balls: Ball[], width: number, height: number, twoPlayer: boolean) {
+/**
+ * The share of the way to its target an aim eases this frame: `turn` per 60th
+ * of a second, whatever the frame rate. Applied per frame as it was, the AI
+ * settled in 17-19 frames at every refresh rate: 0.28s at 60Hz, 0.15s on a
+ * 120Hz phone and 0.63s at 30Hz. Exactly `turn` at 60fps.
+ */
+export function easeShare(turn: number, dt: number): number {
+  const frames = dt * 60;
+  return Math.abs(frames - 1) < 1e-9 ? turn : 1 - Math.pow(1 - turn, frames);
+}
+
+export function aiAim(p: LauncherPlayer, groups: Group[], balls: Ball[], width: number, height: number, twoPlayer: boolean, dt = 1 / 60) {
   let best: Group | null = null, most = 0;
   for (const g of groups) {
     if (!g.members.length || g.members[0].ghost) continue;
@@ -56,8 +67,9 @@ export function aiAim(p: LauncherPlayer, groups: Group[], balls: Ball[], width: 
   }
 
   // Smoothly interpolate aim angle and power so the AI arrow rotates fluidly
-  p.aimDeg += (tempP.aimDeg - p.aimDeg) * 0.15;
-  p.strength += (tempP.strength - p.strength) * 0.15;
+  const k = easeShare(0.15, dt);
+  p.aimDeg += (tempP.aimDeg - p.aimDeg) * k;
+  p.strength += (tempP.strength - p.strength) * k;
 }
 
 // ---------------------------------------------------------------- the ladder
@@ -375,8 +387,8 @@ function planCandidates(p: LauncherPlayer, game: Game, width: number, height: nu
   return out;
 }
 
-export function aiAimLevel(p: LauncherPlayer, game: Game, width: number, height: number, level: number) {
-  aiAimProfile(p, game, width, height, level < 0 ? AI_STRATEGIES.current : AI_LEVELS[Math.min(AI_LEVELS.length - 1, level)]);
+export function aiAimLevel(p: LauncherPlayer, game: Game, width: number, height: number, level: number, dt = 1 / 60) {
+  aiAimProfile(p, game, width, height, level < 0 ? AI_STRATEGIES.current : AI_LEVELS[Math.min(AI_LEVELS.length - 1, level)], dt);
 }
 
 let aimRecoveries = 0;
@@ -401,14 +413,15 @@ function guardAim(p: LauncherPlayer) {
 }
 
 /** Aim player `p` the way `prof` plays. */
-export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, height: number, prof: AiProfile) {
+export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, height: number, prof: AiProfile, dt = 1 / 60) {
   p.holdFire = false;
   guardAim(p);
   if (prof.classic) {
-    aiAim(p, game.groups, game.balls, width, height, game.twoPlayer);
+    aiAim(p, game.groups, game.balls, width, height, game.twoPlayer, dt);
     return;
   }
   const st = stateOf(p);
+  const k = easeShare(prof.turn, dt);
   const want = { ...p };
   if (prof.plan) {
     // Under continuous fire there is no ring to count down to the throw: the
@@ -432,8 +445,8 @@ export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, heigh
     }
     if (FIRE_ON_RELEASE) p.holdFire = !st.job?.done;
     if (st.planned) {
-      p.aimDeg += (st.planned.aimDeg - p.aimDeg) * prof.turn;
-      p.strength += (st.planned.strength - p.strength) * prof.turn;
+      p.aimDeg += (st.planned.aimDeg - p.aimDeg) * k;
+      p.strength += (st.planned.strength - p.strength) * k;
       return;
     }
   }
@@ -471,6 +484,6 @@ export function aiAimProfile(p: LauncherPlayer, game: Game, width: number, heigh
     want.aimDeg = st.idleDeg;
     want.strength = 0.7;
   }
-  p.aimDeg += (want.aimDeg - p.aimDeg) * prof.turn;
-  p.strength += (want.strength - p.strength) * prof.turn;
+  p.aimDeg += (want.aimDeg - p.aimDeg) * k;
+  p.strength += (want.strength - p.strength) * k;
 }

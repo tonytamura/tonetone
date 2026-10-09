@@ -196,11 +196,12 @@ function applyPolicy(
   game: Game,
   width: number,
   height: number,
-  t: number
+  t: number,
+  dt: number
 ): void {
   switch (policy) {
     case 'engine-ai':
-      aiAim(p, game.groups, game.balls, width, height, game.twoPlayer);
+      aiAim(p, game.groups, game.balls, width, height, game.twoPlayer, dt);
       return;
     case 'random':
       p.aimDeg = Math.random() * 180 - 90;
@@ -215,7 +216,7 @@ function applyPolicy(
       return;
     default: {
       const prof = policyProfile(policy);
-      if (prof) aiAimProfile(p, game, width, height, prof);
+      if (prof) aiAimProfile(p, game, width, height, prof, dt);
       return;
     }
   }
@@ -318,11 +319,11 @@ export function runSim(opts: SimOptions = {}): RunResult {
       const t = frame * dt;
 
       if (mode !== 'idle') {
-        applyPolicy(policies[0], game.players[0], game, width, height, t);
+        applyPolicy(policies[0], game.players[0], game, width, height, t, dt);
         // In `ai` mode advanceFrame drives player 2 itself; doing it here too
         // would apply the AI's smoothing twice per frame.
         if (game.twoPlayer && !game.aiOn) {
-          applyPolicy(policies[1], game.players[1], game, width, height, t);
+          applyPolicy(policies[1], game.players[1], game, width, height, t, dt);
         }
       }
 

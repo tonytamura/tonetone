@@ -8,7 +8,7 @@ import { installSeededRandom, restoreRandom, currentSeed, withSeed } from '../..
 import { createStrip } from '../../src/ui/ControlStrips';
 import { createRenderContext, resizeRenderer } from '../../src/graphics/Renderer';
 import { clearSpriteCache } from '../../src/graphics/Sprites';
-import { createGame, resetField, toCollisionState, spawnRainBall } from '../../src/game/GameState';
+import { createGame, resetField, toCollisionState, spawnRainBall, spawn } from '../../src/game/GameState';
 import { advanceFrame } from '../../src/sim/Frame';
 import { launchPointOf, bayInset } from '../../src/physics/LauncherBays';
 import { setupTouchControls } from '../../src/ui/TouchControls';
@@ -20,7 +20,7 @@ import { playNote, playSwoosh } from '../../src/audio/Voices';
 import * as Voices from '../../src/audio/Voices';
 import { PlanJob, plannerStats } from '../../src/game/AIPlanner';
 import { runSim } from '../../src/sim/Harness';
-import { AI_LEVELS, levelIndex } from '../../src/game/AI';
+import { AI_LEVELS, levelIndex, easeShare } from '../../src/game/AI';
 import { startMatch, throwBall } from '../../src/game/GameState';
 import { AudioStore } from '../../src/audio/SynthEngine';
 import { startTutorial, endTutorial, tutorialAfterFrame, drainTutorialEvents } from '../../src/game/Tutorial';
@@ -585,7 +585,7 @@ describe('Bug Detection Test Suite', () => {
     // 60% of throws in all against the 50% it was then meant to be, and a careless
     // throw could be as weak as 0, dribbling out of the bay (Tony, 2026-09-29).
     it('decides careless or not for every throw, and never throws feebly', () => {
-      let throws = 0, careless = 0, feeble = 0, run = 0, longest = 0;
+      let throws = 0, careless = 0, feeble = 0, run = 0, longest = 0, afterCareless = 0, carelessAfterCareless = 0;
       for (const seed of [1, 2, 3]) {
         let lastLoaded: unknown = null;
         runSim({
@@ -596,17 +596,23 @@ describe('Bug Detection Test Suite', () => {
             if (lastLoaded) {
               throws++;
               if (p.strength < 0.2) feeble++;
-              if (p._ai?.wildDeg !== undefined) { careless++; longest = Math.max(longest, ++run); } else run = 0;
+              const now = p._ai?.wildDeg !== undefined;
+              if (run > 0) { afterCareless++; if (now) carelessAfterCareless++; }
+              if (now) { careless++; longest = Math.max(longest, ++run); } else run = 0;
             }
             lastLoaded = p.loaded;
           },
         });
       }
-      // Around AI2's own share, and never in the long runs a per-target draw made.
+      // Around AI2's own share, and drawn afresh each throw: after a careless
+      // throw the next is careless at the same rate, where a per-target draw made
+      // it nearly certain. (The longest run alone is a poor guard: a 60% coin
+      // flipped ~120 times runs 8 ± 2.5 at its longest by chance.)
       const share = AI_LEVELS[levelIndex('ai2')].wild!;
       expect(feeble).toBe(0);
       expect(Math.abs(careless / throws - share)).toBeLessThan(0.15);
-      expect(longest).toBeLessThanOrEqual(10);
+      expect(Math.abs(carelessAfterCareless / afterCareless - share)).toBeLessThan(0.15);
+      expect(longest).toBeLessThan(16);
     });
   });
 
@@ -777,6 +783,47 @@ describe('Bug Detection Test Suite', () => {
       game.flashes = [];
       withSeed(1, () => { for (let i = 0; i < 5; i++) spawnRainBall(game, 200, 200); });
       expect(game.flashes.filter(f => f.kind === 'blocked')).toHaveLength(0);
+    });
+  });
+
+  describe('Bug 24: frame rate changed how the game played', () => {
+    // Substeps were capped at 8, so at 30fps a ball at the speed cap moved
+    // ~20-30px a substep against a 24px ball, and a hit found late and deep
+    // could push it out the far side: 25 of 240 test shots passed straight
+    // through their target at 30fps. And the AI eased its aim per frame, so it
+    // turned twice as fast on a 120Hz phone as at 60Hz.
+    it('never lets a ball at the speed cap pass through another, down to 20fps', () => {
+      const W = 412, H = 915;
+      const saved = snapshotConfig();
+      try {
+        recalcThresholds(H);
+        for (const dt of [1 / 30, 1 / 20]) {
+          let missed = 0;
+          for (let ph = 0; ph < 20; ph++) for (const off of [0, 16, 20]) {
+            const g = createGame(); g.matchLen = 0;
+            spawn(g, 200, 300, 0, 0, null, W, H);
+            spawn(g, 200 + off, 450 + ph * 0.61, 0, 0, null, W, H);
+            const [T, S] = g.balls;
+            T.group!.vx = T.group!.vy = 0;
+            S.group!.vx = 0; S.group!.vy = -PhysicsConfig.SPEED_CAP * PhysicsConfig.SC;
+            let clock = 0, hit = false;
+            for (let f = 0; f < 30 && S.y > 250; f++) {
+              clock = advanceFrame(g, dt, W, H, clock).clock;
+              if (Math.hypot(T.group!.vx, T.group!.vy) > 50) hit = true;
+            }
+            if (!hit) missed++;
+          }
+          expect(missed, `at ${Math.round(1 / dt)}fps`).toBe(0);
+        }
+      } finally { restoreConfig(saved); }
+    });
+
+    it('turns the AI at the same rate per second at any refresh rate', () => {
+      // Two 120Hz frames move the aim exactly as far as one 60Hz frame.
+      const one = easeShare(0.15, 1 / 60);
+      const half = easeShare(0.15, 1 / 120);
+      expect(one).toBe(0.15);
+      expect(1 - (1 - half) * (1 - half)).toBeCloseTo(one, 12);
     });
   });
 

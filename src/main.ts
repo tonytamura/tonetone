@@ -363,12 +363,14 @@ function frame(ts: number) {
   // Held behind the first-play offer or the seat card, the field is drawn but
   // does not move, and the start countdown does not run.
   const held = fieldHeld();
+  let simDt = 0;
   if (!held) {
     tutorial.before();
     const fr = advanceFrame(game, rawDt, W, H, clock, {
       onMatchOver: g => { setPaused(g, false); startResultsEffects(); endMatchUI(g, newMatch, resultNotes(g), duelModes()); },
     });
     clock = fr.clock;
+    simDt = fr.dt;
     tutorial.after(fr.dt, fr.threw);
   }
 
@@ -384,7 +386,9 @@ function frame(ts: number) {
   drawResultsCanvas(renderCtx, game);
   updateHUD(game, tutorial.isActive() ? TUTORIAL_CLOCK : undefined);
   refreshAllStrips();
-  if (!held) updateCountdown(game, rawDt);
+  // On the simulation's dt, which holds the launchers: on raw time a hitch
+  // during the countdown (or a slow device) showed Start! before they let go.
+  if (!held) updateCountdown(game, simDt);
 
   requestAnimationFrame(frame);
 }
