@@ -62,7 +62,7 @@ export interface Game {
    * or `CLASSIC_LEVEL` (-1) for the pre-ladder AI, which the harness plays.
    */
   aiLevel: number;
-  /** Shapes on the balls: 0 automatic (from `AUTO_MARK_COLORS`), 1 always, 2 never. */
+  /** Shapes on the balls: 0 off (the default), 1 on. */
   marks: number;
   /**
    * Launchers driven by the harness rather than a finger. Under continuous fire

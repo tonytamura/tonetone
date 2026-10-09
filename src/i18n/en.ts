@@ -229,7 +229,7 @@ export const EN = {
   'knob.fire.label': 'firing',
   'knob.fire.hint': 'Automatic: the launcher throws by itself each time the ring fills. On release: it throws every time you let go, as fast as you tap, up to 3 balls; the ring adds one ball each time it fills.',
   'knob.labels.label': 'ball shapes',
-  'knob.labels.hint': 'Draws a shape on every ball, one per colour, so colours can be told apart without relying on their hue. Auto shows them from 5 colours up; on, always; off, never.',
+  'knob.labels.hint': 'Draws a shape on every ball, one per colour, so colours can be told apart without relying on their hue. Off unless you turn it on.',
   'knob.vol.label': 'volume',
   'knob.vol.hint': 'Loudness of the whole game. Above 100% boosts it, for a quiet phone speaker.',
   'knob.haptics.label': 'haptics',
@@ -292,7 +292,6 @@ export const EN = {
   'knob.latency.hint': 'How far ahead sound is prepared. Raise it if sound crackles or drops out; lower it if sounds come late. Auto lets the device choose. Changing it restarts the sound.',
   // Readouts beside a slider, in a narrow column: very short.
   'fmt.on': 'on',
-  'fmt.marks.auto': 'auto',
   'fmt.fire.auto': 'automatic',
   'fmt.fire.release': 'on release',
   'fmt.off': 'off',

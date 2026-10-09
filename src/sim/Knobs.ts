@@ -163,11 +163,13 @@ const KNOB_SPECS = {
   },
 
   labels: {
-    // 0 automatic, 1 always, 2 never. 0 and 1 kept what they meant when this was
-    // an off/on switch, so a saved setting still reads the same.
-    group: 'game', kind: 'range', min: 0, max: 2, step: 1, default: 0, cosmetic: true,
+    // Off or on, off by default in every mode (Tony, 2026-10-09). It was briefly
+    // automatic / always / never, with automatic turning the shapes on from five
+    // colours, so the six-colour presets showed them unasked. PlayerSettings
+    // reads a saved 2 ("never") as off.
+    group: 'game', kind: 'range', min: 0, max: 1, step: 1, default: 0, cosmetic: true,
     apply: (v, { game }) => { game.marks = v; },
-    format: v => (v === 1 ? t('fmt.on') : v === 2 ? t('fmt.off') : t('fmt.marks.auto')),
+    format: v => (v === 1 ? t('fmt.on') : t('fmt.off')),
     read: ({ game }) => game.marks,
   },
 

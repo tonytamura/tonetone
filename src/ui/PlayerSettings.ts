@@ -120,7 +120,10 @@ export function loadSettings(store: KeyValueStore | null = deviceStore()): Saved
         if (slot && typeof slot === 'object') customs[id] = cleanValues(slot, advancedKnobs());
       }
     }
-    return { preset, customs, player: cleanValues(p.player, EVERYDAY_KNOBS) };
+    // `labels` was briefly 0 automatic / 1 always / 2 never; it is off/on now, so a
+    // saved 2 ("never") means off, not the slider's top value.
+    const player = p.player && typeof p.player === 'object' && p.player.labels === 2 ? { ...p.player, labels: 0 } : p.player;
+    return { preset, customs, player: cleanValues(player, EVERYDAY_KNOBS) };
   } catch {
     return null;
   }

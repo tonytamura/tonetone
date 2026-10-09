@@ -44,6 +44,16 @@ describe('saved settings', () => {
     expect(loadSettings(s)).toEqual(kept);
   });
 
+  it('read the old ball-shapes settings as the off/on switch it is now', () => {
+    // It was 0 automatic / 1 always / 2 never; "never" must stay off, not
+    // become the slider's top value, and "automatic" is off now too.
+    const s = memoryStore();
+    for (const [was, now] of [[2, 0], [0, 0], [1, 1]]) {
+      s.data.set(SETTINGS_KEY, JSON.stringify({ v: 2, preset: 'normal', customs: {}, player: { labels: was } }));
+      expect(loadSettings(s)?.player.labels, `saved ${was}`).toBe(now);
+    }
+  });
+
   it('carry the single Custom of version 1 over into the first slot', () => {
     const s = memoryStore();
     s.data.set(SETTINGS_KEY, JSON.stringify({ v: 1, preset: 'custom', custom: { reload: 6 }, player: { vol: 0.5 } }));

@@ -6,19 +6,17 @@
  * alone for a colour-blind player: its yellows and mints collapse together under
  * protanopia, and its violets and blues under both protanopia and deuteranopia.
  * The palette is tuned so that up to four colours stay apart by colour
- * (`tests/graphics/BallPalette.test.ts`); from `AUTO_MARK_COLORS` up the shapes
- * come on by themselves, and the `labels` knob turns them on at any count.
+ * (`tests/graphics/BallPalette.test.ts`); the shapes are there for five and six
+ * colours, and for anyone who wants them. They are off unless the `labels`
+ * setting turns them on, in every mode.
  *
  * They replaced the digits 1–6. A digit needs a font at about 8px to be read,
  * so it was hidden below radius 11; a shape is a few strokes and reads at
  * radius 8, the smallest ball the `size` knob allows.
  */
-import { COLORS, slotOfKind } from '../game/Rules';
+import { slotOfKind } from '../game/Rules';
 import { inkOn } from './Sprites';
 import { TAU } from '../math';
-
-/** From this many colours in play, every ball carries its shape. */
-export const AUTO_MARK_COLORS = 5;
 
 /**
  * The shape each colour slot carries, in slot order.
@@ -34,13 +32,13 @@ export const MARK_SHAPES = ['none', 'triangle', 'bar', 'ring', 'plus', 'dots'] a
 export type MarkShape = (typeof MARK_SHAPES)[number];
 
 /**
- * Whether the balls carry their shapes, for the `labels` setting: 0 automatic
- * (from `AUTO_MARK_COLORS` colours), 1 always, 2 never. Never is there because
- * automatic could not be switched off, and a player who can tell six colours
- * apart may not want the shapes (Tony, 2026-09-30).
+ * Whether the balls carry their shapes, for the `labels` setting: 1 on, anything
+ * else off. They were briefly automatic from five colours, which put them on the
+ * six-colour presets unasked; they are off by default in every mode now (Tony,
+ * 2026-10-09).
  */
 export function marksShown(mode: number): boolean {
-  return mode === 1 || (mode !== 2 && COLORS >= AUTO_MARK_COLORS);
+  return mode === 1;
 }
 
 /** The shape for a ball of `kind`, or null for the black and white specials, which need none. */
