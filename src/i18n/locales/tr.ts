@@ -302,7 +302,10 @@ const M: Messages = {
   'home.f1': 'Solo, AGI’ye kadar uzanan bir yapay zekâ merdivenine karşı ya da aynı telefonda bir arkadaşla.',
   'home.f2': 'Sakin üç dakikadan bir dakikalık sprinte altı mod.',
   'home.f3': 'Tarayıcıda oynanır, çevrimdışı çalışır, ana ekrana yüklenir.',
-  'home.soon': 'Yakında Google Play’de.',
+  'home.installTitle': 'Ana ekranına ekle',
+  'home.installAndroid': 'Android: Chrome’da ⋮ menüsünü açıp Uygulamayı yükle’ye dokun.',
+  'home.installIos': 'iPhone ve iPad: Safari’de Paylaş’a, ardından Ana Ekrana Ekle’ye dokun.',
+  'home.by': 'Geliştiren:',
   'home.privacy': 'Gizlilik',
 };
 

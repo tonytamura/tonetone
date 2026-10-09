@@ -289,7 +289,10 @@ const M: Messages = {
   'home.f1': 'En solo, contre une échelle d’IA jusqu’à l’AGI, ou avec un ami sur le même téléphone.',
   'home.f2': 'Six modes, de trois minutes au calme à un sprint d’une minute.',
   'home.f3': 'Se joue dans le navigateur, fonctionne hors ligne et s’installe sur l’écran d’accueil.',
-  'home.soon': 'Bientôt sur Google Play.',
+  'home.installTitle': 'Ajoutez-le à l’écran d’accueil',
+  'home.installAndroid': 'Android : dans Chrome, ouvrez le menu ⋮ et touchez Installer l’application.',
+  'home.installIos': 'iPhone et iPad : dans Safari, touchez Partager, puis Sur l’écran d’accueil.',
+  'home.by': 'Développé par',
   'home.privacy': 'Confidentialité',
 };
 

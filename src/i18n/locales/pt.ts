@@ -289,7 +289,10 @@ const M: Messages = {
   'home.f1': 'Solo, contra uma escada de IAs até a AGI, ou com um amigo no mesmo celular.',
   'home.f2': 'Seis modos, de três minutos tranquilos a um minuto de correria.',
   'home.f3': 'Roda no navegador, funciona offline e instala na tela inicial.',
-  'home.soon': 'Em breve no Google Play.',
+  'home.installTitle': 'Coloque na tela inicial',
+  'home.installAndroid': 'Android: no Chrome, abra o menu ⋮ e toque em Instalar app.',
+  'home.installIos': 'iPhone e iPad: no Safari, toque em Compartilhar e depois em Adicionar à Tela de Início.',
+  'home.by': 'Desenvolvido por',
   'home.privacy': 'Privacidade',
 };
 

@@ -302,7 +302,10 @@ const M: Messages = {
   'home.f1': 'Chơi đơn, đấu bậc thang AI đến tận AGI, hoặc chơi với bạn trên cùng một điện thoại.',
   'home.f2': 'Sáu chế độ, từ ba phút thư thả đến một phút tốc độ.',
   'home.f3': 'Chơi ngay trên trình duyệt, chạy offline và cài được ra màn hình chính.',
-  'home.soon': 'Sắp có trên Google Play.',
+  'home.installTitle': 'Thêm vào màn hình chính',
+  'home.installAndroid': 'Android: trong Chrome, mở menu ⋮ rồi chạm Cài đặt ứng dụng.',
+  'home.installIos': 'iPhone và iPad: trong Safari, chạm Chia sẻ rồi Thêm vào MH chính.',
+  'home.by': 'Phát triển bởi',
   'home.privacy': 'Quyền riêng tư',
 };
 

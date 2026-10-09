@@ -302,7 +302,10 @@ const M: Messages = {
   'home.f1': 'Da solo, contro una scala di IA fino all’AGI, o con un amico sullo stesso telefono.',
   'home.f2': 'Sei modalità, da tre minuti tranquilli a uno sprint di un minuto.',
   'home.f3': 'Si gioca nel browser, funziona offline e si installa nella schermata Home.',
-  'home.soon': 'Presto su Google Play.',
+  'home.installTitle': 'Mettilo nella schermata Home',
+  'home.installAndroid': 'Android: in Chrome apri il menu ⋮ e tocca Installa app.',
+  'home.installIos': 'iPhone e iPad: in Safari tocca Condividi, poi Aggiungi alla schermata Home.',
+  'home.by': 'Sviluppato da',
   'home.privacy': 'Privacy',
 };
 

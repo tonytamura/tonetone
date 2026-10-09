@@ -80,7 +80,10 @@ html[lang="vi"] body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI
 .home-features li:nth-child(2)::before { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
 .home-features li:nth-child(3)::before { background: #ffffff; box-shadow: 0 0 10px #ffffff; }
 
-.home-soon { color: var(--ink-soft); margin: 0 0 18px; }
+.home-howto { margin: 0 auto 26px; max-width: 520px; }
+.home-howto h2 { font-size: 17px; font-weight: 800; margin: 0 0 8px; }
+.home-howto p { color: var(--ink-soft); line-height: 1.5; margin: 0 0 6px; }
+.home-by { color: var(--ink-soft); font-size: 14px; margin: 0 0 8px; letter-spacing: 0.04em; }
 .home-footer a { color: var(--ink-soft); font-size: 14px; }
 
 @media (prefers-reduced-motion: reduce) {

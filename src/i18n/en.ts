@@ -368,7 +368,13 @@ export const EN = {
   'home.f1': 'Solo, against an AI ladder up to AGI, or with a friend on one phone.',
   'home.f2': 'Six modes, from a calm three minutes to a one-minute sprint.',
   'home.f3': 'Plays in the browser, works offline, installs to your home screen.',
-  'home.soon': 'Coming soon to Google Play.',
+  // How to install from the browser, now that the game is on the web only
+  // (Google Play paused 2026-10-09). Name the browsers' own menu items as
+  // they read in this language. home.by comes before the studio name, TMTL.
+  'home.installTitle': 'Put it on your home screen',
+  'home.installAndroid': 'Android: in Chrome, open the ⋮ menu and tap Install app.',
+  'home.installIos': 'iPhone and iPad: in Safari, tap Share, then Add to Home Screen.',
+  'home.by': 'Made by',
   'home.privacy': 'Privacy',
 } as const;
 

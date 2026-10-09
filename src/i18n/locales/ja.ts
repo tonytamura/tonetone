@@ -302,7 +302,10 @@ const M: Messages = {
   'home.f1': 'ソロ、AGIまで続くAIのはしご、または1台のスマホで友だちと。',
   'home.f2': 'ゆったり3分から1分の全力勝負まで、6つのモード。',
   'home.f3': 'ブラウザで遊べて、オフラインでも動き、ホーム画面に追加できる。',
-  'home.soon': 'Google Playで近日公開。',
+  'home.installTitle': 'ホーム画面に追加しよう',
+  'home.installAndroid': 'Android：Chromeで⋮メニューを開き、「アプリをインストール」をタップ。',
+  'home.installIos': 'iPhone・iPad：Safariで共有ボタンをタップし、「ホーム画面に追加」を選択。',
+  'home.by': '開発：',
   'home.privacy': 'プライバシー',
 };
 

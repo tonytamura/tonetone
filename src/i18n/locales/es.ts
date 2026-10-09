@@ -302,7 +302,10 @@ const M: Messages = {
   'home.f1': 'Solo, contra una escalera de IA hasta la AGI, o con un amigo en el mismo móvil.',
   'home.f2': 'Seis modos, de tres minutos tranquilos a un minuto a toda velocidad.',
   'home.f3': 'Funciona en el navegador, sin conexión y se instala en tu pantalla de inicio.',
-  'home.soon': 'Pronto en Google Play.',
+  'home.installTitle': 'Ponlo en tu pantalla de inicio',
+  'home.installAndroid': 'Android: en Chrome, abre el menú ⋮ y toca Instalar aplicación.',
+  'home.installIos': 'iPhone y iPad: en Safari, toca Compartir y luego Añadir a pantalla de inicio.',
+  'home.by': 'Desarrollado por',
   'home.privacy': 'Privacidad',
 };
 

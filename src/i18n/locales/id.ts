@@ -302,7 +302,10 @@ const M: Messages = {
   'home.f1': 'Solo, melawan tangga AI hingga AGI, atau bersama teman di satu ponsel.',
   'home.f2': 'Enam mode, dari tiga menit yang santai hingga sprint satu menit.',
   'home.f3': 'Dimainkan di browser, bisa offline, dan bisa dipasang di layar utama.',
-  'home.soon': 'Segera hadir di Google Play.',
+  'home.installTitle': 'Pasang di layar utama',
+  'home.installAndroid': 'Android: di Chrome, buka menu ⋮ lalu ketuk Instal aplikasi.',
+  'home.installIos': 'iPhone dan iPad: di Safari, ketuk Bagikan, lalu Tambah ke Layar Utama.',
+  'home.by': 'Dikembangkan oleh',
   'home.privacy': 'Privasi',
 };
 

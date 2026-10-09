@@ -302,7 +302,10 @@ const M: Messages = {
   'home.f1': '솔로, AGI까지 이어지는 AI 사다리, 또는 한 휴대폰으로 친구와 함께.',
   'home.f2': '여유로운 3분부터 1분 스프린트까지 6가지 모드.',
   'home.f3': '브라우저에서 플레이, 오프라인에서도 작동, 홈 화면에 설치 가능.',
-  'home.soon': 'Google Play 출시 예정.',
+  'home.installTitle': '홈 화면에 추가하세요',
+  'home.installAndroid': 'Android: Chrome에서 ⋮ 메뉴를 열고 \'앱 설치\'를 누르세요.',
+  'home.installIos': 'iPhone·iPad: Safari에서 공유를 누른 뒤 \'홈 화면에 추가\'를 누르세요.',
+  'home.by': '개발:',
   'home.privacy': '개인정보 처리방침',
 };
 

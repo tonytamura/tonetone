@@ -289,7 +289,10 @@ const M: Messages = {
   'home.f1': 'Solo, gegen eine KI-Leiter bis zur AGI oder mit einem Freund am selben Handy.',
   'home.f2': 'Sechs Modi, von entspannten drei Minuten bis zum Ein-Minuten-Sprint.',
   'home.f3': 'Läuft im Browser, funktioniert offline und lässt sich auf dem Startbildschirm installieren.',
-  'home.soon': 'Bald bei Google Play.',
+  'home.installTitle': 'Auf den Startbildschirm legen',
+  'home.installAndroid': 'Android: In Chrome das Menü ⋮ öffnen und auf App installieren tippen.',
+  'home.installIos': 'iPhone und iPad: In Safari auf Teilen tippen, dann auf Zum Home-Bildschirm.',
+  'home.by': 'Entwickelt von',
   'home.privacy': 'Datenschutz',
 };
 
