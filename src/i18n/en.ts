@@ -353,4 +353,20 @@ export const EN = {
   'sound.lock.single.situation': 'A coloured ball or group locks onto a black, closing a {n}-ball group',
   'sound.lock.pair.name': 'Black + Black Magnet Lock — {tier}',
   'sound.lock.pair.situation': 'Two blacks lock to each other, closing a {n}-ball group',
+
+  // ── Web landing page (home.html, at / on the website) ──────────────────
+  // What the game is, in a line and a short paragraph; the Play and Install
+  // buttons; the screenshot's description for screen readers; three facts;
+  // and the store line. Room is generous: this is a scrolling web page.
+  'home.tagline': 'Physics billiards you play by ear.',
+  'home.lead': 'Lock matching colours. Hit a group hard with a different one and it booms. Every collision plays a note of the same scale.',
+  'home.play': 'Play now',
+  'home.install': 'Install',
+  'home.shot': 'A vs AI match in progress',
+  'home.f1': 'Solo, against an AI ladder up to AGI, or with a friend on one phone.',
+  'home.f2': 'Six modes, from a calm three minutes to a one-minute sprint.',
+  'home.f3': 'Plays in the browser, works offline, installs to your home screen.',
+  'home.soon': 'Coming soon to Google Play.',
+  'home.privacy': 'Privacy',
 } as const;
+

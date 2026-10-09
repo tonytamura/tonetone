@@ -292,6 +292,17 @@ const M: Messages = {
   'sound.lock.single.situation': '색 공이나 그룹이 검은 공에 붙어 공 {n}개 그룹을 완성할 때',
   'sound.lock.pair.name': '검은 공 + 검은 공 자석 결합 — {tier}',
   'sound.lock.pair.situation': '검은 공 두 개가 서로 붙어 공 {n}개 그룹을 완성할 때',
+
+  'home.tagline': '귀로 즐기는 물리 당구.',
+  'home.lead': '같은 색은 달라붙습니다. 다른 색으로 그룹을 세게 치면 터집니다. 부딪힐 때마다 같은 음계의 음이 울립니다.',
+  'home.play': '지금 플레이',
+  'home.install': '설치',
+  'home.shot': '진행 중인 AI 대전',
+  'home.f1': '솔로, AGI까지 이어지는 AI 사다리, 또는 한 휴대폰으로 친구와 함께.',
+  'home.f2': '여유로운 3분부터 1분 스프린트까지 6가지 모드.',
+  'home.f3': '브라우저에서 플레이, 오프라인에서도 작동, 홈 화면에 설치 가능.',
+  'home.soon': 'Google Play 출시 예정.',
+  'home.privacy': '개인정보 처리방침',
 };
 
 export default M;

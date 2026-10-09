@@ -279,6 +279,17 @@ const M: Messages = {
   'sound.lock.single.situation': 'Uma bola colorida ou um grupo gruda numa preta, fechando um grupo de {n} bolas',
   'sound.lock.pair.name': 'Ímã preta + preta — {tier}',
   'sound.lock.pair.situation': 'Duas pretas grudam uma na outra, fechando um grupo de {n} bolas',
+
+  'home.tagline': 'Sinuca com física que se joga de ouvido.',
+  'home.lead': 'Cores iguais grudam. Acerte um grupo com força usando outra cor e ele explode. Cada colisão toca uma nota da mesma escala.',
+  'home.play': 'Jogar agora',
+  'home.install': 'Instalar',
+  'home.shot': 'Uma partida contra a IA em andamento',
+  'home.f1': 'Solo, contra uma escada de IAs até a AGI, ou com um amigo no mesmo celular.',
+  'home.f2': 'Seis modos, de três minutos tranquilos a um minuto de correria.',
+  'home.f3': 'Roda no navegador, funciona offline e instala na tela inicial.',
+  'home.soon': 'Em breve no Google Play.',
+  'home.privacy': 'Privacidade',
 };
 
 export default M;

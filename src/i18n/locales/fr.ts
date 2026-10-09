@@ -279,6 +279,17 @@ const M: Messages = {
   'sound.lock.single.situation': 'Une boule ou un groupe de couleur s’accroche à une noire, formant un groupe de {n} boules',
   'sound.lock.pair.name': 'Aimantation noire + noire — {tier}',
   'sound.lock.pair.situation': 'Deux noires s’accrochent l’une à l’autre, formant un groupe de {n} boules',
+
+  'home.tagline': 'Un billard physique qui se joue à l’oreille.',
+  'home.lead': 'Les couleurs identiques se collent. Frappez fort un groupe avec une autre couleur et il explose. Chaque choc joue une note de la même gamme.',
+  'home.play': 'Jouer',
+  'home.install': 'Installer',
+  'home.shot': 'Une partie contre l’IA en cours',
+  'home.f1': 'En solo, contre une échelle d’IA jusqu’à l’AGI, ou avec un ami sur le même téléphone.',
+  'home.f2': 'Six modes, de trois minutes au calme à un sprint d’une minute.',
+  'home.f3': 'Se joue dans le navigateur, fonctionne hors ligne et s’installe sur l’écran d’accueil.',
+  'home.soon': 'Bientôt sur Google Play.',
+  'home.privacy': 'Confidentialité',
 };
 
 export default M;

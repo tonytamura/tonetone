@@ -292,6 +292,17 @@ const M: Messages = {
   'sound.lock.single.situation': 'Una palla colorata o un gruppo si aggancia a un nero, chiudendo un gruppo di {n} palle',
   'sound.lock.pair.name': 'Aggancio magnetico nero + nero — {tier}',
   'sound.lock.pair.situation': 'Due neri si agganciano tra loro, chiudendo un gruppo di {n} palle',
+
+  'home.tagline': 'Biliardo fisico che si gioca a orecchio.',
+  'home.lead': 'I colori uguali si agganciano. Colpisci forte un gruppo con un altro colore ed esplode. Ogni urto suona una nota della stessa scala.',
+  'home.play': 'Gioca ora',
+  'home.install': 'Installa',
+  'home.shot': 'Una partita contro l’IA in corso',
+  'home.f1': 'Da solo, contro una scala di IA fino all’AGI, o con un amico sullo stesso telefono.',
+  'home.f2': 'Sei modalità, da tre minuti tranquilli a uno sprint di un minuto.',
+  'home.f3': 'Si gioca nel browser, funziona offline e si installa nella schermata Home.',
+  'home.soon': 'Presto su Google Play.',
+  'home.privacy': 'Privacy',
 };
 
 export default M;

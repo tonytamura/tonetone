@@ -292,6 +292,17 @@ const M: Messages = {
   'sound.lock.single.situation': 'Bola atau grup berwarna menempel ke hitam, menutup grup {n} bola',
   'sound.lock.pair.name': 'Tempel Magnet Hitam + Hitam — {tier}',
   'sound.lock.pair.situation': 'Dua hitam saling menempel, menutup grup {n} bola',
+
+  'home.tagline': 'Biliar fisika yang dimainkan dengan telinga.',
+  'home.lead': 'Warna yang sama saling menempel. Pukul keras sebuah grup dengan warna lain dan grup itu meledak. Setiap tabrakan memainkan nada dari tangga nada yang sama.',
+  'home.play': 'Main sekarang',
+  'home.install': 'Pasang',
+  'home.shot': 'Pertandingan lawan AI yang sedang berlangsung',
+  'home.f1': 'Solo, melawan tangga AI hingga AGI, atau bersama teman di satu ponsel.',
+  'home.f2': 'Enam mode, dari tiga menit yang santai hingga sprint satu menit.',
+  'home.f3': 'Dimainkan di browser, bisa offline, dan bisa dipasang di layar utama.',
+  'home.soon': 'Segera hadir di Google Play.',
+  'home.privacy': 'Privasi',
 };
 
 export default M;

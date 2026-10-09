@@ -1,3 +1,4 @@
+import { registerOffline } from './ui/Offline';
 import { PlayMode, createGame, resetField, startMatch } from './game/GameState';
 import { isLangId, onLanguageChange, setLanguage, startingLanguage, t } from './i18n/I18n';
 import { setupLanguagePicker } from './ui/LanguagePicker';
@@ -430,6 +431,7 @@ initMenuScreen(
 );
 
 setupLanguagePicker();
+registerOffline();
 // Start in the language saved on the flag button, else the device's, else
 // English. `?lang=de` forces one for testing, without saving it. The page stays
 // hidden until the words have loaded, rather than flashing English first.

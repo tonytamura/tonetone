@@ -279,6 +279,17 @@ const M: Messages = {
   'sound.lock.single.situation': 'Eine farbige Kugel oder Gruppe dockt an eine schwarze an und schließt eine Gruppe aus {n} Kugeln',
   'sound.lock.pair.name': 'Magnet-Andocken Schwarz + Schwarz – {tier}',
   'sound.lock.pair.situation': 'Zwei schwarze docken aneinander an und schließen eine Gruppe aus {n} Kugeln',
+
+  'home.tagline': 'Physik-Billard, das man nach Gehör spielt.',
+  'home.lead': 'Gleiche Farben docken an. Triff eine Gruppe hart mit einer anderen Farbe, und sie explodiert. Jeder Zusammenstoß spielt einen Ton derselben Tonleiter.',
+  'home.play': 'Jetzt spielen',
+  'home.install': 'Installieren',
+  'home.shot': 'Ein laufendes Spiel gegen die KI',
+  'home.f1': 'Solo, gegen eine KI-Leiter bis zur AGI oder mit einem Freund am selben Handy.',
+  'home.f2': 'Sechs Modi, von entspannten drei Minuten bis zum Ein-Minuten-Sprint.',
+  'home.f3': 'Läuft im Browser, funktioniert offline und lässt sich auf dem Startbildschirm installieren.',
+  'home.soon': 'Bald bei Google Play.',
+  'home.privacy': 'Datenschutz',
 };
 
 export default M;

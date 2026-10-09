@@ -292,6 +292,17 @@ const M: Messages = {
   'sound.lock.single.situation': 'Una bola o grupo de color se une a una negra y cierra un grupo de {n} bolas',
   'sound.lock.pair.name': 'Unión magnética negra + negra — {tier}',
   'sound.lock.pair.situation': 'Dos negras se unen entre sí y cierran un grupo de {n} bolas',
+
+  'home.tagline': 'Billar con física que se juega de oído.',
+  'home.lead': 'Los colores iguales se pegan. Golpea fuerte un grupo con otro color y explota. Cada choque toca una nota de la misma escala.',
+  'home.play': 'Jugar ahora',
+  'home.install': 'Instalar',
+  'home.shot': 'Una partida contra la IA en curso',
+  'home.f1': 'Solo, contra una escalera de IA hasta la AGI, o con un amigo en el mismo móvil.',
+  'home.f2': 'Seis modos, de tres minutos tranquilos a un minuto a toda velocidad.',
+  'home.f3': 'Funciona en el navegador, sin conexión y se instala en tu pantalla de inicio.',
+  'home.soon': 'Pronto en Google Play.',
+  'home.privacy': 'Privacidad',
 };
 
 export default M;

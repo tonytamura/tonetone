@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" class="i18n-loading">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tone Boom — physics billiards you play by ear</title>
+  <meta name="description" content="Physics billiards you play by ear: lock matching colours, boom groups with a hard hit, and every collision plays in tune. Play free in your browser, solo, against the AI or with a friend.">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="canonical" href="%SITE_URL%/">
+  <meta name="theme-color" content="#120726">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Tone Boom">
+  <meta property="og:title" content="Tone Boom — physics billiards you play by ear">
+  <meta property="og:description" content="Lock matching colours, boom groups with a hard hit — every collision plays in tune.">
+  <meta property="og:url" content="%SITE_URL%/">
+  <meta property="og:image" content="%SITE_URL%/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/fonts.css">
+  <link rel="stylesheet" href="/src/home/home.css">
+</head>
+<body>
+<!-- The landing page of the web deploy, served at / (scripts/build-web.ts);
+     the game is at /play. Words come from the game's own translations. -->
+<canvas id="home-bg" aria-hidden="true"></canvas>
+<main class="home">
+  <h1 class="home-logo"><canvas id="home-logo" aria-hidden="true"></canvas><span class="sr-only">Tone Boom</span></h1>
+  <p class="home-tagline" data-i18n="home.tagline">Physics billiards you play by ear.</p>
+  <p class="home-lead" data-i18n="home.lead">Lock matching colours. Hit a group hard with a different one and it booms. Every collision plays a note of the same scale.</p>
+  <div class="home-actions">
+    <a class="home-play" href="/play" data-i18n="home.play">Play now</a>
+    <button id="home-install" class="home-install" type="button" hidden data-i18n="home.install">Install</button>
+  </div>
+  <figure class="home-shot">
+    <img src="/home-shot.webp" width="390" height="702" alt="A vs AI match in progress" data-i18n-alt="home.shot">
+  </figure>
+  <ul class="home-features">
+    <li data-i18n="home.f1">Solo, against an AI ladder up to AGI, or with a friend on one phone.</li>
+    <li data-i18n="home.f2">Six modes, from a calm three minutes to a one-minute sprint.</li>
+    <li data-i18n="home.f3">Plays in the browser, works offline, installs to your home screen.</li>
+  </ul>
+  <p class="home-soon" data-i18n="home.soon">Coming soon to Google Play.</p>
+  <footer class="home-footer"><a href="/privacy" data-i18n="home.privacy">Privacy</a></footer>
+</main>
+<script type="module" src="/src/home/Home.ts"></script>
+</body>
+</html>

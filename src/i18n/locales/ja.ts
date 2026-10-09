@@ -292,6 +292,17 @@ const M: Messages = {
   'sound.lock.single.situation': '色つきのボールやグループが黒にロックし、{n}個のグループが完成',
   'sound.lock.pair.name': '黒＋黒マグネットロック — {tier}',
   'sound.lock.pair.situation': '黒2個が互いにロックし、{n}個のグループが完成',
+
+  'home.tagline': '耳で遊ぶ物理ビリヤード。',
+  'home.lead': '同じ色はくっつく。違う色で強く当てるとグループが爆発。ぶつかるたびに同じ音階の音が鳴る。',
+  'home.play': '今すぐプレイ',
+  'home.install': 'インストール',
+  'home.shot': 'AI戦の対戦中の画面',
+  'home.f1': 'ソロ、AGIまで続くAIのはしご、または1台のスマホで友だちと。',
+  'home.f2': 'ゆったり3分から1分の全力勝負まで、6つのモード。',
+  'home.f3': 'ブラウザで遊べて、オフラインでも動き、ホーム画面に追加できる。',
+  'home.soon': 'Google Playで近日公開。',
+  'home.privacy': 'プライバシー',
 };
 
 export default M;

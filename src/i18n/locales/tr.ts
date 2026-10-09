@@ -292,6 +292,17 @@ const M: Messages = {
   'sound.lock.single.situation': 'Renkli bir top ya da grup siyaha kenetlenir ve {n} toplu bir grup oluşur',
   'sound.lock.pair.name': 'Siyah + siyah mıknatıs kilidi — {tier}',
   'sound.lock.pair.situation': 'İki siyah birbirine kenetlenir ve {n} toplu bir grup oluşur',
+
+  'home.tagline': 'Kulakla oynanan fizik bilardosu.',
+  'home.lead': 'Aynı renkler birbirine kilitlenir. Bir gruba başka renkle sert vur, patlasın. Her çarpışma aynı gamdan bir nota çalar.',
+  'home.play': 'Hemen oyna',
+  'home.install': 'Yükle',
+  'home.shot': 'Süren bir Yapay Zekâya Karşı maçı',
+  'home.f1': 'Solo, AGI’ye kadar uzanan bir yapay zekâ merdivenine karşı ya da aynı telefonda bir arkadaşla.',
+  'home.f2': 'Sakin üç dakikadan bir dakikalık sprinte altı mod.',
+  'home.f3': 'Tarayıcıda oynanır, çevrimdışı çalışır, ana ekrana yüklenir.',
+  'home.soon': 'Yakında Google Play’de.',
+  'home.privacy': 'Gizlilik',
 };
 
 export default M;

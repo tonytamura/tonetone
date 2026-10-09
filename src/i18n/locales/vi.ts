@@ -292,6 +292,17 @@ const M: Messages = {
   'sound.lock.single.situation': 'Một quả bóng màu hoặc một nhóm khóa vào bóng đen, tạo thành nhóm {n} bóng',
   'sound.lock.pair.name': 'Khóa nam châm đen + đen — {tier}',
   'sound.lock.pair.situation': 'Hai bóng đen khóa vào nhau, tạo thành nhóm {n} bóng',
+
+  'home.tagline': 'Bi-a vật lý chơi bằng tai.',
+  'home.lead': 'Các bi cùng màu dính vào nhau. Đánh mạnh vào một nhóm bằng màu khác là nhóm đó nổ tung. Mỗi va chạm vang lên một nốt của cùng một thang âm.',
+  'home.play': 'Chơi ngay',
+  'home.install': 'Cài đặt',
+  'home.shot': 'Một trận đấu AI đang diễn ra',
+  'home.f1': 'Chơi đơn, đấu bậc thang AI đến tận AGI, hoặc chơi với bạn trên cùng một điện thoại.',
+  'home.f2': 'Sáu chế độ, từ ba phút thư thả đến một phút tốc độ.',
+  'home.f3': 'Chơi ngay trên trình duyệt, chạy offline và cài được ra màn hình chính.',
+  'home.soon': 'Sắp có trên Google Play.',
+  'home.privacy': 'Quyền riêng tư',
 };
 
 export default M;

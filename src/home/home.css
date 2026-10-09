@@ -1,0 +1,88 @@
+/* The landing page (home.html). Its own sheet: the game's index.css locks
+   the page for play (no scroll, no selection, no touch gestures), which a page
+   to read must not do. Colours are the game's. */
+:root {
+  color-scheme: dark;
+  --void: #120726;
+  --void-2: #22103f;
+  --ink: #f3e7ff;
+  --ink-soft: #ac91d0;
+  --pink: #ff1ad9;
+  --cyan: #00e5ff;
+  --font-ui: 'Outfit', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+}
+html.i18n-loading body { visibility: hidden; }
+html { background: var(--void); }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: linear-gradient(180deg, var(--void-2), var(--void)) fixed;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+/* Vietnamese: the game's typeface has no Vietnamese, so the system's (Fonts.ts). */
+html[lang="vi"] body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
+
+/* Dimmed: the menu's beams are bright enough to wash out text set over them. */
+#home-bg { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.5; }
+
+.home {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: max(28px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+  text-align: center;
+}
+.home-logo { margin: 8px 0 4px; line-height: 0; }
+#home-logo { width: 100%; display: block; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.home-tagline { font-size: 22px; font-weight: 800; margin: 6px 0 8px; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8); }
+.home-lead {
+  font-size: 16px; line-height: 1.55; color: var(--ink); opacity: 0.88; margin: 0 auto 22px; max-width: 520px;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9);
+}
+
+.home-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 28px; }
+.home-play, .home-install {
+  font: inherit; font-size: 19px; font-weight: 800; letter-spacing: 0.03em;
+  padding: 14px 34px; border-radius: 14px; cursor: pointer; text-decoration: none;
+}
+.home-play {
+  color: var(--void); background: var(--cyan);
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.55);
+}
+.home-play:hover, .home-play:focus-visible { box-shadow: 0 0 34px rgba(0, 229, 255, 0.85); }
+.home-install {
+  color: var(--ink); background: rgba(255, 26, 217, 0.12);
+  border: 2px solid var(--pink);
+}
+.home-install[hidden] { display: none; }
+
+.home-shot { margin: 0 auto 26px; max-width: 300px; }
+.home-shot img {
+  display: block; width: 100%; height: auto; border-radius: 22px;
+  border: 1px solid rgba(172, 145, 208, 0.35);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), 0 0 40px rgba(255, 26, 217, 0.18);
+}
+
+.home-features { list-style: none; padding: 0; margin: 0 auto 22px; max-width: 520px; text-align: left; }
+.home-features li {
+  position: relative; padding: 9px 0 9px 26px; line-height: 1.5;
+  border-bottom: 1px solid rgba(172, 145, 208, 0.15);
+}
+.home-features li::before {
+  content: ''; position: absolute; left: 4px; top: 16px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--pink); box-shadow: 0 0 10px var(--pink);
+}
+.home-features li:nth-child(2)::before { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+.home-features li:nth-child(3)::before { background: #ffffff; box-shadow: 0 0 10px #ffffff; }
+
+.home-soon { color: var(--ink-soft); margin: 0 0 18px; }
+.home-footer a { color: var(--ink-soft); font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .home-play { transition: none; }
+}

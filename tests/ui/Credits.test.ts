@@ -36,18 +36,20 @@ describe('licences', () => {
 
 describe('typefaces ship with the game', () => {
   it('load no font from the network', () => {
-    expect(read('index.html')).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
-    expect(read('index.css')).not.toMatch(/https?:\/\/[^)]*\.woff2?/);
+    for (const page of ['index.html', 'home.html']) expect(read(page)).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
+    expect(read('fonts.css')).not.toMatch(/https?:\/\/[^)]*\.woff2?/);
   });
 
   it('point every @font-face at a file that exists', () => {
-    const urls = [...read('index.css').matchAll(/@font-face\s*\{[^}]*url\('([^']+)'\)/g)].map(m => m[1]);
+    // In fonts.css, which the game and the landing page both link.
+    for (const page of ['index.html', 'home.html']) expect(read(page)).toContain('href="/fonts.css"');
+    const urls = [...read('fonts.css').matchAll(/@font-face\s*\{[^}]*url\('([^']+)'\)/g)].map(m => m[1]);
     expect(urls.length).toBe(4);
     for (const u of urls) expect(existsSync(resolve(root, u)), u).toBe(true);
   });
 
   it('declare both families the canvas and the CSS ask for', () => {
-    const css = read('index.css');
+    const css = read('fonts.css');
     for (const fam of ['Outfit', 'Montserrat']) expect(css).toMatch(new RegExp(`font-family: '${fam}'`));
   });
 });

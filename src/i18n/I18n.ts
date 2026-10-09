@@ -177,6 +177,10 @@ export function translateDom(root: ParentNode): void {
   for (const el of root.querySelectorAll<HTMLElement>('[data-i18n-html]')) {
     el.innerHTML = t(el.dataset.i18nHtml as MessageKey);
   }
+  // `data-i18n-alt` an image's description.
+  for (const el of root.querySelectorAll<HTMLElement>('[data-i18n-alt]')) {
+    el.setAttribute('alt', t(el.dataset.i18nAlt as MessageKey));
+  }
   for (const el of root.querySelectorAll<HTMLElement>('[data-i18n-aria]')) {
     // The name also shows as a tooltip, which is how a mouse finds out what an
     // icon-only button does.

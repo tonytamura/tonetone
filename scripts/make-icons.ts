@@ -11,6 +11,8 @@
  * - Android splash screens, portrait and landscape, at every density;
  * - the web icons (`public/icon-*.png`, the favicon and the Apple touch icon);
  * - a 512px store icon, to `store/`, for the Play listing;
+ * - the web app's maskable icon, and the 1200x630 share image (`public/og.png`)
+ *   that links to the site show, with the full wordmark over the menu's beams;
  * - the iOS app icon and splash.
  *
  *   npm run make:icons
@@ -30,7 +32,7 @@ const BG = '#120726';
 const DENSITIES: [string, number][] = [['mdpi', 1], ['hdpi', 1.5], ['xhdpi', 2], ['xxhdpi', 3], ['xxxhdpi', 4]];
 const RES = 'android/app/src/main/res';
 
-type Kind = 'foreground' | 'mono' | 'square' | 'round' | 'splash' | 'web';
+type Kind = 'foreground' | 'mono' | 'square' | 'round' | 'splash' | 'web' | 'maskable' | 'og';
 /** `opaque`: written as RGB with no alpha channel, which the App Store requires of an app icon. */
 interface Job { path: string; w: number; h: number; kind: Kind; opaque?: boolean }
 
@@ -80,6 +82,8 @@ for (const s of [32, 180, 192, 512]) {
   jobs.push({ path: `public/${name}`, w: s, h: s, kind: 'web' });
 }
 jobs.push({ path: 'store/icon-512.png', w: 512, h: 512, kind: 'square' });
+jobs.push({ path: 'public/icon-maskable-512.png', w: 512, h: 512, kind: 'maskable' });
+jobs.push({ path: 'public/og.png', w: 1200, h: 630, kind: 'og' });
 // iOS: one 1024px icon, opaque as the App Store requires, and the square splash.
 const IOS = 'ios/App/App/Assets.xcassets';
 jobs.push({ path: `${IOS}/AppIcon.appiconset/AppIcon-512@2x.png`, w: 1024, h: 1024, kind: 'square', opaque: true });
@@ -97,12 +101,28 @@ async function main() {
     for (const job of jobs) {
       // Sent as a string: vite-node would otherwise rewrite the dynamic import.
       const data = await page.evaluate(`(async () => {
-        const { drawBilliardBall, drawImpactBoom, WHITE_BALL, BLACK_BALL } = await import('/src/ui/menu/LogoArt.ts');
+        const { drawBilliardBall, drawImpactBoom, drawLogo, WHITE_BALL, BLACK_BALL } = await import('/src/ui/menu/LogoArt.ts');
         const job = ${JSON.stringify(job)};
         const cv = document.createElement('canvas');
         cv.width = Math.round(job.w); cv.height = Math.round(job.h);
         const c = cv.getContext('2d');
         const W = cv.width, H = cv.height, S = Math.min(W, H);
+        if (job.kind === 'og') {
+          // The menu's own background and wordmark, and the tagline under it.
+          await document.fonts.load('italic 900 100px Montserrat');
+          await document.fonts.load('800 40px Outfit');
+          const { drawBackground } = await import('/src/ui/menu/MenuAmbience.ts');
+          const { computeMenuLayout } = await import('/src/ui/menu/MenuLayout.ts');
+          drawBackground(c, W, H, 40);
+          const layout = computeMenuLayout(1000, 1000, c);
+          c.save(); c.translate(100, 0);
+          drawLogo(c, { ...layout, logoCenterY: H * 0.44 }, 1000, 40);
+          c.restore();
+          c.font = '800 44px Outfit'; c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.fillStyle = '#f3e7ff';
+          c.fillText('Physics billiards you play by ear', W / 2, H * 0.44 + layout.ballRadius * 2.4);
+          return cv.toDataURL('image/png');
+        }
         const fill = () => {
           const g = c.createRadialGradient(W / 2, H * 0.42, 0, W / 2, H / 2, Math.max(W, H) * 0.75);
           g.addColorStop(0, '#2a1258'); g.addColorStop(1, '${BG}');
@@ -111,11 +131,11 @@ async function main() {
         // Ball radius as a share of the shorter side. The adaptive foreground
         // must keep its art inside the central 66% that every mask shape shows.
         let share = 0.2;
-        if (job.kind === 'foreground' || job.kind === 'mono') share = 0.135;
+        if (job.kind === 'foreground' || job.kind === 'mono' || job.kind === 'maskable') share = 0.135;
         if (job.kind === 'splash') share = 0.11;
         if (job.kind === 'round') {
           c.beginPath(); c.arc(W / 2, H / 2, S / 2, 0, Math.PI * 2); c.clip(); fill();
-        } else if (job.kind === 'square' || job.kind === 'splash') {
+        } else if (job.kind === 'square' || job.kind === 'splash' || job.kind === 'maskable') {
           fill();
         } else if (job.kind === 'web') {
           const r = S * 0.22;
