@@ -13,6 +13,9 @@ export function registerOffline(): void {
   if (!import.meta.env.PROD || isNativeApp()) return;
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
   if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+  // Embedded in another site's page (the itch.io build): that site serves the
+  // files, and the worker's address would be the host's, not ours.
+  if (window.self !== window.top) return;
   // After load, so caching the files never competes with the first paint.
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => { /* no worker, no offline: the page still works */ });

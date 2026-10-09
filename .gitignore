@@ -16,3 +16,5 @@ npm-debug.log*
 .idea/
 .vscode/
 *.swp
+dist-itch/
+store/itch/

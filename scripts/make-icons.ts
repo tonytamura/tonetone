@@ -84,6 +84,8 @@ for (const s of [32, 180, 192, 512]) {
 jobs.push({ path: 'store/icon-512.png', w: 512, h: 512, kind: 'square' });
 jobs.push({ path: 'public/icon-maskable-512.png', w: 512, h: 512, kind: 'maskable' });
 jobs.push({ path: 'public/og.png', w: 1200, h: 630, kind: 'og' });
+// The itch.io page's cover image, the size itch.io asks for.
+jobs.push({ path: 'store/itch-cover-630x500.png', w: 630, h: 500, kind: 'og' });
 // iOS: one 1024px icon, opaque as the App Store requires, and the square splash.
 const IOS = 'ios/App/App/Assets.xcassets';
 jobs.push({ path: `${IOS}/AppIcon.appiconset/AppIcon-512@2x.png`, w: 1024, h: 1024, kind: 'square', opaque: true });
@@ -114,11 +116,13 @@ async function main() {
           const { drawBackground } = await import('/src/ui/menu/MenuAmbience.ts');
           const { computeMenuLayout } = await import('/src/ui/menu/MenuLayout.ts');
           drawBackground(c, W, H, 40);
-          const layout = computeMenuLayout(1000, 1000, c);
-          c.save(); c.translate(100, 0);
-          drawLogo(c, { ...layout, logoCenterY: H * 0.44 }, 1000, 40);
+          // The wordmark across five sixths of the width, centred.
+          const LW = Math.round(W * 0.83);
+          const layout = computeMenuLayout(LW, 1000, c);
+          c.save(); c.translate((W - LW) / 2, 0);
+          drawLogo(c, { ...layout, logoCenterY: H * 0.44 }, LW, 40);
           c.restore();
-          c.font = '800 44px Outfit'; c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.font = '800 ' + Math.round(W * 0.037) + 'px Outfit'; c.textAlign = 'center'; c.textBaseline = 'middle';
           c.fillStyle = '#f3e7ff';
           c.fillText('Physics billiards you play by ear', W / 2, H * 0.44 + layout.ballRadius * 2.4);
           return cv.toDataURL('image/png');

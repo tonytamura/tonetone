@@ -16,6 +16,7 @@
     "verify": "npm run build && npm test && npm run sim:physics && npm run sim:invariants && npm run sim:baseline",
     "cap:sync": "cap sync",
     "build:web": "tsc && vite build && vite-node scripts/build-web.ts",
+    "build:itch": "tsc && vite build --base ./ --outDir dist-itch && vite-node scripts/build-itch.ts",
     "build:native": "tsc && vite build && vite-node scripts/native-version.ts && cap sync",
     "cap:android": "cap open android",
     "cap:ios": "cap open ios",
