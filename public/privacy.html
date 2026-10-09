@@ -17,6 +17,8 @@
     p, li { color: #d6cde8; }
     a { color: #ff1ad9; }
     .updated { color: #a99bc4; font-size: 14px; margin: 0 0 24px; }
+    .translate { margin: -12px 0 24px; font-size: 15px; }
+    [hidden] { display: none; }
     nav { margin-bottom: 28px; }
     hr { border: 0; border-top: 1px solid rgba(172, 145, 208, 0.25); margin: 40px 0; }
   </style>
@@ -27,6 +29,11 @@
 
   <h1>Privacy</h1>
   <p class="updated">Last updated 9 October 2026</p>
+  <!-- A plain link to Google Translate in the reader's language, set below; nothing
+       of Google's loads until it is followed. Not the Translate widget: that is
+       discontinued, and it loads Google's script on every visit, which this page
+       says the site does not do. Hidden for readers of English. -->
+  <p id="translate" class="translate" hidden><a href="#" rel="noopener">Translate this page</a></p>
 
   <p>Tone Boom is a game you play on your own device. It has no accounts, no ads and no in-game
   chat, and it does not ask for your name, email, location, contacts, camera or microphone.</p>
@@ -62,23 +69,18 @@
   <p>Tone Boom is made by TMTL, an independent developer, as a hobby: it has no company, no
   advertisers and no partners behind it, and nothing about you is shared with anyone.</p>
 
-  <hr>
-
-  <h1 lang="pt-BR">Privacidade</h1>
-  <div lang="pt-BR">
-  <p>Tone Boom é um jogo que roda no seu próprio aparelho. Não tem conta, anúncios nem chat, e não
-  pede nome, e-mail, localização, contatos, câmera ou microfone.</p>
-  <p><strong>No aparelho:</strong> o jogo guarda suas opções, idioma, se você já viu o tutorial, seus
-  recordes e a escada da IA no armazenamento do próprio aparelho. Nada disso sai dele; limpar os
-  dados do site ou desinstalar o app apaga tudo.</p>
-  <p><strong>No site:</strong> contamos visitas com o Vercel Web Analytics, sem cookies e sem
-  identificar ninguém; só vemos totais (páginas, país, tipo de aparelho e navegador).</p>
-  <p><strong>Quem faz:</strong> Tone Boom é desenvolvido por TMTL, desenvolvedor independente, como
-  hobby; não há empresa, anunciantes nem parceiros, e nada sobre você é compartilhado.</p>
-  <p><strong>Nos apps Android e iOS:</strong> não coletam nem enviam nada. No Android há duas
-  permissões comuns: vibração (pode ser desligada nas Opções) e acesso à rede, que o framework
-  declara por padrão e o jogo não usa.</p>
-  </div>
 </main>
+<script>
+  // The reader's language, if it is not English: Google Translate's address for this page in it.
+  (function () {
+    var lang = (navigator.language || 'en').toLowerCase();
+    if (lang.indexOf('en') === 0) return;
+    var tl = /^(zh|pt)-/.test(lang) ? lang : lang.split('-')[0];
+    var p = document.getElementById('translate');
+    p.querySelector('a').href = 'https://translate.google.com/translate?sl=en&tl=' + encodeURIComponent(tl) +
+      '&u=' + encodeURIComponent(location.origin + '/privacy');
+    p.hidden = false;
+  })();
+</script>
 </body>
 </html>
